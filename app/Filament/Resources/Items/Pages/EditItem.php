@@ -1,0 +1,27 @@
+<?php
+
+namespace App\Filament\Resources\Items\Pages;
+
+use App\Filament\Resources\Items\ItemResource;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ForceDeleteAction;
+use Filament\Actions\RestoreAction;
+use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Icons\Heroicon;
+
+class EditItem extends EditRecord
+{
+    protected static string $resource = ItemResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            DeleteAction::make()
+                ->icon(Heroicon::Trash)
+                ->button()
+            ,
+            ForceDeleteAction::make(),
+            RestoreAction::make(),
+        ];
+    }
+}
