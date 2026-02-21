@@ -23,6 +23,10 @@ services:
     image: nginx:alpine
     container_name: nginx-skp-warehouse
     restart: unless-stopped
+    ports: 
+      - "8001:80" # Sesuaikan dengan Port yang mau dipake. misal 8001:80, 8002:80
+    # kalo udah ada dan mau pake domain, bagian ports dihapus (gunakan NPM)
+
     logging:
       driver: "json-file"
       options:
@@ -54,7 +58,7 @@ services:
     networks:
       - laravel-net
     healthcheck:
-      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      test: ["CMD", "mariadb-admin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD_ROOT}"]
       interval: 10s
       timeout: 5s
       retries: 3
