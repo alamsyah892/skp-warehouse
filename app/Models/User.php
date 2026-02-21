@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
 use Jeffgreco13\FilamentBreezy\Traits\TwoFactorAuthenticatable;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -72,9 +73,20 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
         ];
     }
 
+    // public function getFilamentAvatarUrl(): ?string
+    // {
+    //     return $this->avatar_url;
+    // }
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->avatar_url;
+        // Jika kolom avatar_url kosong, jangan kembalikan string kosong
+        if (!$this->avatar_url) {
+            return null;
+        }
+
+        // Storage::url akan otomatis menambahkan '/storage/' 
+        // jika kamu menggunakan filesystem disk 'public'
+        return Storage::url($this->avatar_url);
     }
 
     public function canAccessPanel(Panel $panel): bool
