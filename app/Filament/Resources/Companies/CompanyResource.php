@@ -62,11 +62,34 @@ class CompanyResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $query
+            ->with([
+                'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
+                'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
+                'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
+                'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            ])
+        ;
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with(['warehouses', 'divisions', 'projects', 'banks']);
+        $query->with([
+            'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
+        ]);
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

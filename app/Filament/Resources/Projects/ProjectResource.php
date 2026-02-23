@@ -67,9 +67,11 @@ class ProjectResource extends Resource
         $query = parent::getEloquentQuery();
 
         $query
+            ->with([
+                'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
+                'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            ])
             ->withCount([
-                'companies',
-                'warehouses',
                 'purchaseRequests',
                 // 'purchaseRequestItems',
             ])
@@ -86,8 +88,8 @@ class ProjectResource extends Resource
 
         $query
             ->with([
-                'companies' => fn($query) => $query->orderByDesc('alias'),
-                'warehouses' => fn($query) => $query->orderByDesc('name'),
+                'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
+                'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
                 'purchaseRequests' => fn($query) => $query->orderByDesc('id'),
                 // 'purchaseRequestItems' => fn($query) => $query->orderByDesc('purchase_request_id'),
             ])

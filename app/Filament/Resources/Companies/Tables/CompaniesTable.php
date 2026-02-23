@@ -30,33 +30,35 @@ class CompaniesTable
             ->columns([
                 Stack::make([
                     Split::make([
+                        TextColumn::make('alias')
+                            ->label('Bussines name / alias')
+                            ->searchable()
+                            ->sortable()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->grow(false)
+                        ,
+                        IconColumn::make('is_active')
+                            ->label('Status')
+                            ->sortable()
+                            ->tooltip(fn($state) => Company::STATUS_LABELS[$state] ?? '-')
+                            ->boolean()
+                            ->trueIcon(Heroicon::CheckBadge)
+                            ->falseIcon(Heroicon::ExclamationTriangle)
+                            ->trueColor('success')
+                            ->falseColor('warning')
+                        ,
                         TextColumn::make('code')
                             ->searchable()
                             ->sortable()
                             ->badge()
                             ->color('info')
                             ->fontFamily(FontFamily::Mono)
+                            ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                        ,
-
-                        IconColumn::make('is_active')
-                            ->label('Status')
-                            ->sortable()
-                            ->tooltip(fn($state) => Company::STATUS_LABELS[$state] ?? '-')
-                            ->boolean()
-                            ->trueIcon(Heroicon::OutlinedCheckBadge)
-                            ->falseIcon(Heroicon::OutlinedExclamationTriangle)
-                            ->trueColor('success')
-                            ->falseColor('danger')
                             ->grow(false)
                         ,
                     ]),
-                    TextColumn::make('alias')
-                        ->label('Bussines name / alias')
-                        ->searchable()
-                        ->sortable()
-                        ->weight(FontWeight::Bold)
-                    ,
 
                     TextColumn::make('name')
                         ->searchable()
@@ -78,7 +80,7 @@ class CompaniesTable
                             ->searchable()
                             ->color('gray')
                         ,
-                    ])->space(0),
+                    ]),
                 ])->space(2),
                 Panel::make([
                     Stack::make([
@@ -137,13 +139,43 @@ class CompaniesTable
                             ->badge()
                             ->limitList(3)
                         ,
+
+                        TextColumn::make('banks.name')
+                            ->description("Banks: ", position: 'above')
+                            ->badge()
+                            ->limitList(3)
+                        ,
                     ])->space(2),
                 ])->collapsible(),
             ])
             ->filters([
-                SelectFilter::make('warehouses')->relationship('warehouses', 'name')->multiple()->preload(),
-                SelectFilter::make('divisions')->relationship('divisions', 'name')->multiple()->preload(),
-                SelectFilter::make('projects')->relationship('projects', 'name')->multiple()->searchable()->preload(),
+                SelectFilter::make('warehouses')
+                    ->relationship(
+                        'warehouses',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
+                SelectFilter::make('divisions')
+                    ->relationship(
+                        'divisions',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
+                SelectFilter::make('projects')
+                    ->relationship(
+                        'projects',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
 
                 SelectFilter::make('is_active')
                     ->label('Status')
@@ -157,26 +189,10 @@ class CompaniesTable
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()->before(function ($record, DeleteAction $action) {
-                    if ($record->warehouses()->exists()) {
+                    if ($record->purchaseRequests()->exists()) {
                         Notification::make()
                             ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Warehouses.')
-                            ->danger()
-                            ->send()
-                        ;
-                        $action->cancel();
-                    } elseif ($record->divisions()->exists()) {
-                        Notification::make()
-                            ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Divisions.')
-                            ->danger()
-                            ->send()
-                        ;
-                        $action->cancel();
-                    } elseif ($record->projects()->exists()) {
-                        Notification::make()
-                            ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Projects.')
+                            ->body('This Company cannot be deleted because it has Purchase Requests.')
                             ->danger()
                             ->send()
                         ;

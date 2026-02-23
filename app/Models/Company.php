@@ -63,21 +63,26 @@ class Company extends Model
 
     public function warehouses(): BelongsToMany
     {
-        return $this->belongsToMany(Warehouse::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Warehouse::class);
     }
 
     public function divisions(): BelongsToMany
     {
-        return $this->belongsToMany(Division::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Division::class);
     }
 
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Project::class);
     }
 
     public function banks(): HasMany
     {
-        return $this->hasMany(Bank::class)->orderBy('name')->orderBy('code');
+        return $this->hasMany(Bank::class);
+    }
+
+    public function purchaseRequests(): HasMany
+    {
+        return $this->hasMany(PurchaseRequest::class);
     }
 }
