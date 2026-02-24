@@ -47,7 +47,6 @@ class RolesTable
                                 ->stacked()
                                 ->grow(false)
                                 ->disk('public')
-                                ->defaultImageUrl(fn($record) => $record->users?->count() ? url('avatars/ic_default_user.png') : false)
                                 ->extraImgAttributes([
                                     'alt' => 'Image',
                                     'loading' => 'lazy',
