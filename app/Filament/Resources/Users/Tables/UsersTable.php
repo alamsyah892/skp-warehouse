@@ -34,7 +34,12 @@ class UsersTable
                             ->circular()
                             ->grow(false)
                             ->disk('public')
-                            ->defaultImageUrl(fn($record) => $record->users?->count() ? url('avatars/ic_default_user.png') : false)
+                            ->defaultImageUrl(
+                                function ($record) {
+                                    $name = urlencode($record->name);
+                                    return url("https://ui-avatars.com/api/?name={$name}&background=random&color=fff");
+                                }
+                            )
                             ->extraImgAttributes([
                                 'alt' => 'Image',
                                 'loading' => 'lazy',

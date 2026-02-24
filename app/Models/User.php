@@ -75,19 +75,16 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     public function getFilamentAvatarUrl(): ?string
     {
-        return $this->avatar_url;
-    }
-    // public function getFilamentAvatarUrl(): ?string
-    // {
-    //     // Jika kolom avatar_url kosong, jangan kembalikan string kosong
-    //     if (!$this->avatar_url) {
-    //         return null;
-    //     }
+        // Jika kolom avatar_url kosong, kasih default
+        if (!$this->avatar_url) {
+            $name = urlencode($this->name);
+            return "https://ui-avatars.com/api/?name={$name}&background=random&color=fff";
+        }
 
-    //     // Storage::url akan otomatis menambahkan '/storage/' 
-    //     // jika kamu menggunakan filesystem disk 'public'
-    //     return Storage::url($this->avatar_url);
-    // }
+        // Storage::url akan otomatis menambahkan '/storage/' 
+        // jika kamu menggunakan filesystem disk 'public'
+        return Storage::url($this->avatar_url);
+    }
 
     public function canAccessPanel(Panel $panel): bool
     {
