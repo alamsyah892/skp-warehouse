@@ -62,11 +62,40 @@ class WarehouseResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $query
+            ->with([
+                'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
+                'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
+                'users' => fn($query) => $query->orderByDesc('id'),
+            ])
+            ->withCount([
+                'companies',
+                'projects',
+                'users',
+                'purchaseRequests',
+            ])
+        ;
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with(['addresses', 'companies', 'projects', 'users']);
+        $query->with([
+            'addresses' => fn($query) => $query->orderBy('id')->orderBy('address'),
+            'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
+            'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            'users' => fn($query) => $query->orderByDesc('id'),
+            'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
+        ]);
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

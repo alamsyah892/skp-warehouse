@@ -47,16 +47,21 @@ class Warehouse extends Model
 
     public function companies(): BelongsToMany
     {
-        return $this->belongsToMany(Company::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Company::class);
     }
 
     public function projects(): BelongsToMany
     {
-        return $this->belongsToMany(Project::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Project::class);
     }
 
     public function users(): BelongsToMany
     {
-        return $this->belongsToMany(User::class)->orderBy('name');
+        return $this->belongsToMany(User::class);
+    }
+
+    public function purchaseRequests(): HasMany
+    {
+        return $this->hasMany(PurchaseRequest::class);
     }
 }
