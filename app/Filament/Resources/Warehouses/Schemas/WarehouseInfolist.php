@@ -15,10 +15,125 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\TextSize;
+use Filament\Support\Icons\Heroicon;
 
 class WarehouseInfolist
 {
     public static function configure(Schema $schema): Schema
+    {
+        return $schema->components([
+            Grid::make()
+                ->columnSpanFull()
+                ->columns([
+                    'default' => 1,
+                    // 'lg' => 1,
+                    'xl' => 4,
+                    '2xl' => 4,
+                ])
+                ->schema([
+                    Grid::make() // left / 1
+                        ->columnSpan([
+                            'xl' => 3,
+                            '2xl' => 3,
+                        ])
+                        ->schema([
+                            static::dataSection(), // 1.1
+
+                            static::tabSection(), // 1.2
+                        ])
+                    ,
+
+                    Grid::make() // right / 2
+                        ->columnSpan([
+                            'xl' => 1,
+                            '2xl' => 1,
+                        ])
+                        ->schema([
+                            static::otherInfoSection(), // 2.1
+
+                            static::relatedDataSection(), // 2.2
+                        ])
+                    ,
+                ])
+            ,
+        ]);
+    }
+
+    protected static function dataSection(): Section
+    {
+        return Section::make('Warehouse Information')
+            ->icon(Heroicon::BuildingOffice2)
+            ->iconColor('primary')
+            ->description('Informasi utama dan identitas dasar gudang.')
+            // ->afterHeader([
+            //     Action::make('edit')
+            //         ->label('Edit')
+            //         ->icon(Heroicon::PencilSquare)
+            //         ->url(fn($record) => WarehouseResource::getUrl('edit', ['record' => $record]))
+            //     ,
+            // ])
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(3)
+            ->compact()
+            ->schema([
+
+            ])
+        ;
+    }
+
+    protected static function otherInfoSection(): Section
+    {
+        return Section::make('Other Information')
+            ->icon(Heroicon::InformationCircle)
+            ->iconColor('primary')
+            ->description('Informasi lain terkait gudang.')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+
+            ])
+        ;
+    }
+
+    protected static function relatedDataSection(): Section
+    {
+        return Section::make('Related Data')
+            ->icon(Heroicon::Link)
+            ->iconColor('primary')
+            ->description('Daftar entitas yang terhubung dengan gudang ini.')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+
+            ])
+        ;
+    }
+
+    protected static function tabSection(): Tabs
+    {
+        return Tabs::make()
+            ->columnSpanFull()
+            ->tabs([
+                Tab::make('PR History')
+                    ->icon(Heroicon::OutlinedClipboardDocumentList)
+                    ->badge(fn($record) => $record->purchase_requests_count ?: null)
+                    ->schema([
+
+                    ])
+                ,
+
+                ActivityLogTab::make('Logs'),
+            ])
+        ;
+    }
+
+
+    public static function _configure(Schema $schema): Schema
     {
         return $schema->components([
             Tabs::make()->tabs([
