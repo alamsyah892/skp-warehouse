@@ -96,7 +96,7 @@ class CompanyResource extends Resource
             'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
             'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
             'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id')
+            'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
         ]);
 
         return $query->withoutGlobalScopes([
