@@ -157,57 +157,57 @@ class CompanyInfolist
         return Tabs::make()
             ->columnSpanFull()
             ->tabs([
-                // Tab::make('PR History')
-                //     ->icon(Heroicon::OutlinedClipboardDocumentList)
-                //     ->badge(fn($record) => $record->purchase_requests_count ?: null)
-                //     ->schema([
-                //         Callout::make()
-                //             ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Perusahaan ini.')
-                //             ->info()
-                //             ->color(null)
-                //         ,
+                Tab::make('PR History')
+                    ->icon(Heroicon::OutlinedClipboardDocumentList)
+                    ->badge(fn($record) => $record->purchase_requests_count ?: null)
+                    ->schema([
+                        Callout::make()
+                            ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Perusahaan ini.')
+                            ->info()
+                            ->color(null)
+                        ,
 
-                //         RepeatableEntry::make('purchaseRequests')
-                //             ->columnSpanFull()
-                //             ->table([
-                //                 TableColumn::make('Number'),
-                //                 TableColumn::make('Warehouse')
-                //                 // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                //                 ,
-                //                 TableColumn::make('Company')
-                //                 // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                //                 ,
-                //                 TableColumn::make('Division'),
-                //                 // TableColumn::make('Deskripsi'),
-                //                 TableColumn::make('Status'),
-                //             ])
-                //             ->schema([
-                //                 TextEntry::make('number')
-                //                     ->url(
-                //                         fn($record) => PurchaseRequestResource::getUrl('view', [
-                //                             'record' => $record->id,
-                //                         ])
-                //                     )
-                //                     ->openUrlInNewTab() // optional
-                //                     ->color('primary')
-                //                     ->icon(Heroicon::ArrowTopRightOnSquare)
-                //                     ->iconPosition(IconPosition::After)
-                //                     ->wrap(false)
-                //                 ,
-                //                 TextEntry::make('warehouse.name'),
-                //                 TextEntry::make('company.alias'),
-                //                 TextEntry::make('division.name'),
-                //                 // TextEntry::make('description'),
-                //                 TextEntry::make('status')
-                //                     ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                //                     ->badge()
-                //                     ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
-                //                 ,
-                //             ])
-                //             ->visible(fn($record) => $record->purchase_requests_count > 0)
-                //         ,
-                //     ])
-                // ,
+                        RepeatableEntry::make('purchaseRequests')
+                            ->columnSpanFull()
+                            ->table([
+                                TableColumn::make('Number'),
+                                TableColumn::make('Warehouse')
+                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
+                                ,
+                                TableColumn::make('Company')
+                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
+                                ,
+                                TableColumn::make('Division'),
+                                // TableColumn::make('Deskripsi'),
+                                TableColumn::make('Status'),
+                            ])
+                            ->schema([
+                                TextEntry::make('number')
+                                    ->url(
+                                        fn($record) => PurchaseRequestResource::getUrl('view', [
+                                            'record' => $record->id,
+                                        ])
+                                    )
+                                    ->openUrlInNewTab() // optional
+                                    ->color('primary')
+                                    ->icon(Heroicon::ArrowTopRightOnSquare)
+                                    ->iconPosition(IconPosition::After)
+                                    ->wrap(false)
+                                ,
+                                TextEntry::make('warehouse.name'),
+                                TextEntry::make('company.alias'),
+                                TextEntry::make('division.name'),
+                                // TextEntry::make('description'),
+                                TextEntry::make('status')
+                                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                                    ->badge()
+                                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                                ,
+                            ])
+                            ->visible(fn($record) => $record->purchase_requests_count > 0)
+                        ,
+                    ])
+                ,
 
                 Tab::make('Banks')
                     ->icon(Heroicon::OutlinedBuildingLibrary)
