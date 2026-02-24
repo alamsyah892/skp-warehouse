@@ -294,19 +294,19 @@ class CompanyInfolist
                 ,
 
                 TextEntry::make('warehouses.name')
-                    ->label(fn($record) => 'Warehouses (' . ($record->warehouses?->count() ?? 0) . ')')
+                    ->label(fn($record) => "Warehouses ({$record->warehouses_count})")
                     ->badge()
                     ->placeholder('-')
                     ->columnSpanFull()
                 ,
                 TextEntry::make('divisions.name')
-                    ->label(fn($record) => 'Divisions (' . ($record->divisions?->count() ?? 0) . ')')
+                    ->label(fn($record) => "Divisions ({$record->divisions_count})")
                     ->badge()
                     ->placeholder('-')
                     ->columnSpanFull()
                 ,
                 TextEntry::make('projects.name')
-                    ->label(fn($record) => 'Projects (' . ($record->projects?->count() ?? 0) . ')')
+                    ->label(fn($record) => "Projects ({$record->projects_count})")
                     ->badge()
                     ->placeholder('-')
                     ->columnSpanFull()
