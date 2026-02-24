@@ -10,7 +10,6 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontFamily;
-use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -31,10 +30,9 @@ class CompaniesTable
                 Stack::make([
                     Split::make([
                         TextColumn::make('alias')
-                            ->label('Bussines name / alias')
+                            ->label('Bussines Name / Alias')
                             ->searchable()
                             ->sortable()
-                            ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->grow(false)
                         ,
@@ -52,19 +50,17 @@ class CompaniesTable
                             ->searchable()
                             ->sortable()
                             ->badge()
-                            ->color('info')
                             ->fontFamily(FontFamily::Mono)
-                            ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->grow(false)
                         ,
                     ]),
 
                     TextColumn::make('name')
+                        ->label('Company Name')
                         ->searchable()
                         ->sortable()
                         ->description(fn($record): string => $record->description)
-                        ->weight(FontWeight::Bold)
                     ,
 
                     Stack::make([
@@ -138,6 +134,11 @@ class CompaniesTable
                             ->description("Projects: ", position: 'above')
                             ->badge()
                             ->limitList(3)
+                        ,
+
+                        TextColumn::make('purchase_requests_count')
+                            ->description("PR count: ", position: 'above')
+                            ->sortable()
                         ,
 
                         TextColumn::make('banks.name')

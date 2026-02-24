@@ -28,7 +28,7 @@ class CompanyResource extends Resource
     public static ?int $navigationSort = 1;
     protected static string|UnitEnum|null $navigationGroup = 'General';
 
-    protected static ?string $recordTitleAttribute = 'name';
+    protected static ?string $recordTitleAttribute = 'alias';
 
     public static function form(Schema $schema): Schema
     {
@@ -72,6 +72,13 @@ class CompanyResource extends Resource
                 'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
                 'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
                 'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            ])
+            ->withCount([
+                'warehouses',
+                'divisions',
+                'projects',
+                'banks',
+                'purchaseRequests',
             ])
         ;
 
