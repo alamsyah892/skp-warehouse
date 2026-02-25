@@ -62,11 +62,36 @@ class DivisionResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $query
+            ->with([
+                'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
+            ])
+            ->withCount([
+                'purchaseRequests',
+            ])
+        ;
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with('companies');
+        $query
+            ->with([
+                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
+            ])
+            ->withCount([
+                'companies',
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

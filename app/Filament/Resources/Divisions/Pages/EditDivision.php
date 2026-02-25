@@ -21,10 +21,10 @@ class EditDivision extends EditRecord
                 ->icon(Heroicon::Trash)
                 ->button()
                 ->before(function ($record, DeleteAction $action) {
-                    if ($record->companies()->exists()) {
+                    if ($record->purchaseRequests()->exists()) {
                         Notification::make()
                             ->title('Action cannot be continued.')
-                            ->body('This Division cannot be deleted because it still has Companies.')
+                            ->body('This Division cannot be deleted because it has Purchase Requests.')
                             ->danger()
                             ->send()
                         ;

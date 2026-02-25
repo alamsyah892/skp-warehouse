@@ -10,7 +10,6 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontFamily;
-use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -30,32 +29,34 @@ class DivisionsTable
             ->columns([
                 Stack::make([
                     Split::make([
-                        TextColumn::make('code')
+                        TextColumn::make('name')
                             ->searchable()
                             ->sortable()
-                            ->badge()
-                            ->color('info')
-                            ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
+                            ->grow(false)
                         ,
-
                         IconColumn::make('is_active')
                             ->label('Status')
                             ->sortable()
                             ->tooltip(fn($state) => Division::STATUS_LABELS[$state] ?? '-')
                             ->boolean()
-                            ->trueIcon(Heroicon::OutlinedCheckBadge)
-                            ->falseIcon(Heroicon::OutlinedExclamationTriangle)
+                            ->trueIcon(Heroicon::CheckBadge)
+                            ->falseIcon(Heroicon::ExclamationTriangle)
                             ->trueColor('success')
-                            ->falseColor('danger')
+                            ->falseColor('warning')
+                        ,
+                        TextColumn::make('code')
+                            ->searchable()
+                            ->sortable()
+                            ->badge()
+                            ->fontFamily(FontFamily::Mono)
+                            ->size(TextSize::Large)
                             ->grow(false)
                         ,
                     ]),
-                    TextColumn::make('name')
-                        ->searchable()
-                        ->sortable()
-                        ->description(fn($record): string => $record->description)
-                        ->weight(FontWeight::Bold)
+                    TextColumn::make('description')
+                        ->placeholder('-')
+                        ->color('gray')
                     ,
                 ])->space(2),
                 Panel::make([
@@ -67,11 +68,24 @@ class DivisionsTable
                             ->badge()
                             ->limitList(3)
                         ,
+
+                        TextColumn::make('purchase_requests_count')
+                            ->description("PR count: ", position: 'above')
+                            ->sortable()
+                        ,
                     ])->space(2),
                 ])->collapsible(),
             ])
             ->filters([
-                SelectFilter::make('companies')->relationship('companies', 'alias')->multiple()->preload(),
+                SelectFilter::make('companies')
+                    ->relationship(
+                        'companies',
+                        'alias',
+                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
 
                 SelectFilter::make('is_active')
                     ->label('Status')
@@ -85,10 +99,10 @@ class DivisionsTable
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make()->before(function ($record, DeleteAction $action) {
-                    if ($record->companies()->exists()) {
+                    if ($record->purchaseRequests()->exists()) {
                         Notification::make()
                             ->title('Action cannot be continued.')
-                            ->body('This Division cannot be deleted because it still has Companies.')
+                            ->body('This Division cannot be deleted because it has Purchase Requests.')
                             ->danger()
                             ->send()
                         ;

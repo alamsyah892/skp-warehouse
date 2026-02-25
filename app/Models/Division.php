@@ -7,6 +7,7 @@ use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Division extends Model
@@ -41,6 +42,11 @@ class Division extends Model
 
     public function companies(): BelongsToMany
     {
-        return $this->belongsToMany(Company::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Company::class);
+    }
+
+    public function purchaseRequests(): HasMany
+    {
+        return $this->hasMany(PurchaseRequest::class);
     }
 }
