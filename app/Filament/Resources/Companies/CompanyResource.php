@@ -74,10 +74,6 @@ class CompanyResource extends Resource
                 'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
             ])
             ->withCount([
-                'warehouses',
-                'divisions',
-                'projects',
-                'banks',
                 'purchaseRequests',
             ])
         ;
@@ -91,13 +87,17 @@ class CompanyResource extends Resource
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with([
-            'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
-        ]);
+        $query
+            ->with([
+                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
+            ])
+            ->withCount([
+                'warehouses',
+                'divisions',
+                'projects',
+                'banks',
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

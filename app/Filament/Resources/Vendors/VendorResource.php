@@ -62,11 +62,30 @@ class VendorResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $query
+            ->with([
+                'itemCategories' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            ])
+        ;
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with('itemCategories');
+        $query
+            ->withCount([
+                'itemCategories',
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

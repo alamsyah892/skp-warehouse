@@ -21,26 +21,10 @@ class EditCompany extends EditRecord
                 ->icon(Heroicon::Trash)
                 ->button()
                 ->before(function ($record, DeleteAction $action) {
-                    if ($record->warehouses()->exists()) {
+                    if ($record->purchaseRequests()->exists()) {
                         Notification::make()
                             ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Warehouses.')
-                            ->danger()
-                            ->send()
-                        ;
-                        $action->cancel();
-                    } elseif ($record->divisions()->exists()) {
-                        Notification::make()
-                            ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Divisions.')
-                            ->danger()
-                            ->send()
-                        ;
-                        $action->cancel();
-                    } elseif ($record->projects()->exists()) {
-                        Notification::make()
-                            ->title('Action cannot be continued.')
-                            ->body('This Company cannot be deleted because it still has Projects.')
+                            ->body('This Company cannot be deleted because it has Purchase Requests.')
                             ->danger()
                             ->send()
                         ;
