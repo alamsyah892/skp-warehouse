@@ -88,10 +88,12 @@ class ProjectResource extends Resource
 
         $query
             ->with([
-                'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
-                'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
-                'purchaseRequests' => fn($query) => $query->orderByDesc('id'),
-                // 'purchaseRequestItems' => fn($query) => $query->orderByDesc('purchase_request_id'),
+                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
+                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('purchase_request_id'),
+            ])
+            ->withCount([
+                'companies',
+                'warehouses',
             ])
         ;
 

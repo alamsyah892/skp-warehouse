@@ -128,13 +128,10 @@ class DivisionInfolist
                             ->columnSpanFull()
                             ->table([
                                 TableColumn::make('Number'),
-                                TableColumn::make('Warehouse')
-                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                                ,
-                                TableColumn::make('Company')
-                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                                ,
-                                TableColumn::make('Division'),
+                                TableColumn::make('Warehouse'),
+                                TableColumn::make('Company'),
+                                // TableColumn::make('Division'),
+                                TableColumn::make('Project'),
                                 // TableColumn::make('Deskripsi'),
                                 TableColumn::make('Status'),
                             ])
@@ -153,7 +150,8 @@ class DivisionInfolist
                                 ,
                                 TextEntry::make('warehouse.name'),
                                 TextEntry::make('company.alias'),
-                                TextEntry::make('division.name'),
+                                // TextEntry::make('division.name'),
+                                TextEntry::make('project.name'),
                                 // TextEntry::make('description'),
                                 TextEntry::make('status')
                                     ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])

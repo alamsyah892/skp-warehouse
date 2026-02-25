@@ -17,6 +17,7 @@ use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -185,6 +186,15 @@ class CompaniesTable
                 ,
 
                 TrashedFilter::make()->native(false),
+
+                Filter::make('unused_in_pr')
+                    ->label('Belum ada di PR')
+                    ->indicator('PR count: 0')
+                    ->query(
+                        fn($query) =>
+                        $query->whereDoesntHave('purchaseRequests')
+                    )
+                ,
             ])
             ->recordActions([
                 ViewAction::make(),

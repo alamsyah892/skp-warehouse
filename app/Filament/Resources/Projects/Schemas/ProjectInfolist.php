@@ -11,6 +11,7 @@ use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -70,7 +71,7 @@ class ProjectInfolist
         return Section::make('Project Information')
             ->icon(Heroicon::Square3Stack3d)
             ->iconColor('primary')
-            ->description('Informasi utama dan identitas dasar project.')
+            ->description('Informasi utama dan identitas dasar Project.')
             // ->afterHeader([
             //     Action::make('edit')
             //         ->label('Edit')
@@ -118,79 +119,6 @@ class ProjectInfolist
         ;
     }
 
-    protected static function otherInfoSection(): Section
-    {
-        return Section::make('Other Information')
-            ->icon(Heroicon::InformationCircle)
-            ->iconColor('primary')
-            ->description('Informasi lain terkait project.')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-                TextEntry::make('allow_po')
-                    ->label('Allow PO')
-                    ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
-                    ->formatStateUsing(fn($state) => $state ? 'Allowed' : 'Blocked')
-                    ->badge()
-                    ->color(fn($state) => $state ? 'success' : 'danger')
-                    ->columnSpanFull()
-                ,
-
-                TextEntry::make('is_active')
-                    ->label('Status')
-                    ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
-                    ->formatStateUsing(fn($state) => Project::STATUS_LABELS[$state])
-                    ->badge()
-                    ->color(fn($state) => $state == Project::STATUS_ACTIVE ? 'success' : 'danger')
-                    ->columnSpanFull()
-                ,
-
-                TextEntry::make('created_at')->date()
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                ,
-                TextEntry::make('updated_at')->date()
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                ,
-                TextEntry::make('deleted_at')->date()
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                    ->visible(fn($state) => $state != null)
-                ,
-            ])
-        ;
-    }
-
-    protected static function relatedDataSection(): Section
-    {
-        return Section::make('Related Data')
-            ->icon(Heroicon::Link)
-            ->iconColor('primary')
-            ->description('Daftar entitas yang terhubung dengan project ini.')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-                TextEntry::make('companies.alias')
-                    ->label(fn($record) => "Companies ({$record->companies_count})")
-                    ->badge()
-                    ->placeholder('-')
-                    ->columnSpanFull()
-                ,
-                TextEntry::make('warehouses.name')
-                    ->label(fn($record) => "Warehouses ({$record->warehouses_count})")
-                    ->badge()
-                    ->placeholder('-')
-                    ->columnSpanFull()
-                ,
-            ])
-        ;
-    }
-
     protected static function tabSection(): Tabs
     {
         return Tabs::make()
@@ -200,10 +128,10 @@ class ProjectInfolist
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_requests_count ?: null)
                     ->schema([
-                        TextEntry::make('info')
-                            ->hiddenLabel()
-                            ->state('Riwayat semua Pengajuan Pembelian yang terkait dengan project ini.')
-                            ->color('gray')
+                        Callout::make()
+                            ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Project ini.')
+                            ->info()
+                            ->color(null)
                         ,
 
                         RepeatableEntry::make('purchaseRequests')
@@ -289,7 +217,86 @@ class ProjectInfolist
                     ])
                 ,
 
-                ActivityLogTab::make('Logs'),
+                ActivityLogTab::make('Activity Logs'),
+            ])
+        ;
+    }
+
+    protected static function otherInfoSection(): Section
+    {
+        return Section::make('Other Information')
+            ->icon(Heroicon::InformationCircle)
+            ->iconColor('primary')
+            ->description('Informasi lain terkait Project.')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+                TextEntry::make('allow_po')
+                    ->label('Allow PO')
+                    ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
+                    ->formatStateUsing(fn($state) => $state ? 'Allowed' : 'Blocked')
+                    ->badge()
+                    ->color(fn($state) => $state ? 'success' : 'danger')
+                    ->columnSpanFull()
+                ,
+
+                TextEntry::make('is_active')
+                    ->label('Status')
+                    ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
+                    ->formatStateUsing(fn($state) => Project::STATUS_LABELS[$state])
+                    ->badge()
+                    ->color(fn($state) => $state == Project::STATUS_ACTIVE ? 'success' : 'danger')
+                    ->columnSpanFull()
+                ,
+
+                TextEntry::make('created_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                ,
+                TextEntry::make('updated_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                ,
+                TextEntry::make('deleted_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                    ->visible(fn($state) => $state != null)
+                ,
+            ])
+        ;
+    }
+
+    protected static function relatedDataSection(): Section
+    {
+        return Section::make('Related Data')
+            ->icon(Heroicon::Link)
+            ->iconColor('primary')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+                Callout::make()
+                    ->columnSpanFull()
+                    ->description('Daftar entitas yang terhubung dengan Project ini.')
+                    ->info()
+                    ->color(null)
+                ,
+
+                TextEntry::make('companies.alias')
+                    ->label(fn($record) => "Companies ({$record->companies_count})")
+                    ->badge()
+                    ->placeholder('-')
+                    ->columnSpanFull()
+                ,
+                TextEntry::make('warehouses.name')
+                    ->label(fn($record) => "Warehouses ({$record->warehouses_count})")
+                    ->badge()
+                    ->placeholder('-')
+                    ->columnSpanFull()
+                ,
             ])
         ;
     }

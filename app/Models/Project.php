@@ -48,12 +48,12 @@ class Project extends Model
 
     public function companies(): BelongsToMany
     {
-        return $this->belongsToMany(Company::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Company::class);
     }
 
     public function warehouses(): BelongsToMany
     {
-        return $this->belongsToMany(Warehouse::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Warehouse::class);
     }
 
     public function purchaseRequests(): HasMany

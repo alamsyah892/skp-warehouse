@@ -32,11 +32,26 @@ class ProjectsTable
             ->columns([
                 Stack::make([
                     Split::make([
+                        TextColumn::make('name')
+                            ->searchable()
+                            ->sortable()
+                            ->size(TextSize::Large)
+                            ->grow(false)
+                        ,
+                        IconColumn::make('is_active')
+                            ->label('Status')
+                            ->sortable()
+                            ->tooltip(fn($state) => Project::STATUS_LABELS[$state] ?? '-')
+                            ->boolean()
+                            ->trueIcon(Heroicon::CheckBadge)
+                            ->falseIcon(Heroicon::ExclamationTriangle)
+                            ->trueColor('success')
+                            ->falseColor('warning')
+                        ,
                         TextColumn::make('code')
                             ->searchable()
                             ->sortable()
                             ->badge()
-                            ->color('info')
                             ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
                             ->grow(false)
@@ -47,35 +62,23 @@ class ProjectsTable
                             ->searchable()
                             ->sortable()
                             ->badge()
-                            ->color('info')
                             ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
-                        ,
-
-                        IconColumn::make('is_active')
-                            ->label('Status')
-                            ->sortable()
-                            ->tooltip(fn($state) => Project::STATUS_LABELS[$state] ?? '-')
-                            ->boolean()
-                            ->trueIcon(Heroicon::OutlinedCheckBadge)
-                            ->falseIcon(Heroicon::OutlinedExclamationTriangle)
-                            ->trueColor('success')
-                            ->falseColor('danger')
                             ->grow(false)
                         ,
                     ]),
-                    TextColumn::make('name')
-                        ->searchable()
-                        ->sortable()
-                        ->description(fn($record): string => $record->description)
-                        ->weight(FontWeight::Bold)
+                    TextColumn::make('description')
+                        ->placeholder('-')
+                        ->color('gray')
                     ,
                 ])->space(2),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('allow_po')
                             ->description('Allow PO: ', position: 'above')
+                            ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
                             ->formatStateUsing(fn($state) => $state ? 'Allowed' : 'Blocked')
+                            ->badge()
                             ->color(fn(bool $state) => $state ? 'success' : 'danger')
                         ,
 
@@ -100,8 +103,26 @@ class ProjectsTable
                 ])->collapsible(),
             ])
             ->filters([
-                SelectFilter::make('companies')->relationship('companies', 'alias')->multiple()->preload(),
-                SelectFilter::make('warehouses')->relationship('warehouses', 'name')->multiple()->preload(),
+                SelectFilter::make('companies')
+                    ->relationship(
+                        'companies',
+                        'alias',
+                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
+
+                SelectFilter::make('warehouses')
+                    ->relationship(
+                        'warehouses',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
+
                 SelectFilter::make('allow_po')
                     ->label('Allow PO')
                     ->options([1 => 'Allowed', 0 => 'Blocked',])
@@ -120,7 +141,7 @@ class ProjectsTable
                     ->label('Belum ada di PR')
                     ->indicator('PR count: 0')
                     ->query(
-                        fn(Builder $query) =>
+                        fn($query) =>
                         $query->whereDoesntHave('purchaseRequests')
                     )
                 ,
