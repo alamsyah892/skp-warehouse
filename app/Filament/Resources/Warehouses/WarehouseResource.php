@@ -73,6 +73,7 @@ class WarehouseResource extends Resource
                 'users' => fn($query) => $query->orderByDesc('id'),
             ])
             ->withCount([
+                'addresses',
                 'companies',
                 'projects',
                 'users',

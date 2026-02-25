@@ -3,10 +3,14 @@
 namespace App\Filament\Resources\Warehouses\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Models\PurchaseRequest;
 use App\Models\Warehouse;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -14,6 +18,8 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 
@@ -64,7 +70,7 @@ class WarehouseInfolist
         return Section::make('Warehouse Information')
             ->icon(Heroicon::BuildingOffice2)
             ->iconColor('primary')
-            ->description('Informasi utama dan identitas dasar gudang.')
+            ->description('Informasi utama dan identitas dasar Gudang.')
             // ->afterHeader([
             //     Action::make('edit')
             //         ->label('Edit')
@@ -77,39 +83,30 @@ class WarehouseInfolist
             ->columns(3)
             ->compact()
             ->schema([
+                TextEntry::make('name')
+                    ->columnSpan(2)
+                    ->icon(fn($record) => $record->is_active ? Heroicon::CheckBadge : Heroicon::ExclamationTriangle)
+                    ->iconPosition(IconPosition::After)
+                    ->iconColor(fn($record) => $record->is_active ? 'success' : 'warning')
+                    ->size(TextSize::Large)
+                    ->weight(FontWeight::Bold)
+                ,
 
-            ])
-        ;
-    }
+                TextEntry::make('code')
+                    ->badge()
+                    ->fontFamily(FontFamily::Mono)
+                    ->size(TextSize::Large)
+                ,
 
-    protected static function otherInfoSection(): Section
-    {
-        return Section::make('Other Information')
-            ->icon(Heroicon::InformationCircle)
-            ->iconColor('primary')
-            ->description('Informasi lain terkait gudang.')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-
-            ])
-        ;
-    }
-
-    protected static function relatedDataSection(): Section
-    {
-        return Section::make('Related Data')
-            ->icon(Heroicon::Link)
-            ->iconColor('primary')
-            ->description('Daftar entitas yang terhubung dengan gudang ini.')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-
+                Grid::make()
+                    ->columnSpan(2)
+                    ->schema([
+                        TextEntry::make('description')
+                            ->columnSpanFull()
+                            ->placeholder('-')
+                        ,
+                    ])
+                ,
             ])
         ;
     }
@@ -119,148 +116,177 @@ class WarehouseInfolist
         return Tabs::make()
             ->columnSpanFull()
             ->tabs([
+                Tab::make('Addresses')
+                    ->icon(Heroicon::OutlinedMapPin)
+                    ->badge(fn($record) => $record->addresses_count ?: null)
+                    ->schema([
+                        Callout::make()
+                            ->description('Detail lokasi operasional Gudang untuk koordinasi pengiriman.')
+                            ->info()
+                            ->color(null)
+                        ,
+                        RepeatableEntry::make('addresses')
+                            ->hiddenLabel()
+                            ->columns(3)
+                            ->schema([
+                                TextEntry::make('address')
+                                    ->icon(Heroicon::Map)
+                                    ->columnSpan(2)
+                                ,
+                                TextEntry::make('city')
+                                    ->icon(Heroicon::BuildingOffice)
+                                ,
+
+                                // TextEntry::make('post_code'),
+                                // TextEntry::make('phone'),
+                                // TextEntry::make('fax'),
+                            ])
+                        ,
+                    ])
+                ,
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_requests_count ?: null)
                     ->schema([
+                        Callout::make()
+                            ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Gudang ini.')
+                            ->info()
+                            ->color(null)
+                        ,
 
+                        RepeatableEntry::make('purchaseRequests')
+                            ->columnSpanFull()
+                            ->table([
+                                TableColumn::make('Number'),
+                                TableColumn::make('Warehouse')
+                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
+                                ,
+                                TableColumn::make('Company')
+                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
+                                ,
+                                TableColumn::make('Division'),
+                                // TableColumn::make('Deskripsi'),
+                                TableColumn::make('Status'),
+                            ])
+                            ->schema([
+                                TextEntry::make('number')
+                                    ->url(
+                                        fn($record) => PurchaseRequestResource::getUrl('view', [
+                                            'record' => $record->id,
+                                        ])
+                                    )
+                                    ->openUrlInNewTab() // optional
+                                    ->color('primary')
+                                    ->icon(Heroicon::ArrowTopRightOnSquare)
+                                    ->iconPosition(IconPosition::After)
+                                    ->wrap(false)
+                                ,
+                                TextEntry::make('warehouse.name'),
+                                TextEntry::make('company.alias'),
+                                TextEntry::make('division.name'),
+                                // TextEntry::make('description'),
+                                TextEntry::make('status')
+                                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                                    ->badge()
+                                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                                ,
+                            ])
+                            ->visible(fn($record) => $record->purchase_requests_count > 0)
+                        ,
                     ])
                 ,
 
-                ActivityLogTab::make('Logs'),
+                ActivityLogTab::make('Activity Logs'),
             ])
         ;
     }
 
-
-    public static function _configure(Schema $schema): Schema
+    protected static function otherInfoSection(): Section
     {
-        return $schema->components([
-            Tabs::make()->tabs([
-                Tab::make('Data')->schema([
-                    Grid::make()
-                        ->columns([
-                            'default' => 1,
-                            'lg' => 1,
-                            'xl' => 1,
-                            '2xl' => 4,
-                        ])
-                        ->schema([
-                            Section::make() // left
-                                ->columnSpan([
-                                    '2xl' => 3,
-                                ])
-                                ->contained(false)
-                                ->schema([
-                                    Fieldset::make('Warehouse')
-                                        ->columnSpanFull()
-                                        ->columns(2)
-                                        ->schema([
-                                            TextEntry::make('code')
-                                                ->badge()
-                                                ->color('info')
-                                                ->fontFamily(FontFamily::Mono)
-                                                ->size(TextSize::Large)
-                                            ,
-                                            TextEntry::make('name'),
-                                            TextEntry::make('description')
-                                                ->placeholder('-')
-                                                ->columnSpanFull()
-                                            ,
-                                        ])
-                                    ,
+        return Section::make('Other Information')
+            ->icon(Heroicon::InformationCircle)
+            ->iconColor('primary')
+            ->description('Informasi lain terkait Gudang.')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+                TextEntry::make('is_active')
+                    ->label('Status')
+                    ->icon(fn($state) => $state ? Heroicon::CheckCircle : Heroicon::XCircle)
+                    ->formatStateUsing(fn($state) => Warehouse::STATUS_LABELS[$state])
+                    ->badge()
+                    ->color(fn($state) => $state == Warehouse::STATUS_ACTIVE ? 'success' : 'warning')
+                    ->columnSpanFull()
+                ,
 
-                                    Fieldset::make('Warehouse Addresses')
-                                        ->columnSpanFull()
-                                        ->columns(1)
-                                        ->schema([
-                                            RepeatableEntry::make('addresses')
-                                                ->hiddenLabel()
-                                                ->columns(3)
-                                                ->schema([
-                                                    TextEntry::make('address')
-                                                        ->columnSpan(2)
-                                                    ,
-                                                    TextEntry::make('city'),
-                                                    // TextEntry::make('post_code'),
-                                                    // TextEntry::make('phone'),
-                                                    // TextEntry::make('fax'),
-                                                ])
-                                            ,
-                                        ])
-                                    ,
-                                ])
-                            ,
-                            Section::make() // right
-                                ->contained(false)
-                                ->schema([
-                                    Fieldset::make('Configuration & Information')
-                                        ->columnSpanFull()
-                                        ->columns(2)
-                                        ->schema([
-                                            TextEntry::make('is_active')
-                                                ->label('Status')
-                                                ->formatStateUsing(fn($state) => Warehouse::STATUS_LABELS[$state] ?? '-')
-                                                ->badge()
-                                                ->color(fn(bool $state) => $state == Warehouse::STATUS_ACTIVE ? 'success' : 'danger')
-                                            ,
+                TextEntry::make('created_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                ,
+                TextEntry::make('updated_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                ,
+                TextEntry::make('deleted_at')->date()
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                    ->visible(fn($state) => $state != null)
+                ,
+            ])
+        ;
+    }
 
-                                            Grid::make()
-                                                ->columnSpanFull()
-                                                ->schema([
-                                                    TextEntry::make('created_at')->date(),
-                                                    TextEntry::make('updated_at')->date(),
-                                                    TextEntry::make('deleted_at')->date()->visible(fn($state) => $state != null),
-                                                ])
-                                            ,
-                                        ])
-                                    ,
+    protected static function relatedDataSection(): Section
+    {
+        return Section::make('Related Data')
+            ->icon(Heroicon::Link)
+            ->iconColor('primary')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+                Callout::make()
+                    ->columnSpanFull()
+                    ->description('Daftar entitas yang terhubung dengan Gudang ini.')
+                    ->info()
+                    ->color(null)
+                ,
 
-                                    Fieldset::make('Related Data')
-                                        ->columnSpanFull()
-                                        ->columns(2)
-                                        ->schema([
-                                            TextEntry::make('companies.alias')
-                                                ->label(fn($record) => 'Companies (' . ($record->companies?->count() ?? 0) . ')')
-                                                ->badge()
-                                                ->placeholder('-')
-                                                ->columnSpanFull()
-                                            ,
-                                            TextEntry::make('projects.name')
-                                                ->label(fn($record) => 'Projects (' . ($record->projects?->count() ?? 0) . ')')
-                                                ->badge()
-                                                ->placeholder('-')
-                                                ->columnSpanFull()
-                                            ,
+                TextEntry::make('companies.alias')
+                    ->label(fn($record) => "Companies ({$record->companies_count})")
+                    ->badge()
+                    ->placeholder('-')
+                    ->columnSpanFull()
+                ,
+                TextEntry::make('projects.name')
+                    ->label(fn($record) => "Projects ({$record->projects_count})")
+                    ->badge()
+                    ->placeholder('-')
+                    ->columnSpanFull()
+                ,
 
-                                            ImageEntry::make('users.avatar_url')
-                                                ->label(fn($record) => 'Users (' . ($record->users?->count() ?? 0) . ')')
-                                                ->limitedRemainingText()
-                                                ->circular()
-                                                ->stacked()
-                                                ->disk('public')
-                                                ->defaultImageUrl(fn($record) => $record->users?->count() ? url('avatars/ic_default_user.png') : false)
-                                                ->extraImgAttributes([
-                                                    'alt' => 'Image',
-                                                    'loading' => 'lazy',
-                                                ])
-                                                ->columnSpanFull()
-                                            ,
-                                            TextEntry::make('users.name')
-                                                ->hiddenLabel()
-                                                ->badge()
-                                                ->placeholder('-')
-                                                ->columnSpanFull()
-                                            ,
-                                        ])
-                                    ,
-                                ])
-                            ,
-                        ])
-                    ,
-                ]),
-                ActivityLogTab::make('Logs'),
-            ])->columnSpanFull(),
-        ]);
+                ImageEntry::make('users.avatar_url')
+                    ->label(fn($record) => "Users ({$record->users_count})")
+                    ->limitedRemainingText()
+                    ->circular()
+                    ->stacked()
+                    ->disk('public')
+                    ->extraImgAttributes([
+                        'alt' => 'Image',
+                        'loading' => 'lazy',
+                    ])
+                    ->columnSpanFull()
+                ,
+                TextEntry::make('users.name')
+                    ->hiddenLabel()
+                    ->badge()
+                    ->placeholder('-')
+                    ->columnSpanFull()
+                ,
+            ])
+        ;
     }
 }
