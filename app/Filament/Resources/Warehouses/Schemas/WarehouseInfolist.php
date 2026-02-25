@@ -68,7 +68,7 @@ class WarehouseInfolist
     protected static function dataSection(): Section
     {
         return Section::make('Warehouse Information')
-            ->icon(Heroicon::BuildingOffice2)
+            ->icon(Heroicon::HomeModern)
             ->iconColor('primary')
             ->description('Informasi utama dan identitas dasar Gudang.')
             // ->afterHeader([
