@@ -157,6 +157,29 @@ class CompanyInfolist
         return Tabs::make()
             ->columnSpanFull()
             ->tabs([
+                Tab::make('Banks')
+                    ->icon(Heroicon::OutlinedBuildingLibrary)
+                    ->badge(fn($record) => $record->banks_count ?: null)
+                    ->schema([
+                        RepeatableEntry::make('banks')
+                            ->table([
+                                TableColumn::make('Code'),
+                                TableColumn::make('Name'),
+                                TableColumn::make('Account Number'),
+                            ])
+                            ->schema([
+                                TextEntry::make('code')
+                                    ->fontFamily(FontFamily::Mono)
+                                ,
+                                TextEntry::make('name'),
+                                TextEntry::make('account_number')
+                                    ->label('Account Number')
+                                    ->placeholder('-')
+                                ,
+                            ])
+                        ,
+                    ])
+                ,
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_requests_count ?: null)
@@ -209,30 +232,6 @@ class CompanyInfolist
                     ])
                 ,
 
-                Tab::make('Banks')
-                    ->icon(Heroicon::OutlinedBuildingLibrary)
-                    ->badge(fn($record) => $record->banks_count ?: null)
-                    ->schema([
-                        RepeatableEntry::make('banks')
-                            ->table([
-                                TableColumn::make('Code'),
-                                TableColumn::make('Name'),
-                                TableColumn::make('Account Number'),
-                            ])
-                            ->schema([
-                                TextEntry::make('code')
-                                    ->fontFamily(FontFamily::Mono)
-                                ,
-                                TextEntry::make('name'),
-                                TextEntry::make('account_number')
-                                    ->label('Account Number')
-                                    ->placeholder('-')
-                                ,
-                            ])
-                        ,
-                    ])
-                ,
-
                 ActivityLogTab::make('Activity Logs'),
             ])
         ;
@@ -280,7 +279,6 @@ class CompanyInfolist
         return Section::make('Related Data')
             ->icon(Heroicon::Link)
             ->iconColor('primary')
-            // ->description('Daftar entitas yang terhubung dengan Perusahaan ini.')
             ->collapsible()
             ->columnSpanFull()
             ->columns(2)
