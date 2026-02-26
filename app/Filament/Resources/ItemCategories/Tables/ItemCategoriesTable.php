@@ -13,6 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\Layout\Panel;
 use Filament\Tables\Columns\Layout\Split;
 use Filament\Tables\Columns\Layout\Stack;
@@ -32,45 +33,60 @@ class ItemCategoriesTable
             ->columns([
                 Stack::make([
                     Split::make([
+                        TextColumn::make('name')
+                            ->searchable()
+                            ->sortable()
+                            ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
+                        ,
                         TextColumn::make('code')
                             ->searchable()
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
-                            ->color('info')
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
+                            ->grow(false)
                         ,
 
                         TextColumn::make('level')
-                            ->formatStateUsing(fn(int|null $state) => ItemCategory::LEVEL_LABELS[$state] ?? '-')
+                            ->formatStateUsing(fn(int|null $state) => ItemCategory::LEVEL_LABELS[$state] ?? '')
                             ->badge()
                             ->color(fn(int|null $state) => ItemCategory::LEVEL_COLOR[$state] ?? 'default')
+                            ->size(TextSize::Large)
                             ->grow(false)
                         ,
                     ]),
-                    TextColumn::make('name')
-                        ->searchable()
-                        ->sortable()
-                        ->description(fn($record): string => $record->description)
-                        ->weight(FontWeight::Bold)
-                    ,
-
                     TextColumn::make('parent_path')
                         ->searchable()
                         ->sortable()
+                        ->icon(Heroicon::Swatch)
+                        ->iconColor('primary')
+                    ,
+
+                    TextColumn::make('description')
+                        ->placeholder('-')
                         ->color('gray')
                     ,
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('allow_po')
                             ->description('Allow PO: ', position: 'above')
                             ->sortable()
                             ->formatStateUsing(fn($state) => $state ? 'Allowed' : 'Blocked')
+                            ->badge()
                             ->color(fn(bool $state) => $state ? 'success' : 'danger')
+                            ->icon(fn(bool $state) => $state ? Heroicon::CheckBadge : Heroicon::ExclamationTriangle)
+                            ->iconColor(fn(bool $state) => $state ? 'success' : 'warning')
                         ,
 
                         TimestampPanel::make(),
+
+                        TextColumn::make('items_count')
+                            ->description("Items count: ", position: 'above')
+                            ->sortable()
+                        ,
 
                         TextColumn::make('items.name')
                             ->description("Items ", position: 'above')
@@ -100,6 +116,7 @@ class ItemCategoriesTable
 
                                 return ItemCategory::where('level', ItemCategory::LEVEL_CATEGORY)
                                     ->when($domainId, fn($q) => $q->where('parent_id', $domainId))
+                                    ->orderBy('name')
                                     ->pluck('name', 'id')
                                 ;
                             })

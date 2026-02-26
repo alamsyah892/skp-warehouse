@@ -62,12 +62,28 @@ class ItemCategoryResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        $query
+            ->with([
+                'items' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            ])
+            ->withCount([
+                'items',
+            ])
+        ;
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
-
-        $query->with('items');
-
+        
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);

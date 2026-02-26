@@ -71,6 +71,7 @@ class ItemResource extends Resource
         $query
             ->withCount([
                 'purchaseRequestItems',
+                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3)),
             ])
         ;
 
@@ -85,7 +86,8 @@ class ItemResource extends Resource
 
         $query
             ->with([
-                'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('purchase_request_id'),
+                'purchaseRequestItems' => fn($query) => $query->orderByDesc('purchase_request_id'),
+                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('purchase_request_id'),
             ])
         ;
 
