@@ -61,20 +61,17 @@ class BanksTable
                             ->searchable()
                             ->sortable()
                             ->weight(FontWeight::Bold)
-                            // ->color('gray')
                             ->icon(Heroicon::BuildingOffice2)
                             ->iconColor('primary')
                             ->grow(false)
                         ,
                         TextColumn::make('company.name')
                             ->searchable()
-                            // ->color('gray')
                         ,
                     ]),
                     TextColumn::make('account_number')
                         ->searchable()
                         ->placeholder('-')
-                        // ->color('gray')
                         ->icon(Heroicon::CreditCard)
                         ->iconColor('primary')
                     ,
@@ -82,7 +79,7 @@ class BanksTable
                         ->placeholder('-')
                         ->color('gray')
                     ,
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('currency.code')
