@@ -33,12 +33,13 @@ class BanksTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
                             ->label('Status')
                             ->sortable()
-                            ->tooltip(fn($state) => Bank::STATUS_LABELS[$state] ?? '-')
+                            ->tooltip(fn($state) => Bank::STATUS_LABELS[$state] ?? '')
                             ->boolean()
                             ->trueIcon(Heroicon::CheckBadge)
                             ->falseIcon(Heroicon::ExclamationTriangle)
@@ -50,7 +51,8 @@ class BanksTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
@@ -59,20 +61,20 @@ class BanksTable
                             ->searchable()
                             ->sortable()
                             ->weight(FontWeight::Bold)
-                            ->color('gray')
+                            // ->color('gray')
                             ->icon(Heroicon::BuildingOffice2)
                             ->iconColor('primary')
                             ->grow(false)
                         ,
                         TextColumn::make('company.name')
                             ->searchable()
-                            ->color('gray')
+                            // ->color('gray')
                         ,
                     ]),
                     TextColumn::make('account_number')
                         ->searchable()
                         ->placeholder('-')
-                        ->color('gray')
+                        // ->color('gray')
                         ->icon(Heroicon::CreditCard)
                         ->iconColor('primary')
                     ,
