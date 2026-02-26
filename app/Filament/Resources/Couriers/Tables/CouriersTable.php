@@ -9,7 +9,6 @@ use Filament\Actions\EditAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
-use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -29,32 +28,34 @@ class CouriersTable
             ->columns([
                 Stack::make([
                     Split::make([
-                        TextColumn::make('code')
+                        TextColumn::make('name')
                             ->searchable()
                             ->sortable()
-                            ->badge()
-                            ->color('info')
-                            ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
+                            ->grow(false)
                         ,
-
                         IconColumn::make('is_active')
                             ->label('Status')
                             ->sortable()
                             ->tooltip(fn($state) => Courier::STATUS_LABELS[$state] ?? '-')
                             ->boolean()
-                            ->trueIcon(Heroicon::OutlinedCheckBadge)
-                            ->falseIcon(Heroicon::OutlinedExclamationTriangle)
+                            ->trueIcon(Heroicon::CheckBadge)
+                            ->falseIcon(Heroicon::ExclamationTriangle)
                             ->trueColor('success')
-                            ->falseColor('danger')
+                            ->falseColor('warning')
+                        ,
+                        TextColumn::make('code')
+                            ->searchable()
+                            ->sortable()
+                            ->badge()
+                            ->fontFamily(FontFamily::Mono)
+                            ->size(TextSize::Large)
                             ->grow(false)
                         ,
                     ]),
-                    TextColumn::make('name')
-                        ->searchable()
-                        ->sortable()
-                        ->description(fn($record): string => $record->description)
-                        ->weight(FontWeight::Bold)
+                    TextColumn::make('description')
+                        ->placeholder('-')
+                        ->color('gray')
                     ,
                 ])->space(2),
                 Panel::make([
