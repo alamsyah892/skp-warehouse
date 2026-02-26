@@ -36,30 +36,28 @@ class ItemCategoriesTable
                         TextColumn::make('name')
                             ->searchable()
                             ->sortable()
-                            ->size(TextSize::Large)
                             ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
                         ,
                         TextColumn::make('code')
                             ->searchable()
                             ->sortable()
-                            ->badge()
                             ->fontFamily(FontFamily::Mono)
                             ->icon(Heroicon::Hashtag)
                             ->iconColor('primary')
                             ->grow(false)
+                            ->badge()
                         ,
 
                         TextColumn::make('level')
                             ->formatStateUsing(fn(int|null $state) => ItemCategory::LEVEL_LABELS[$state] ?? '')
-                            ->badge()
                             ->color(fn(int|null $state) => ItemCategory::LEVEL_COLOR[$state] ?? 'default')
-                            ->size(TextSize::Large)
                             ->grow(false)
+                            ->badge()
+                            ->size(TextSize::Large)
                         ,
                     ]),
                     TextColumn::make('parent_path')
-                        ->searchable()
-                        ->sortable()
                         ->icon(Heroicon::Swatch)
                         ->iconColor('primary')
                     ,
@@ -73,12 +71,11 @@ class ItemCategoriesTable
                     Stack::make([
                         TextColumn::make('allow_po')
                             ->description('Allow PO: ', position: 'above')
-                            ->sortable()
                             ->formatStateUsing(fn($state) => $state ? 'Allowed' : 'Blocked')
-                            ->badge()
                             ->color(fn(bool $state) => $state ? 'success' : 'danger')
                             ->icon(fn(bool $state) => $state ? Heroicon::CheckBadge : Heroicon::ExclamationTriangle)
                             ->iconColor(fn(bool $state) => $state ? 'success' : 'warning')
+                            ->badge()
                         ,
 
                         TimestampPanel::make(),
@@ -90,8 +87,8 @@ class ItemCategoriesTable
 
                         TextColumn::make('items.name')
                             ->description("Items ", position: 'above')
-                            ->badge()
                             ->limitList(3)
+                            ->badge()
                         ,
                     ])->space(2),
                 ])->collapsible(),
