@@ -11,6 +11,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -36,6 +37,7 @@ class ItemsTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
@@ -53,19 +55,22 @@ class ItemsTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
                     TextColumn::make('category.parent_full_path')
                         ->color('gray')
+                        ->icon(Heroicon::Swatch)
+                        ->iconColor('primary')
                     ,
 
                     TextColumn::make('description')
                         ->placeholder('-')
                         ->color('gray')
                     ,
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         Split::make([

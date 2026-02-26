@@ -10,6 +10,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -35,6 +36,7 @@ class CompaniesTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
@@ -52,7 +54,8 @@ class CompaniesTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
@@ -61,6 +64,9 @@ class CompaniesTable
                         ->label('Company Name')
                         ->searchable()
                         ->sortable()
+                        ->weight(FontWeight::Bold)
+                        ->icon(Heroicon::BuildingOffice2)
+                        ->iconColor('primary')
                         ->description(fn($record): string => $record->description)
                     ,
 
@@ -78,7 +84,7 @@ class CompaniesTable
                             ->color('gray')
                         ,
                     ]),
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         Split::make([

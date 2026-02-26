@@ -35,6 +35,7 @@ class VendorsTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
@@ -52,7 +53,8 @@ class VendorsTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
@@ -71,7 +73,7 @@ class VendorsTable
                             ->color('gray')
                         ,
                     ]),
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         Split::make([

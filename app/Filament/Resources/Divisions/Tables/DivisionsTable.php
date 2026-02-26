@@ -10,6 +10,7 @@ use Filament\Actions\RestoreAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -34,6 +35,7 @@ class DivisionsTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
@@ -51,7 +53,8 @@ class DivisionsTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
@@ -59,7 +62,7 @@ class DivisionsTable
                         ->placeholder('-')
                         ->color('gray')
                     ,
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         TimestampPanel::make(),

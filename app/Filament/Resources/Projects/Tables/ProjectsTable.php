@@ -22,7 +22,6 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 class ProjectsTable
 {
@@ -36,6 +35,7 @@ class ProjectsTable
                             ->searchable()
                             ->sortable()
                             ->size(TextSize::Large)
+                            ->weight(FontWeight::Bold)
                             ->grow(false)
                         ,
                         IconColumn::make('is_active')
@@ -53,7 +53,8 @@ class ProjectsTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
 
@@ -63,7 +64,8 @@ class ProjectsTable
                             ->sortable()
                             ->badge()
                             ->fontFamily(FontFamily::Mono)
-                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->grow(false)
                         ,
                     ]),
@@ -71,7 +73,7 @@ class ProjectsTable
                         ->placeholder('-')
                         ->color('gray')
                     ,
-                ])->space(2),
+                ]),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('allow_po')
