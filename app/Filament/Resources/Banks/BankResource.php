@@ -73,8 +73,6 @@ class BankResource extends Resource
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        $query->with(['company', 'currency']);
-
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);

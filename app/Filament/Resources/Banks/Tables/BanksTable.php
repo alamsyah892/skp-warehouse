@@ -29,62 +29,63 @@ class BanksTable
             ->columns([
                 Stack::make([
                     Split::make([
-                        TextColumn::make('code')
+                        TextColumn::make('name')
                             ->searchable()
                             ->sortable()
-                            ->badge()
-                            ->color('info')
-                            ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
+                            ->grow(false)
                         ,
-
                         IconColumn::make('is_active')
                             ->label('Status')
                             ->sortable()
                             ->tooltip(fn($state) => Bank::STATUS_LABELS[$state] ?? '-')
                             ->boolean()
-                            ->trueIcon(Heroicon::OutlinedCheckBadge)
-                            ->falseIcon(Heroicon::OutlinedExclamationTriangle)
+                            ->trueIcon(Heroicon::CheckBadge)
+                            ->falseIcon(Heroicon::ExclamationTriangle)
                             ->trueColor('success')
-                            ->falseColor('danger')
+                            ->falseColor('warning')
+                        ,
+                        TextColumn::make('code')
+                            ->searchable()
+                            ->sortable()
+                            ->badge()
+                            ->fontFamily(FontFamily::Mono)
+                            ->size(TextSize::Large)
                             ->grow(false)
                         ,
                     ]),
-
-                    Stack::make([
+                    Split::make([
                         TextColumn::make('company.alias')
                             ->searchable()
                             ->sortable()
                             ->weight(FontWeight::Bold)
                             ->color('gray')
+                            ->icon(Heroicon::BuildingOffice2)
+                            ->iconColor('primary')
+                            ->grow(false)
                         ,
                         TextColumn::make('company.name')
                             ->searchable()
                             ->color('gray')
                         ,
                     ]),
-
-                    Stack::make([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable()
-                            ->description(fn($record): string => $record->description)
-                            ->weight(FontWeight::Bold)
-                        ,
-
-                        TextColumn::make('account_number')
-                            ->searchable()
-                            ->placeholder('-')
-                            ->color('gray')
-                        ,
-                    ]),
+                    TextColumn::make('account_number')
+                        ->searchable()
+                        ->placeholder('-')
+                        ->color('gray')
+                        ->icon(Heroicon::CreditCard)
+                        ->iconColor('primary')
+                    ,
+                    TextColumn::make('description')
+                        ->placeholder('-')
+                        ->color('gray')
+                    ,
                 ])->space(2),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('currency.code')
                             ->description('Currency: ', position: 'above')
                             ->badge()
-                            ->color('info')
                             ->fontFamily(FontFamily::Mono)
                             ->size(TextSize::Large)
                         ,
@@ -97,7 +98,15 @@ class BanksTable
                 ])->collapsible(),
             ])
             ->filters([
-                SelectFilter::make('company')->relationship('company', 'alias')->multiple()->preload(),
+                SelectFilter::make('company')
+                    ->relationship(
+                        'company',
+                        'alias',
+                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->preload()
+                ,
 
                 SelectFilter::make('is_active')
                     ->label('Status')
