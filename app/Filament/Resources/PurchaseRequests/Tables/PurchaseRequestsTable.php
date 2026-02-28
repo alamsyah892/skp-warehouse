@@ -2,13 +2,18 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Tables;
 
+use App\Models\PurchaseRequest;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -18,29 +23,79 @@ class PurchaseRequestsTable
     {
         return $table
             ->columns([
-                TextColumn::make('company.alias')
-                    ->searchable(),
-                TextColumn::make('warehouse.name')
-                    ->searchable(),
-                TextColumn::make('warehouseAddress.address')
-                    ->searchable(),
-                TextColumn::make('division.name')
-                    ->searchable(),
-                TextColumn::make('project.name')
-                    ->searchable(),
-                TextColumn::make('user.name')
-                    ->searchable(),
-                TextColumn::make('type')
-                    ->numeric()
-                    ->sortable(),
                 TextColumn::make('number')
-                    ->searchable(),
+                    ->searchable()
+                    ->sortable()
+                    ->fontFamily(FontFamily::Mono)
+                    ->icon(Heroicon::Hashtag)
+                    ->iconColor('primary')
+                    // ->badge()
+                    ->grow(false)
+                ,
+                TextColumn::make('warehouse.name')
+                    ->searchable()
+                    ->icon(Heroicon::HomeModern)
+                    ->iconColor('primary')
+                    // ->badge()
+                    ->grow(false)
+                ,
+                TextColumn::make('company.alias')
+                    ->searchable()
+                    ->icon(Heroicon::BuildingOffice2)
+                    ->iconColor('primary')
+                    // ->badge()
+                    ->grow(false)
+                ,
+                // TextColumn::make('warehouseAddress.address')
+                //     ->searchable(),
+                TextColumn::make('division.name')
+                    ->searchable()
+                    ->icon(Heroicon::Briefcase)
+                    ->iconColor('primary')
+                    // ->badge()
+                    ->grow(false)
+                ,
+                TextColumn::make('project.name')
+                    ->searchable()
+                    ->icon(Heroicon::Square3Stack3d)
+                    ->iconColor('primary')
+                    // ->badge()
+                    ->grow(false)
+                ,
+                ViewColumn::make('user_profile')
+                    ->label('User')
+                    ->view('filament.tables.columns.user-profile')
+                    // ->extraImgAttributes([
+                    //     'alt' => 'Image',
+                    //     'loading' => 'lazy',
+                    // ])
+                    ->searchable(query: function ($query, string $search) {
+                        $query->whereHas('user', function ($q) use ($search) {
+                            $q->where('name', 'like', "%{$search}%");
+                        });
+                    })
+                ,
+                // TextColumn::make('user.name')
+                //     ->searchable()
+                // ->icon(Heroicon::User)
+                // ->iconColor('primary')
+                // ->badge()
+                // ->grow(false)
+                // ,
+                TextColumn::make('type')
+                    ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('memo')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('boq')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
-                    ->numeric()
+                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                    ->badge()
+                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
                     ->sortable(),
                 TextColumn::make('created_at')
                     ->dateTime()
@@ -55,6 +110,7 @@ class PurchaseRequestsTable
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
+            ->stackedOnMobile()
             ->filters([
                 TrashedFilter::make(),
             ])
