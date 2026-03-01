@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
+use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -49,6 +50,15 @@ class PurchaseRequest extends Model
         self::STATUS_RECEIVED => 'primary',
         self::STATUS_ORDERED => 'info',
         self::STATUS_FINISH => 'success',
+    ];
+
+    public const STATUS_ICONS = [
+        self::STATUS_DRAFT => Heroicon::OutlinedPencilSquare,
+        self::STATUS_CANCELED => Heroicon::OutlinedXCircle,
+        self::STATUS_WAITING => Heroicon::OutlinedClock,
+        self::STATUS_RECEIVED => Heroicon::OutlinedInboxArrowDown,
+        self::STATUS_ORDERED => Heroicon::OutlinedShoppingCart,
+        self::STATUS_FINISH => Heroicon::OutlinedCheckCircle,
     ];
 
     protected $fillable = [

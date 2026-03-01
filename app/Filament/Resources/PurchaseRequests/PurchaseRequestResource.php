@@ -66,7 +66,14 @@ class PurchaseRequestResource extends Resource
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
-        // $query->with(['company', 'warehouse', 'warehouseAddress', 'division', 'project', 'user', 'purchaseRequestItems']);
+        $query
+            // ->with([
+            //     'items' => fn($query) => $query->orderBy('name')->orderBy('code'),
+            // ])
+            ->withCount([
+                'purchaseRequestItems',
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

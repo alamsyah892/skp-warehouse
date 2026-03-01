@@ -24,8 +24,11 @@ class ProjectResource extends Resource
     protected static ?string $model = Project::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquare3Stack3d;
+
     protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::Square3Stack3d;
+
     public static ?int $navigationSort = 4;
+
     protected static string|UnitEnum|null $navigationGroup = 'General';
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -74,8 +77,7 @@ class ProjectResource extends Resource
             ->withCount([
                 'purchaseRequests',
                 // 'purchaseRequestItems',
-            ])
-        ;
+            ]);
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
@@ -94,8 +96,7 @@ class ProjectResource extends Resource
             ->withCount([
                 'companies',
                 'warehouses',
-            ])
-        ;
+            ]);
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

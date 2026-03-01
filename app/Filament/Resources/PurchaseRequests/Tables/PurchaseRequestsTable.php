@@ -3,17 +3,13 @@
 namespace App\Filament\Resources\PurchaseRequests\Tables;
 
 use App\Models\PurchaseRequest;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteBulkAction;
-use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\ImageColumn;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 
@@ -27,104 +23,127 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->sortable()
                     ->fontFamily(FontFamily::Mono)
-                    ->icon(Heroicon::Hashtag)
-                    ->iconColor('primary')
-                    // ->badge()
-                    ->grow(false)
+                    ->size(TextSize::Large)
+                    ->weight(FontWeight::Bold)
                 ,
-                TextColumn::make('warehouse.name')
-                    ->searchable()
-                    ->icon(Heroicon::HomeModern)
-                    ->iconColor('primary')
-                    // ->badge()
-                    ->grow(false)
-                ,
-                TextColumn::make('company.alias')
-                    ->searchable()
-                    ->icon(Heroicon::BuildingOffice2)
-                    ->iconColor('primary')
-                    // ->badge()
-                    ->grow(false)
-                ,
-                // TextColumn::make('warehouseAddress.address')
-                //     ->searchable(),
-                TextColumn::make('division.name')
-                    ->searchable()
-                    ->icon(Heroicon::Briefcase)
-                    ->iconColor('primary')
-                    // ->badge()
-                    ->grow(false)
-                ,
-                TextColumn::make('project.name')
-                    ->searchable()
-                    ->icon(Heroicon::Square3Stack3d)
-                    ->iconColor('primary')
-                    // ->badge()
-                    ->grow(false)
-                ,
+                // TextColumn::make('type')
+                //     ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
+                //     ->sortable()
+                //     ->toggleable(isToggledHiddenByDefault: true)
+                // ,
+                TextColumn::make('warehouse.name'),
+                TextColumn::make('company.alias'),
+                TextColumn::make('division.name'),
+                TextColumn::make('project.name'),
                 ViewColumn::make('user_profile')
                     ->label('User')
                     ->view('filament.tables.columns.user-profile')
-                    // ->extraImgAttributes([
-                    //     'alt' => 'Image',
-                    //     'loading' => 'lazy',
-                    // ])
-                    ->searchable(query: function ($query, string $search) {
-                        $query->whereHas('user', function ($q) use ($search) {
-                            $q->where('name', 'like', "%{$search}%");
-                        });
-                    })
                 ,
-                // TextColumn::make('user.name')
-                //     ->searchable()
-                // ->icon(Heroicon::User)
-                // ->iconColor('primary')
-                // ->badge()
-                // ->grow(false)
-                // ,
-                TextColumn::make('type')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('memo')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('boq')
-                    ->searchable()
-                    ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                    ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
                     ->badge()
                     ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
-                    ->sortable(),
+                    ->grow(false)
+                    ->sortable()
+                ,
+
+                TextColumn::make('memo')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('boq')
+                    ->label('BOQ')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('warehouseAddress.address')
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
                 TextColumn::make('created_at')
-                    ->dateTime()
+                    ->date()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->color('gray')
+                ,
                 TextColumn::make('updated_at')
-                    ->dateTime()
+                    ->date()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
                 TextColumn::make('deleted_at')
-                    ->dateTime()
+                    ->date()
                     ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
             ])
-            ->stackedOnMobile()
             ->filters([
-                TrashedFilter::make(),
+                SelectFilter::make('warehouse')
+                    ->relationship(
+                        'warehouse',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('company')
+                    ->relationship(
+                        'company',
+                        'alias',
+                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('division')
+                    ->relationship(
+                        'division',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('project')
+                    ->relationship(
+                        'project',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code')
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make(name: 'status')
+                    ->options(PurchaseRequest::STATUS_LABELS)
+                    ->native(false)
+                ,
+
+                TrashedFilter::make()->native(false),
             ])
             ->recordActions([
-                ViewAction::make(),
-                EditAction::make(),
+                ViewAction::make()->hiddenLabel(),
+                // EditAction::make(),
             ])
-            ->toolbarActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                    ForceDeleteBulkAction::make(),
-                    RestoreBulkAction::make(),
-                ]),
-            ])
+
+            ->stackedOnMobile()
 
             ->contentGrid([])
             ->paginated([5, 10, 25, 50, 100])
