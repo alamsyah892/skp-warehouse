@@ -44,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
                 ->persistSearchInSession()
                 ->persistFiltersInSession()
                 ->deferFilters(false)
+                ->deferColumnManager(false)
                 // ->paginated([5, 10, 25, 50, 100])
                 ->paginated([6, 12, 24, 48, 96])
                 ->defaultPaginationPageOption(12)

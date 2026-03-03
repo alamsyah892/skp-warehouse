@@ -4,16 +4,12 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Models\PurchaseRequest;
-use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmptyState;
-use Filament\Schemas\Components\Flex;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -84,29 +80,19 @@ class PurchaseRequestInfolist
             ->columns(3)
             ->compact()
             ->schema([
-                TextEntry::make('number')
-                    ->hiddenLabel()
-                    ->fontFamily(FontFamily::Mono)
-                    ->weight(FontWeight::Bold)
-                    ->size(TextSize::Large)
-                    ->icon(Heroicon::Hashtag)
-                    ->iconColor('primary')
-                    ->columnSpan(2)
-                ,
-
-                TextEntry::make('created_at')
-                    ->hiddenLabel()
-                    ->date()
-                    // ->weight(FontWeight::Bold)
-                    // ->size(TextSize::Large)
-                    ->icon(Heroicon::CalendarDays)
-                    ->iconColor('primary')
-                // ->placeholder('-')
-                // ->badge()
-                ,
                 Grid::make()
                     ->columnSpan(2)
                     ->schema([
+                        TextEntry::make('number')
+                            ->hiddenLabel()
+                            ->columnSpanFull()
+                            ->fontFamily(FontFamily::Mono)
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
+                        ,
+
                         TextEntry::make('warehouse.name')
                             ->label('Warehouse')
                             ->hiddenLabel()
@@ -134,14 +120,16 @@ class PurchaseRequestInfolist
 
                         TextEntry::make('warehouseAddress.address')
                             ->label('Warehouse Address')
-                            // ->hiddenLabel()
+                            ->columnSpanFull()
+                            ->color('gray')
                             ->icon(Heroicon::MapPin)
                             ->iconColor('primary')
-                            ->placeholder('-'),
-
+                            ->placeholder('-')
+                        ,
 
                         TextEntry::make('description')
                             ->columnSpanFull()
+                            ->color('gray')
                             ->placeholder('-')
                         ,
                     ])
@@ -149,39 +137,41 @@ class PurchaseRequestInfolist
                 Grid::make()
                     ->columns(1)
                     ->schema([
-                        TextEntry::make('user.name')
-                            ->label('User')
+                        TextEntry::make('created_at')
                             ->hiddenLabel()
-                            ->icon(Heroicon::User)
+                            ->date()
+                            ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                         ,
 
-                        // ViewEntry::make('user_profile')
-                        //     ->label('User Profile')
-                        //     ->label('User')
-                        //     ->view('filament.tables.columns.user-profile')
-                        // ,
-
-                        ImageEntry::make('user.avatar_url')
-                            ->hiddenLabel()
-                            ->imageSize(40)
-                            ->circular()
-                            ->disk('public')
-                            ->defaultImageUrl(
-                                function ($record) {
-                                    $name = urlencode($record->user->name);
-                                    return url("https://ui-avatars.com/api/?name={$name}&background=random&color=fff");
-                                }
-                            )
-                            ->extraImgAttributes([
-                                'alt' => 'Image',
-                                'loading' => 'lazy',
-                            ])
+                        TextEntry::make('user')
+                            ->label('Requested By')
+                            ->view('filament.tables.columns.user-profile')
                         ,
+
+                        // ImageEntry::make('user.avatar_url')
+                        //     ->label('User')
+                        //     ->imageSize(40)
+                        //     ->circular()
+                        //     ->disk('public')
+                        //     ->defaultImageUrl(
+                        //         function ($record) {
+                        //             $name = urlencode($record->user->name);
+                        //             return url("https://ui-avatars.com/api/?name={$name}&background=random&color=fff");
+                        //         }
+                        //     )
+                        //     ->extraImgAttributes([
+                        //         'alt' => 'Image',
+                        //         'loading' => 'lazy',
+                        //     ])
+                        // ,
+                        // TextEntry::make('user.name')
+                        //     ->hiddenLabel()
+                        // ,
 
                         TextEntry::make('status')
                             ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                            ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
+                            ->icon(fn($state): mixed => PurchaseRequest::STATUS_ICONS[$state])
                             ->badge()
                             ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
                         ,
@@ -204,11 +194,11 @@ class PurchaseRequestInfolist
                             ->description('Item yang dipesan untuk Purchase Request ini.')
                             ->info()
                             ->color(null)
-                            ->columnSpanFull()
                         ,
 
                         RepeatableEntry::make('purchaseRequestItems')
                             ->label('Purchase Request Items')
+                            ->hiddenLabel()
                             ->table([
                                 TableColumn::make('Item Code'),
                                 TableColumn::make('Item Name'),
@@ -223,13 +213,17 @@ class PurchaseRequestInfolist
                                     ->icon(Heroicon::Hashtag)
                                     ->badge()
                                 ,
-                                TextEntry::make('item.name'),
+                                TextEntry::make('item.name')
+                                    ->wrap()
+                                ,
                                 TextEntry::make('item.unit'),
                                 TextEntry::make('qty')
                                     ->numeric()
                                     ->alignment(Alignment::Center)
                                 ,
-                                TextEntry::make('description'),
+                                TextEntry::make('description')
+                                    ->wrap()
+                                ,
                             ])
                             ->visible(fn($record) => $record->purchase_request_items_count > 0)
                         ,
@@ -262,18 +256,24 @@ class PurchaseRequestInfolist
                 //     ->numeric(),
 
                 TextEntry::make('memo')
+                    ->color('gray')
                     ->placeholder('-')
                 ,
                 TextEntry::make('boq')
                     ->label('BOQ')
+                    ->color('gray')
                     ->placeholder('-')
                 ,
                 TextEntry::make('notes')
+                    ->columnSpanFull()
                     ->placeholder('-')
-                    ->columnSpanFull(),
+                    ->color('gray')
+                ,
                 TextEntry::make('info')
+                    ->columnSpanFull()
                     ->placeholder('-')
-                    ->columnSpanFull(),
+                    ->color('gray')
+                ,
 
                 TextEntry::make('created_at')->date()
                     ->color('gray')

@@ -20,21 +20,45 @@ class PurchaseRequestsTable
         return $table
             ->columns([
                 TextColumn::make('number')
+                    ->description(fn($record): string => $record->description)
                     ->searchable()
                     ->sortable()
                     ->fontFamily(FontFamily::Mono)
                     ->size(TextSize::Large)
                     ->weight(FontWeight::Bold)
+                    ->wrap()
                 ,
                 // TextColumn::make('type')
                 //     ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
                 //     ->sortable()
                 //     ->toggleable(isToggledHiddenByDefault: true)
                 // ,
-                TextColumn::make('warehouse.name'),
-                TextColumn::make('company.alias'),
-                TextColumn::make('division.name'),
-                TextColumn::make('project.name'),
+                TextColumn::make('warehouse.name')
+                    ->wrap()
+                ,
+                TextColumn::make('company.alias')
+                    ->wrap()
+                ,
+                TextColumn::make('division.name')
+                    ->wrap()
+                ,
+                TextColumn::make('project.name')
+                    ->wrap()
+                ,
+                TextColumn::make('warehouseAddress.address')
+                    ->label('Warehouse Address')
+                    ->wrapHeader()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('created_at')
+                    ->wrapHeader()
+                    ->date()
+                    ->sortable()
+                    ->wrap()
+                ,
                 ViewColumn::make('user_profile')
                     ->label('User')
                     ->view('filament.tables.columns.user-profile')
@@ -52,6 +76,7 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
+                    ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('boq')
@@ -59,30 +84,25 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
-                    ->toggleable(isToggledHiddenByDefault: true)
-                ,
-                TextColumn::make('warehouseAddress.address')
-                    ->placeholder('-')
-                    ->color('gray')
+                    ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
 
-                TextColumn::make('created_at')
-                    ->date()
-                    ->sortable()
-                    ->color('gray')
-                ,
                 TextColumn::make('updated_at')
+                    ->wrapHeader()
                     ->date()
                     ->sortable()
                     ->color('gray')
+                    ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('deleted_at')
+                    ->wrapHeader()
                     ->date()
                     ->sortable()
                     ->placeholder('-')
                     ->color('gray')
+                    ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
             ])
