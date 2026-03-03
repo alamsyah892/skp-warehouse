@@ -222,6 +222,8 @@ class PurchaseRequestInfolist
                                     ->alignment(Alignment::Center)
                                 ,
                                 TextEntry::make('description')
+                                    ->color('gray')
+                                    ->placeholder('-')
                                     ->wrap()
                                 ,
                             ])

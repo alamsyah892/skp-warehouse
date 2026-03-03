@@ -62,14 +62,27 @@ class PurchaseRequestResource extends Resource
         ];
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        $query = parent::getEloquentQuery();
+
+        if (auth()->user()->warehouses()->exists()) {
+            $query->whereIn('warehouse_id', auth()->user()->warehouses->pluck('id'));
+        }
+
+        return $query->withoutGlobalScopes([
+            SoftDeletingScope::class,
+        ]);
+    }
+
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
 
         $query
-            // ->with([
-            //     'items' => fn($query) => $query->orderBy('name')->orderBy('code'),
-            // ])
+            ->with([
+                'purchaseRequestItems' => fn($query) => $query->orderBy('id'),
+            ])
             ->withCount([
                 'purchaseRequestItems',
             ])

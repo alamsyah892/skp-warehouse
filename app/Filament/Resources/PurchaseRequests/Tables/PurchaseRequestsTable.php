@@ -18,6 +18,9 @@ class PurchaseRequestsTable
 {
     public static function configure(Table $table): Table
     {
+        $userWarehouseIds = auth()->user()->warehouses->pluck('id');
+        $hasRestrictedWarehouses = $userWarehouseIds->isNotEmpty();
+
         return $table
             ->columns([
                 TextColumn::make('number')
@@ -31,7 +34,6 @@ class PurchaseRequestsTable
                 ,
                 // TextColumn::make('type')
                 //     ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
-                //     ->sortable()
                 //     ->toggleable(isToggledHiddenByDefault: true)
                 // ,
                 TextColumn::make('warehouse.name')
@@ -112,7 +114,13 @@ class PurchaseRequestsTable
                     ->relationship(
                         'warehouse',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query
+                            ->when(
+                                $hasRestrictedWarehouses,
+                                fn($q) => $q->whereIn('id', $userWarehouseIds)
+                            )
+                            ->orderBy('name')->orderBy('code')
+
                     )
                     ->multiple()
                     ->searchable()
@@ -123,7 +131,12 @@ class PurchaseRequestsTable
                     ->relationship(
                         'company',
                         'alias',
-                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                        fn($query) => $query
+                            ->when(
+                                $hasRestrictedWarehouses,
+                                fn($q) => $q->whereHas('warehouses', fn($w) => $w->whereIn('warehouses.id', $userWarehouseIds))
+                            )
+                            ->orderBy('alias')->orderBy('code')
                     )
                     ->multiple()
                     ->searchable()
@@ -134,7 +147,7 @@ class PurchaseRequestsTable
                     ->relationship(
                         'division',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
                     ->searchable()
@@ -145,7 +158,12 @@ class PurchaseRequestsTable
                     ->relationship(
                         'project',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query
+                            ->when(
+                                $hasRestrictedWarehouses,
+                                fn($q) => $q->whereHas('warehouses', fn($w) => $w->whereIn('warehouses.id', $userWarehouseIds))
+                            )
+                            ->orderBy('name')->orderBy('code')
                     )
                     ->multiple()
                     ->searchable()
@@ -161,7 +179,6 @@ class PurchaseRequestsTable
             ])
             ->recordActions([
                 ViewAction::make()->hiddenLabel(),
-                // EditAction::make(),
             ], position: RecordActionsPosition::BeforeColumns)
 
             ->striped()
