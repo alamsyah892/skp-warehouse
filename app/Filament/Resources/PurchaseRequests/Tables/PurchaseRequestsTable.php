@@ -9,6 +9,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
@@ -151,18 +152,19 @@ class PurchaseRequestsTable
                     ->preload()
                 ,
 
-                SelectFilter::make(name: 'status')
-                    ->options(PurchaseRequest::STATUS_LABELS)
-                    ->native(false)
-                ,
+                // SelectFilter::make(name: 'status')
+                //     ->options(PurchaseRequest::STATUS_LABELS)
+                //     ->native(false)
+                // ,
 
                 TrashedFilter::make()->native(false),
             ])
             ->recordActions([
                 ViewAction::make()->hiddenLabel(),
                 // EditAction::make(),
-            ])
+            ], position: RecordActionsPosition::BeforeColumns)
 
+            ->striped()
             ->stackedOnMobile()
 
             ->contentGrid([])
