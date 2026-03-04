@@ -107,18 +107,20 @@ class WarehousesTable
                     ->relationship(
                         'companies',
                         'alias',
-                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                        fn($query) => $query->orderBy('alias')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
                 SelectFilter::make('projects')
                     ->relationship(
                         'projects',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
 

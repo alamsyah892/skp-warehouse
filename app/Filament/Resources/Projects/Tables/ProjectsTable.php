@@ -109,9 +109,10 @@ class ProjectsTable
                     ->relationship(
                         'companies',
                         'alias',
-                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                        fn($query) => $query->orderBy('alias')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
 
@@ -119,9 +120,15 @@ class ProjectsTable
                     ->relationship(
                         'warehouses',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query
+                            ->when(
+                                auth()->user()->warehouses()->exists(),
+                                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+                            )
+                            ->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
 

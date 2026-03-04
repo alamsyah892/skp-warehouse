@@ -85,9 +85,10 @@ class DivisionsTable
                     ->relationship(
                         'companies',
                         'alias',
-                        fn($query) => $query->orderBy('alias')->orderBy('code')
+                        fn($query) => $query->orderBy('alias')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
 

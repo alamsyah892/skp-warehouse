@@ -161,27 +161,35 @@ class CompaniesTable
                     ->relationship(
                         'warehouses',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query
+                            ->when(
+                                auth()->user()->warehouses()->exists(),
+                                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+                            )
+                            ->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
                 SelectFilter::make('divisions')
                     ->relationship(
                         'divisions',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
                 SelectFilter::make('projects')
                     ->relationship(
                         'projects',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code')
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
+                    ->searchable()
                     ->preload()
                 ,
 
