@@ -18,9 +18,6 @@ class PurchaseRequestsTable
 {
     public static function configure(Table $table): Table
     {
-        $userWarehouseIds = auth()->user()->warehouses->pluck('id');
-        $hasRestrictedWarehouses = $userWarehouseIds->isNotEmpty();
-
         return $table
             ->columns([
                 TextColumn::make('number')
@@ -116,11 +113,10 @@ class PurchaseRequestsTable
                         'name',
                         fn($query) => $query
                             ->when(
-                                $hasRestrictedWarehouses,
-                                fn($q) => $q->whereIn('id', $userWarehouseIds)
+                                auth()->user()->warehouses()->exists(),
+                                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
                             )
-                            ->orderBy('name')->orderBy('code')
-
+                            ->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
                     ->searchable()
@@ -131,12 +127,7 @@ class PurchaseRequestsTable
                     ->relationship(
                         'company',
                         'alias',
-                        fn($query) => $query
-                            ->when(
-                                $hasRestrictedWarehouses,
-                                fn($q) => $q->whereHas('warehouses', fn($w) => $w->whereIn('warehouses.id', $userWarehouseIds))
-                            )
-                            ->orderBy('alias')->orderBy('code')
+                        fn($query) => $query->orderBy('alias')->orderBy('code'),
                     )
                     ->multiple()
                     ->searchable()
@@ -158,12 +149,7 @@ class PurchaseRequestsTable
                     ->relationship(
                         'project',
                         'name',
-                        fn($query) => $query
-                            ->when(
-                                $hasRestrictedWarehouses,
-                                fn($q) => $q->whereHas('warehouses', fn($w) => $w->whereIn('warehouses.id', $userWarehouseIds))
-                            )
-                            ->orderBy('name')->orderBy('code')
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
                     ->searchable()

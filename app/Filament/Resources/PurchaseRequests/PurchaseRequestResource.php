@@ -66,10 +66,6 @@ class PurchaseRequestResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        if (auth()->user()->warehouses()->exists()) {
-            $query->whereIn('warehouse_id', auth()->user()->warehouses->pluck('id'));
-        }
-
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);

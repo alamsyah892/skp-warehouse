@@ -99,6 +99,6 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
 
     public function warehouses(): BelongsToMany
     {
-        return $this->belongsToMany(Warehouse::class)->orderBy('name')->orderBy('code');
+        return $this->belongsToMany(Warehouse::class);
     }
 }

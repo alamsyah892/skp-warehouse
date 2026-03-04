@@ -91,6 +91,22 @@ class PurchaseRequest extends Model
         'info',
     ];
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope('user_warehouses', function ($builder) {
+            if (app()->runningInConsole() || !auth()->check()) {
+                return;
+            }
+
+            $userWarehouseIds = auth()->user()->warehouses->pluck('id');
+            if ($userWarehouseIds->isNotEmpty()) {
+                $builder->whereHas('warehouse', function ($q) use ($userWarehouseIds) {
+                    $q->whereIn('warehouses.id', $userWarehouseIds);
+                });
+            }
+        });
+    }
+
     /* ================= RELATION ================= */
 
     public function company(): BelongsTo

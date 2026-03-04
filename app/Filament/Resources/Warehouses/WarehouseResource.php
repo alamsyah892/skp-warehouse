@@ -67,6 +67,10 @@ class WarehouseResource extends Resource
         $query = parent::getEloquentQuery();
 
         $query
+            ->when(
+                auth()->user()->warehouses()->exists(),
+                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+            )
             ->with([
                 'companies' => fn($query) => $query->orderBy('alias')->orderBy('code'),
                 'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
