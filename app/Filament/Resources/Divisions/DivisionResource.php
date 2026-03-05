@@ -97,29 +97,4 @@ class DivisionResource extends Resource
             SoftDeletingScope::class,
         ]);
     }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Division');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Division');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Division', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Division', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Division', $record);
-    }
 }

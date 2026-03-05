@@ -106,29 +106,4 @@ class WarehouseResource extends Resource
             SoftDeletingScope::class,
         ]);
     }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Warehouse');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Warehouse');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Warehouse', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Warehouse', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Warehouse', $record);
-    }
 }

@@ -88,29 +88,4 @@ class PurchaseRequestResource extends Resource
             SoftDeletingScope::class,
         ]);
     }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Purchase Request');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Purchase Request');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Purchase Request', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Purchase Request', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Purchase Request', $record);
-    }
 }

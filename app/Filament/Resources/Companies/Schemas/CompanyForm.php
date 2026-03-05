@@ -9,6 +9,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -114,27 +115,21 @@ class CompanyForm
 
                                     Fieldset::make('Related Data')
                                         ->columnSpanFull()
-                                        ->columns(2)
+                                        ->columns(1)
                                         ->schema([
-                                            Section::make() // left
-                                                ->columnSpanFull()
-                                                ->schema([
-                                                    Placeholder::make('info')
-                                                        ->hiddenLabel()
-                                                        ->icon(Heroicon::InformationCircle)
-                                                        ->iconColor('info')
-                                                        ->content(new HtmlString(
-                                                            '
+                                            Callout::make()
+                                                ->description(
+                                                    new HtmlString(
+                                                        '
                                                             <strong> Info</strong><br>
                                                             Gunakan bagian ini untuk mengaitkan <strong>Perusahaan</strong> dengan <strong>Warehouse / Divisi / Project</strong><br>
                                                             Relasi ini membantu pengelompokan dan pembatasan data di sistem.
                                                             <br>Misalnya dalam <strong>Opsi Perusahaan</strong> pada <strong>Form Pembuatan Pengajuan / PO / Penerimaan / Invoice</strong> atau <strong>Laporan</strong>
                                                             '
-                                                        ))
-                                                        ->color('gray')
-                                                        ->columnSpanFull()
-                                                    ,
-                                                ])
+                                                    )
+                                                )
+                                                ->info()
+                                                ->color(null)
                                             ,
 
                                             Select::make('warehouses')
@@ -142,21 +137,28 @@ class CompanyForm
                                                 ->multiple()
                                                 ->searchable()
                                                 ->preload()
-                                                ->columnSpanFull()
+                                                ->disabled(fn() => auth()->user()->warehouses()->exists())
                                             ,
                                             Select::make('divisions')
                                                 ->relationship('divisions', 'name')
                                                 ->multiple()
                                                 ->searchable()
                                                 ->preload()
-                                                ->columnSpanFull()
+                                                ->disabled(fn() => auth()->user()->warehouses()->exists())
                                             ,
                                             Select::make('projects')
-                                                ->relationship('projects', 'name')
+                                                ->relationship(
+                                                    'projects',
+                                                    'name',
+                                                    fn($query) => $query
+                                                        ->withoutGlobalScopes(['user_warehouses'])
+                                                        ->orderBy('name')->orderBy('code'),
+
+                                                )
                                                 ->multiple()
                                                 ->searchable()
                                                 ->preload()
-                                                ->columnSpanFull()
+                                                ->disabled(fn() => auth()->user()->warehouses()->exists())
                                             ,
                                         ])
                                     ,

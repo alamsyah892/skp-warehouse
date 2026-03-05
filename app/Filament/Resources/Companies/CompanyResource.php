@@ -6,6 +6,7 @@ use App\Filament\Resources\Companies\Pages\CreateCompany;
 use App\Filament\Resources\Companies\Pages\EditCompany;
 use App\Filament\Resources\Companies\Pages\ListCompanies;
 use App\Filament\Resources\Companies\Pages\ViewCompany;
+use App\Filament\Resources\Companies\RelationManagers\PurchaseRequestsRelationManager;
 use App\Filament\Resources\Companies\Schemas\CompanyForm;
 use App\Filament\Resources\Companies\Schemas\CompanyInfolist;
 use App\Filament\Resources\Companies\Tables\CompaniesTable;
@@ -48,6 +49,7 @@ class CompanyResource extends Resource
     public static function getRelations(): array
     {
         return [
+            PurchaseRequestsRelationManager::class,
             //
         ];
     }
@@ -104,30 +106,5 @@ class CompanyResource extends Resource
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);
-    }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Company');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Company');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Company', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Company', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Company', $record);
     }
 }

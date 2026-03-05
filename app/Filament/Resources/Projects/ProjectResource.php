@@ -102,29 +102,4 @@ class ProjectResource extends Resource
             SoftDeletingScope::class,
         ]);
     }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Project');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Project');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Project', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Project', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Project', $record);
-    }
 }
