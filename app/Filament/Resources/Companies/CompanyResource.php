@@ -89,7 +89,9 @@ class CompanyResource extends Resource
 
         $query
             ->with([
-                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
+                'purchaseRequests' => fn($query) => $query
+                    ->orderByDesc('id')
+                ,
             ])
             ->withCount([
                 'warehouses',
