@@ -9,12 +9,16 @@ use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Model;
 
 class PurchaseRequestsRelationManager extends RelationManager
 {
     protected static string $relationship = 'purchaseRequests';
+
+    protected static ?string $title = 'Purchase Requests';
 
     protected static ?string $relatedResource = CompanyResource::class;
 
@@ -55,4 +59,24 @@ class PurchaseRequestsRelationManager extends RelationManager
                 ]),
             ]);
     }
+
+    public function isReadOnly(): bool
+    {
+        return true;
+    }
+
+    // public function getContentTabComponent(): Tab
+    // {
+    //     return Tab::make('Settings')
+    //         ->icon('heroicon-m-cog');
+    // }
+
+    // public static function getTabComponent(Model $company, string $pageClass): Tab
+    // {
+    //     return Tab::make('Blog posts')
+    //         ->badge($company->purchaseRequests()->count())
+    //         ->badgeColor('info')
+    //         ->badgeTooltip('The number of posts in this category')
+    //         ->icon('heroicon-m-document-text');
+    // }
 }

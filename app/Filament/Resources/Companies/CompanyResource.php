@@ -49,8 +49,7 @@ class CompanyResource extends Resource
     public static function getRelations(): array
     {
         return [
-            PurchaseRequestsRelationManager::class,
-            //
+            'purchaseRequests' => PurchaseRequestsRelationManager::class,
         ];
     }
 
