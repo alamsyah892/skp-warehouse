@@ -181,55 +181,55 @@ class CompanyInfolist
                         ,
                     ])
                 ,
-                Tab::make('PR History')
-                    ->icon(Heroicon::OutlinedClipboardDocumentList)
-                    ->badge(fn($record) => $record->purchase_requests_count ?: null)
-                    ->schema([
-                        Callout::make()
-                            ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Perusahaan ini.')
-                            ->info()
-                            ->color(null)
-                        ,
+                // Tab::make('PR History')
+                //     ->icon(Heroicon::OutlinedClipboardDocumentList)
+                //     ->badge(fn($record) => $record->purchase_requests_count ?: null)
+                //     ->schema([
+                //         Callout::make()
+                //             ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Perusahaan ini.')
+                //             ->info()
+                //             ->color(null)
+                //         ,
 
-                        // RepeatableEntry::make('purchaseRequests')
-                        //     ->columnSpanFull()
-                        //     ->table([
-                        //         TableColumn::make('Number'),
-                        //         TableColumn::make('Warehouse'),
-                        //         // TableColumn::make('Company'),
-                        //         TableColumn::make('Division'),
-                        //         TableColumn::make('Project'),
-                        //         // TableColumn::make('Deskripsi'),
-                        //         TableColumn::make('Status'),
-                        //     ])
-                        //     ->schema([
-                        //         TextEntry::make('number')
-                        //             ->url(
-                        //                 fn($record) => PurchaseRequestResource::getUrl('view', [
-                        //                     'record' => $record->id,
-                        //                 ])
-                        //             )
-                        //             ->openUrlInNewTab() // optional
-                        //             ->color('primary')
-                        //             ->icon(Heroicon::ArrowTopRightOnSquare)
-                        //             ->iconPosition(IconPosition::After)
-                        //             ->wrap(false)
-                        //         ,
-                        //         TextEntry::make('warehouse.name'),
-                        //         // TextEntry::make('company.alias'),
-                        //         TextEntry::make('division.name'),
-                        //         TextEntry::make('project.name'),
-                        //         // TextEntry::make('description'),
-                        //         TextEntry::make('status')
-                        //             ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                        //             ->badge()
-                        //             ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
-                        //         ,
-                        //     ])
-                        //     ->visible(fn($record) => $record->purchase_requests_count > 0)
-                        // ,
-                    ])
-                ,
+                // RepeatableEntry::make('purchaseRequests')
+                //     ->columnSpanFull()
+                //     ->table([
+                //         TableColumn::make('Number'),
+                //         TableColumn::make('Warehouse'),
+                //         // TableColumn::make('Company'),
+                //         TableColumn::make('Division'),
+                //         TableColumn::make('Project'),
+                //         // TableColumn::make('Deskripsi'),
+                //         TableColumn::make('Status'),
+                //     ])
+                //     ->schema([
+                //         TextEntry::make('number')
+                //             ->url(
+                //                 fn($record) => PurchaseRequestResource::getUrl('view', [
+                //                     'record' => $record->id,
+                //                 ])
+                //             )
+                //             ->openUrlInNewTab() // optional
+                //             ->color('primary')
+                //             ->icon(Heroicon::ArrowTopRightOnSquare)
+                //             ->iconPosition(IconPosition::After)
+                //             ->wrap(false)
+                //         ,
+                //         TextEntry::make('warehouse.name'),
+                //         // TextEntry::make('company.alias'),
+                //         TextEntry::make('division.name'),
+                //         TextEntry::make('project.name'),
+                //         // TextEntry::make('description'),
+                //         TextEntry::make('status')
+                //             ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                //             ->badge()
+                //             ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                //         ,
+                //     ])
+                //     ->visible(fn($record) => $record->purchase_requests_count > 0)
+                // ,
+                //     ])
+                // ,
 
                 ActivityLogTab::make('Activity Logs'),
             ])

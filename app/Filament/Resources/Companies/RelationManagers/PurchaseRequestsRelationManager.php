@@ -3,6 +3,8 @@
 namespace App\Filament\Resources\Companies\RelationManagers;
 
 use App\Filament\Resources\Companies\CompanyResource;
+use App\Filament\Resources\PurchaseRequests\Pages\ViewPurchaseRequest;
+use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
@@ -10,7 +12,15 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Enums\RecordActionsPosition;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
 
@@ -22,42 +32,167 @@ class PurchaseRequestsRelationManager extends RelationManager
 
     protected static ?string $relatedResource = CompanyResource::class;
 
-    // public function table(Table $table): Table
-    // {
-    //     return $table
-    //         ->headerActions([
-    //             CreateAction::make(),
-    //         ]);
-    // }
-
     public function table(Table $table): Table
     {
         return $table
             ->recordTitleAttribute('number')
             ->columns([
-                TextColumn::make('number')->sortable()->searchable(),
-                TextColumn::make('warehouse.name'),
-                TextColumn::make('division.name'),
-                TextColumn::make('project.name'),
+                TextColumn::make('number')
+                    ->description(fn($record): string => $record->description)
+                    ->searchable()
+                    ->sortable()
+                    ->fontFamily(FontFamily::Mono)
+                    ->size(TextSize::Large)
+                    ->weight(FontWeight::Bold)
+                    ->wrap()
+                ,
+                // TextColumn::make('type')
+                //     ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
+                //     ->toggleable(isToggledHiddenByDefault: true)
+                // ,
+                TextColumn::make('warehouse.name')
+                    ->wrap()
+                ,
+                // TextColumn::make('company.alias')
+                //     ->wrap()
+                // ,
+                TextColumn::make('division.name')
+                    ->wrap()
+                ,
+                TextColumn::make('project.name')
+                    ->wrap()
+                ,
+                TextColumn::make('warehouseAddress.address')
+                    ->label('Warehouse Address')
+                    ->wrapHeader()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('created_at')
+                    ->wrapHeader()
+                    ->date()
+                    ->sortable()
+                    ->wrap()
+                ,
+                ViewColumn::make('user_profile')
+                    ->label('User')
+                    ->view('filament.tables.columns.user-profile')
+                ,
                 TextColumn::make('status')
-                    ->badge()
                     ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state]),
+                    ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
+                    ->badge()
+                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                    ->grow(false)
+                    ->sortable()
+                ,
+
+                TextColumn::make('memo')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('boq')
+                    ->label('BOQ')
+                    ->searchable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
+                TextColumn::make('updated_at')
+                    ->wrapHeader()
+                    ->date()
+                    ->sortable()
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('deleted_at')
+                    ->wrapHeader()
+                    ->date()
+                    ->sortable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
             ])
             ->filters([
-                //
+                SelectFilter::make('warehouse')
+                    ->relationship(
+                        'warehouse',
+                        'name',
+                        fn($query) => $query
+                            ->when(
+                                auth()->user()->warehouses()->exists(),
+                                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+                            )
+                            ->orderBy('name')->orderBy('code'),
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                // SelectFilter::make('company')
+                //     ->relationship(
+                //         'company',
+                //         'alias',
+                //         fn($query) => $query->orderBy('alias')->orderBy('code'),
+                //     )
+                //     ->multiple()
+                //     ->searchable()
+                //     ->preload()
+                // ,
+
+                SelectFilter::make('division')
+                    ->relationship(
+                        'division',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('project')
+                    ->relationship(
+                        'project',
+                        'name',
+                        fn($query) => $query->orderBy('name')->orderBy('code'),
+                    )
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                TrashedFilter::make()->native(false),
             ])
-            ->headerActions([
-                CreateAction::make(),
-            ])
-            ->actions([
-                ViewAction::make(),
-            ])
-            ->bulkActions([
-                BulkActionGroup::make([
-                    DeleteBulkAction::make(),
-                ]),
-            ]);
+            // ->recordUrl(
+            //     fn($record) =>
+            //     PurchaseRequestResource::getUrl('view', ['record' => $record])
+            // )
+            ->recordActions([
+                ViewAction::make()->hiddenLabel()->url(
+                    fn($record) =>
+                    PurchaseRequestResource::getUrl('view', ['record' => $record])
+                ),
+            ], position: RecordActionsPosition::BeforeColumns)
+
+            ->striped()
+            ->stackedOnMobile()
+
+            ->contentGrid([])
+            ->paginated([5, 10, 25, 50, 100])
+            ->defaultPaginationPageOption(10)
+        ;
     }
 
     public function isReadOnly(): bool
@@ -65,18 +200,11 @@ class PurchaseRequestsRelationManager extends RelationManager
         return true;
     }
 
-    // public function getContentTabComponent(): Tab
-    // {
-    //     return Tab::make('Settings')
-    //         ->icon('heroicon-m-cog');
-    // }
-
-    // public static function getTabComponent(Model $company, string $pageClass): Tab
-    // {
-    //     return Tab::make('Blog posts')
-    //         ->badge($company->purchaseRequests()->count())
-    //         ->badgeColor('info')
-    //         ->badgeTooltip('The number of posts in this category')
-    //         ->icon('heroicon-m-document-text');
-    // }
+    public static function getTabComponent(Model $company, string $pageClass): Tab
+    {
+        return Tab::make('Purchase Requests')
+            ->icon(Heroicon::OutlinedClipboardDocumentList)
+            ->badge($company->purchaseRequests()->count() > 0 ? $company->purchaseRequests()->count() : null)
+        ;
+    }
 }

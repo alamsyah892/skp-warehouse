@@ -3,11 +3,13 @@
 namespace App\Filament\Resources\Companies\Pages;
 
 use App\Filament\Resources\Companies\CompanyResource;
+use App\Models\Company;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\Enums\ContentTabPosition;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Model;
 
 class ViewCompany extends ViewRecord
 {
@@ -28,14 +30,14 @@ class ViewCompany extends ViewRecord
         return true;
     }
 
-    public function getContentTabComponent(): Tab
-    {
-        return Tab::make('Settings')
-            ->icon('heroicon-m-cog');
-    }
+    // public function getContentTabComponent(): Tab
+    // {
+    //     return Tab::make('Settings')
+    //         ->icon('heroicon-m-cog');
+    // }
 
-    public function getContentTabPosition(): ?ContentTabPosition
-    {
-        return ContentTabPosition::After;
-    }
+    // public function getContentTabPosition(): ?ContentTabPosition
+    // {
+    //     return ContentTabPosition::After;
+    // }
 }
