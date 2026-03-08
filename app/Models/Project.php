@@ -77,8 +77,8 @@ class Project extends Model
         return $this->hasMany(PurchaseRequest::class);
     }
 
-    // public function purchaseRequestItems(): HasManyThrough
-    // {
-    //     return $this->hasManyThrough(PurchaseRequestItem::class, PurchaseRequest::class);
-    // }
+    public function purchaseRequestItems(): HasManyThrough
+    {
+        return $this->hasManyThrough(PurchaseRequestItem::class, PurchaseRequest::class);
+    }
 }
