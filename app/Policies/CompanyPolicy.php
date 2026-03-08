@@ -8,14 +8,14 @@ use Illuminate\Auth\Access\Response;
 
 class CompanyPolicy
 {
-    public function before(User $user, string $ability): ?bool
-    {
-        if ($user->hasRole(['Project Owner'])) {
-            return true;
-        }
+    // public function before(User $user, string $ability): ?bool
+    // {
+    //     if ($user->hasRole(['Project Owner'])) {
+    //         return true;
+    //     }
 
-        return null;
-    }
+    //     return null;
+    // }
 
     /**
      * Determine whether the user can view any models.

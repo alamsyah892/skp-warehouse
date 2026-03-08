@@ -8,6 +8,15 @@ use Illuminate\Auth\Access\Response;
 
 class DivisionPolicy
 {
+    // public function before(User $user, string $ability): ?bool
+    // {
+    //     if ($user->hasRole(['Project Owner'])) {
+    //         return true;
+    //     }
+
+    //     return null;
+    // }
+
     /**
      * Determine whether the user can view any models.
      */
