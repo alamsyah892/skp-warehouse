@@ -146,7 +146,7 @@ class PurchaseRequestInfolist
 
                         TextEntry::make('user')
                             ->label('Requested By')
-                            ->view('filament.tables.columns.user-profile')
+                            ->view('filament.user-profile')
                         ,
 
                         // ImageEntry::make('user.avatar_url')

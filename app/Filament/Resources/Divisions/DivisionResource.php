@@ -85,9 +85,6 @@ class DivisionResource extends Resource
         $query = parent::getRecordRouteBindingEloquentQuery();
 
         $query
-            ->with([
-                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
-            ])
             ->withCount([
                 'companies',
             ])

@@ -1,41 +1,34 @@
 <?php
 
-namespace App\Filament\Resources\Companies\RelationManagers;
+namespace App\Livewire;
 
-use App\Filament\Resources\Companies\CompanyResource;
-use App\Filament\Resources\PurchaseRequests\Pages\ViewPurchaseRequest;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\CreateAction;
-use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\ViewAction;
-use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
-use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
+use Filament\Widgets\TableWidget;
 
-class PurchaseRequestsRelationManager extends RelationManager
+class DivisionPurchaseRequestsTable extends TableWidget
 {
-    protected static string $relationship = 'purchaseRequests';
-
-    protected static ?string $title = 'Purchase Requests';
-
-    protected static ?string $relatedResource = CompanyResource::class;
+    public $record;
 
     public function table(Table $table): Table
     {
         return $table
-            ->recordTitleAttribute('number')
+            ->heading(null)
+            ->query(
+                PurchaseRequest::query()
+                    ->where('division_id', $this->record->id)
+            )
             ->columns([
                 TextColumn::make('number')
                     ->description(fn($record): string => $record->description)
@@ -53,12 +46,12 @@ class PurchaseRequestsRelationManager extends RelationManager
                 TextColumn::make('warehouse.name')
                     ->wrap()
                 ,
-                // TextColumn::make('company.alias')
-                //     ->wrap()
-                // ,
-                TextColumn::make('division.name')
+                TextColumn::make('company.alias')
                     ->wrap()
                 ,
+                // TextColumn::make('division.name')
+                //     ->wrap()
+                // ,
                 TextColumn::make('project.name')
                     ->wrap()
                 ,
@@ -78,7 +71,7 @@ class PurchaseRequestsRelationManager extends RelationManager
                 ,
                 ViewColumn::make('user_profile')
                     ->label('User')
-                    ->view('filament.tables.columns.user-profile')
+                    ->view('filament.user-profile')
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
@@ -140,27 +133,27 @@ class PurchaseRequestsRelationManager extends RelationManager
                     ->preload()
                 ,
 
-                // SelectFilter::make('company')
-                //     ->relationship(
-                //         'company',
-                //         'alias',
-                //         fn($query) => $query->orderBy('alias')->orderBy('code'),
-                //     )
-                //     ->multiple()
-                //     ->searchable()
-                //     ->preload()
-                // ,
-
-                SelectFilter::make('division')
+                SelectFilter::make('company')
                     ->relationship(
-                        'division',
-                        'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code'),
+                        'company',
+                        'alias',
+                        fn($query) => $query->orderBy('alias')->orderBy('code'),
                     )
                     ->multiple()
                     ->searchable()
                     ->preload()
                 ,
+
+                // SelectFilter::make('division')
+                //     ->relationship(
+                //         'division',
+                //         'name',
+                //         fn($query) => $query->orderBy('name')->orderBy('code'),
+                //     )
+                //     ->multiple()
+                //     ->searchable()
+                //     ->preload()
+                // ,
 
                 SelectFilter::make('project')
                     ->relationship(
@@ -175,15 +168,14 @@ class PurchaseRequestsRelationManager extends RelationManager
 
                 TrashedFilter::make()->native(false),
             ])
-            // ->recordUrl(
-            //     fn($record) =>
-            //     PurchaseRequestResource::getUrl('view', ['record' => $record])
-            // )
             ->recordActions([
-                ViewAction::make()->hiddenLabel()->url(
-                    fn($record) =>
-                    PurchaseRequestResource::getUrl('view', ['record' => $record])
-                ),
+                ViewAction::make()->hiddenLabel()
+                    ->url(
+                        fn($record) => PurchaseRequestResource::getUrl('view', [
+                            'record' => $record->id,
+                        ])
+                    )
+                ,
             ], position: RecordActionsPosition::BeforeColumns)
 
             ->striped()
@@ -191,20 +183,8 @@ class PurchaseRequestsRelationManager extends RelationManager
 
             ->contentGrid([])
             ->paginated([5, 10, 25, 50, 100])
+            ->paginationMode(PaginationMode::Default)
             ->defaultPaginationPageOption(10)
-        ;
-    }
-
-    public function isReadOnly(): bool
-    {
-        return true;
-    }
-
-    public static function getTabComponent(Model $company, string $pageClass): Tab
-    {
-        return Tab::make('Purchase Requests')
-            ->icon(Heroicon::OutlinedClipboardDocumentList)
-            ->badge($company->purchaseRequests()->count() > 0 ? $company->purchaseRequests()->count() : null)
         ;
     }
 }

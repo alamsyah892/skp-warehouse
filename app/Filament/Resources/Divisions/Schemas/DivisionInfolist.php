@@ -3,14 +3,12 @@
 namespace App\Filament\Resources\Divisions\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
-use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Livewire\DivisionPurchaseRequestsTable;
 use App\Models\Division;
-use App\Models\PurchaseRequest;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -113,6 +111,7 @@ class DivisionInfolist
     {
         return Tabs::make()
             ->columnSpanFull()
+            ->persistTabInQueryString()
             ->tabs([
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
@@ -124,43 +123,7 @@ class DivisionInfolist
                             ->color(null)
                         ,
 
-                        RepeatableEntry::make('purchaseRequests')
-                            ->columnSpanFull()
-                            ->table([
-                                TableColumn::make('Number'),
-                                TableColumn::make('Warehouse'),
-                                TableColumn::make('Company'),
-                                // TableColumn::make('Division'),
-                                TableColumn::make('Project'),
-                                // TableColumn::make('Deskripsi'),
-                                TableColumn::make('Status'),
-                            ])
-                            ->schema([
-                                TextEntry::make('number')
-                                    ->url(
-                                        fn($record) => PurchaseRequestResource::getUrl('view', [
-                                            'record' => $record->id,
-                                        ])
-                                    )
-                                    ->openUrlInNewTab() // optional
-                                    ->color('primary')
-                                    ->icon(Heroicon::ArrowTopRightOnSquare)
-                                    ->iconPosition(IconPosition::After)
-                                    ->wrap(false)
-                                ,
-                                TextEntry::make('warehouse.name'),
-                                TextEntry::make('company.alias'),
-                                // TextEntry::make('division.name'),
-                                TextEntry::make('project.name'),
-                                // TextEntry::make('description'),
-                                TextEntry::make('status')
-                                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                                    ->badge()
-                                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
-                                ,
-                            ])
-                            ->visible(fn($record) => $record->purchase_requests_count > 0)
-                        ,
+                        Livewire::make(DivisionPurchaseRequestsTable::class),
                     ])
                 ,
 

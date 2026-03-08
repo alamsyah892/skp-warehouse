@@ -3,17 +3,12 @@
 namespace App\Filament\Resources\Projects\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
-use App\Filament\Resources\Projects\ProjectResource;
-use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Livewire\ProjectPurchaseRequestsTable;
 use App\Models\Project;
-use App\Models\PurchaseRequest;
-use Filament\Actions\Action;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Callout;
-use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -123,6 +118,7 @@ class ProjectInfolist
     {
         return Tabs::make()
             ->columnSpanFull()
+            ->persistTabInQueryString()
             ->tabs([
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
@@ -134,86 +130,7 @@ class ProjectInfolist
                             ->color(null)
                         ,
 
-                        RepeatableEntry::make('purchaseRequests')
-                            ->columnSpanFull()
-                            ->table([
-                                TableColumn::make('Number'),
-                                TableColumn::make('Warehouse')
-                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                                ,
-                                TableColumn::make('Company')
-                                // ->hiddenHeaderLabel(fn($record) => $record->companies_count == 1)
-                                ,
-                                TableColumn::make('Division'),
-                                // TableColumn::make('Deskripsi'),
-                                TableColumn::make('Status'),
-                            ])
-                            ->schema([
-                                TextEntry::make('number')
-                                    ->url(
-                                        fn($record) => PurchaseRequestResource::getUrl('view', [
-                                            'record' => $record->id,
-                                        ])
-                                    )
-                                    ->openUrlInNewTab() // optional
-                                    ->color('primary')
-                                    ->icon(Heroicon::ArrowTopRightOnSquare)
-                                    ->iconPosition(IconPosition::After)
-                                    ->wrap(false)
-                                ,
-                                TextEntry::make('warehouse.name'),
-                                TextEntry::make('company.alias'),
-                                TextEntry::make('division.name'),
-                                // TextEntry::make('description'),
-                                TextEntry::make('status')
-                                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
-                                    ->badge()
-                                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
-                                ,
-                            ])
-                            ->visible(fn($record) => $record->purchase_requests_count > 0)
-                        ,
-                        EmptyState::make('No purchase request yet')
-                            ->description('No purchase request has been recorded yet.')
-                            ->icon(Heroicon::OutlinedClipboardDocumentList)
-                            ->visible(fn($record) => $record->purchase_requests_count == 0)
-                            ->contained(false)
-                        ,
-
-                        // RepeatableEntry::make('purchaseRequestItems')
-                        //     ->columnSpanFull()
-                        //     ->table([
-                        //         TableColumn::make('Purchase request number'),
-                        //         TableColumn::make('Item code'),
-                        //         TableColumn::make('Item name'),
-                        //         TableColumn::make('Item unit'),
-                        //         TableColumn::make('Qty'),
-                        //         // TableColumn::make('Deskripsi'),
-                        //     ])
-                        //     ->schema([
-                        //         TextEntry::make('purchaseRequest.number')
-                        //             ->wrap(false)
-                        //         ,
-                        //         TextEntry::make('item.code')
-                        //             ->badge()
-                        //             ->color('info')
-                        //             ->fontFamily(FontFamily::Mono)
-                        //             ->size(TextSize::Large)
-                        //         ,
-                        //         TextEntry::make('item.name'),
-                        //         TextEntry::make('item.unit'),
-                        //         TextEntry::make('qty')->numeric()->alignEnd(),
-                        //         // TextEntry::make('description'),
-                        //     ])
-                        //     ->visible(fn ($record) => $record->purchase_request_items_count > 0)
-                        // ,
-                        // EmptyState::make('No purchase request item yet')
-                        //     ->description('No purchase request item has been recorded yet.')
-                        //     ->icon(Heroicon::OutlinedClipboardDocumentList)
-                        //     ->visible(fn($record) => $record->purchase_request_items_count == 0)
-                        //     ->contained(false)
-                        // ,
-
+                        Livewire::make(ProjectPurchaseRequestsTable::class),
                     ])
                 ,
 

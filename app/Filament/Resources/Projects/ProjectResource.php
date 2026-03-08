@@ -76,8 +76,9 @@ class ProjectResource extends Resource
             ])
             ->withCount([
                 'purchaseRequests',
-                // 'purchaseRequestItems',
-            ]);
+                'purchaseRequestItems',
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
@@ -89,14 +90,11 @@ class ProjectResource extends Resource
         $query = parent::getRecordRouteBindingEloquentQuery();
 
         $query
-            ->with([
-                'purchaseRequests' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('id'),
-                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('purchase_request_id'),
-            ])
             ->withCount([
                 'companies',
                 'warehouses',
-            ]);
+            ])
+        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

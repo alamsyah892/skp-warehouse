@@ -2,9 +2,9 @@
 
 namespace App\Providers\Filament;
 
-use Andreia\FilamentNordTheme\FilamentNordThemePlugin;
+// use Andreia\FilamentNordTheme\FilamentNordThemePlugin;
 use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
-use Caresome\FilamentNeobrutalism\NeobrutalismeTheme;
+// use Caresome\FilamentNeobrutalism\NeobrutalismeTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;

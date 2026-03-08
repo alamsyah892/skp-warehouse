@@ -66,6 +66,12 @@ class PurchaseRequestResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
+        $query
+            ->withCount([
+                'purchaseRequestItems',
+            ])
+        ;
+
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);
@@ -78,9 +84,6 @@ class PurchaseRequestResource extends Resource
         $query
             ->with([
                 'purchaseRequestItems' => fn($query) => $query->orderBy('id'),
-            ])
-            ->withCount([
-                'purchaseRequestItems',
             ])
         ;
 

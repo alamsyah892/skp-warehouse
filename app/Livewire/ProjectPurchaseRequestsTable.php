@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Filament\Resources\PurchaseRequests\Tables;
+namespace App\Livewire;
 
+use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
@@ -9,16 +10,25 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Filament\Widgets\TableWidget;
 
-class PurchaseRequestsTable
+class ProjectPurchaseRequestsTable extends TableWidget
 {
-    public static function configure(Table $table): Table
+    public $record;
+
+    public function table(Table $table): Table
     {
         return $table
+            ->heading(null)
+            ->query(
+                PurchaseRequest::query()
+                    ->where('project_id', $this->record->id)
+            )
             ->columns([
                 TextColumn::make('number')
                     ->description(fn($record): string => $record->description)
@@ -42,9 +52,9 @@ class PurchaseRequestsTable
                 TextColumn::make('division.name')
                     ->wrap()
                 ,
-                TextColumn::make('project.name')
-                    ->wrap()
-                ,
+                // TextColumn::make('project.name')
+                //     ->wrap()
+                // ,
                 TextColumn::make('warehouseAddress.address')
                     ->label('Warehouse Address')
                     ->wrapHeader()
@@ -83,13 +93,6 @@ class PurchaseRequestsTable
                     ->label('BOQ')
                     ->searchable()
                     ->placeholder('-')
-                    ->color('gray')
-                    ->wrap()
-                    ->toggleable(isToggledHiddenByDefault: true)
-                ,
-                TextColumn::make('purchase_request_items_count')
-                    ->label("PR Items count")
-                    ->sortable()
                     ->color('gray')
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -152,26 +155,27 @@ class PurchaseRequestsTable
                     ->preload()
                 ,
 
-                SelectFilter::make('project')
-                    ->relationship(
-                        'project',
-                        'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code'),
-                    )
-                    ->multiple()
-                    ->searchable()
-                    ->preload()
-                ,
-
-                // SelectFilter::make(name: 'status')
-                //     ->options(PurchaseRequest::STATUS_LABELS)
-                //     ->native(false)
+                // SelectFilter::make('project')
+                //     ->relationship(
+                //         'project',
+                //         'name',
+                //         fn($query) => $query->orderBy('name')->orderBy('code'),
+                //     )
+                //     ->multiple()
+                //     ->searchable()
+                //     ->preload()
                 // ,
 
                 TrashedFilter::make()->native(false),
             ])
             ->recordActions([
-                ViewAction::make()->hiddenLabel(),
+                ViewAction::make()->hiddenLabel()
+                    ->url(
+                        fn($record) => PurchaseRequestResource::getUrl('view', [
+                            'record' => $record->id,
+                        ])
+                    )
+                ,
             ], position: RecordActionsPosition::BeforeColumns)
 
             ->striped()
@@ -179,8 +183,8 @@ class PurchaseRequestsTable
 
             ->contentGrid([])
             ->paginated([5, 10, 25, 50, 100])
+            ->paginationMode(PaginationMode::Default)
             ->defaultPaginationPageOption(10)
-
         ;
     }
 }
