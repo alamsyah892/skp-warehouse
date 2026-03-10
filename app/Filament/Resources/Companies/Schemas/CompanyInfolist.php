@@ -161,6 +161,7 @@ class CompanyInfolist
                 Tab::make('Banks')
                     ->icon(Heroicon::OutlinedBuildingLibrary)
                     ->badge(fn($record) => $record->banks_count ?: null)
+                    ->badgeTooltip('Bank count')
                     ->schema([
                         RepeatableEntry::make('banks')
                             ->table([
@@ -185,6 +186,7 @@ class CompanyInfolist
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_requests_count ?: null)
+                    ->badgeTooltip('PR count')
                     ->schema([
                         Callout::make()
                             ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Perusahaan ini.')

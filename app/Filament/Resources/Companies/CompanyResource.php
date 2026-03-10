@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class CompanyResource extends Resource
@@ -68,7 +69,10 @@ class CompanyResource extends Resource
 
         $query
             ->with([
-                'warehouses' => fn($query) => $query->orderBy('name')->orderBy('code'),
+                'warehouses' => fn($query) => $query
+                    ->forUserWarehouses(Auth::user())
+                    ->orderBy('name')->orderBy('code')
+                ,
                 'divisions' => fn($query) => $query->orderBy('name')->orderBy('code'),
                 'projects' => fn($query) => $query->orderBy('name')->orderBy('code'),
                 'banks' => fn($query) => $query->orderBy('name')->orderBy('code'),
@@ -89,7 +93,10 @@ class CompanyResource extends Resource
 
         $query
             ->withCount([
-                'warehouses',
+                'warehouses' => fn($query) => $query
+                    ->forUserWarehouses(Auth::user())
+                    ->orderBy('name')->orderBy('code')
+                ,
                 'divisions',
                 'projects',
                 'banks',

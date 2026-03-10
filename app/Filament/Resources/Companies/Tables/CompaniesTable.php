@@ -22,6 +22,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
 
 class CompaniesTable
 {
@@ -30,61 +31,73 @@ class CompaniesTable
         return $table
             ->columns([
                 Stack::make([
-                    Split::make([
-                        TextColumn::make('alias')
-                            ->label('Bussines Name / Alias')
-                            ->searchable()
-                            ->sortable()
-                            ->size(TextSize::Large)
-                            ->weight(FontWeight::Bold)
-                            ->grow(false)
-                        ,
-                        IconColumn::make('is_active')
-                            ->label('Status')
-                            ->sortable()
-                            ->tooltip(fn($state) => Company::STATUS_LABELS[$state] ?? '-')
-                            ->boolean()
-                            ->trueIcon(Heroicon::CheckBadge)
-                            ->falseIcon(Heroicon::ExclamationTriangle)
-                            ->trueColor('success')
-                            ->falseColor('warning')
-                        ,
-                        TextColumn::make('code')
-                            ->searchable()
-                            ->sortable()
-                            ->badge()
-                            ->fontFamily(FontFamily::Mono)
-                            ->icon(Heroicon::Hashtag)
-                            ->iconColor('primary')
-                            ->grow(false)
-                        ,
-                    ]),
-
-                    TextColumn::make('name')
-                        ->label('Company Name')
-                        ->searchable()
-                        ->sortable()
-                        ->weight(FontWeight::Bold)
-                        ->icon(Heroicon::BuildingOffice2)
-                        ->iconColor('primary')
-                        ->description(fn($record): string => $record->description)
-                    ,
-
                     Stack::make([
-                        TextColumn::make('address')
+                        Split::make([
+                            TextColumn::make('alias')
+                                ->label('Bussines Name / Alias')
+                                ->searchable()
+                                ->sortable()
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->grow(false)
+                            ,
+                            IconColumn::make('is_active')
+                                ->label('Status')
+                                ->sortable()
+                                ->tooltip(fn($state) => Company::STATUS_LABELS[$state] ?? '-')
+                                ->boolean()
+                                ->trueIcon(Heroicon::CheckBadge)
+                                ->falseIcon(Heroicon::ExclamationTriangle)
+                                ->trueColor('success')
+                                ->falseColor('warning')
+                            ,
+                            TextColumn::make('code')
+                                ->searchable()
+                                ->sortable()
+                                ->badge()
+                                ->fontFamily(FontFamily::Mono)
+                                ->icon(Heroicon::Hashtag)
+                                ->iconColor('primary')
+                                ->grow(false)
+                            ,
+                        ]),
+
+                        TextColumn::make('name')
+                            ->label('Company Name')
                             ->searchable()
-                            ->color('gray')
+                            ->sortable()
+                            ->weight(FontWeight::Bold)
+                            ->icon(Heroicon::BuildingOffice2)
+                            ->iconColor('primary')
+                            ->description(fn($record): string => $record->description)
                         ,
-                        TextColumn::make('city')
-                            ->searchable()
-                            ->color('gray')
-                        ,
-                        TextColumn::make('post_code')
-                            ->searchable()
-                            ->color('gray')
+
+                        Stack::make([
+                            TextColumn::make('address')
+                                ->searchable()
+                                ->color('gray')
+                            ,
+                            TextColumn::make('city')
+                                ->searchable()
+                                ->color('gray')
+                            ,
+                            TextColumn::make('post_code')
+                                ->searchable()
+                                ->color('gray')
+                            ,
+                        ]),
+                    ]),
+
+                    Split::make([
+                        TextColumn::make('purchase_requests_count')
+                            ->label('PR Count')
+                            ->sortable()
+                            ->icon(Heroicon::OutlinedClipboardDocumentList)
+                            ->iconColor('primary')
+                            ->description("PR count: ", position: 'above')
                         ,
                     ]),
-                ]),
+                ])->space(2),
                 Panel::make([
                     Stack::make([
                         Split::make([
@@ -143,10 +156,10 @@ class CompaniesTable
                             ->limitList(3)
                         ,
 
-                        TextColumn::make('purchase_requests_count')
-                            ->description("PR count: ", position: 'above')
-                            ->sortable()
-                        ,
+                        // TextColumn::make('purchase_requests_count')
+                        //     ->description("PR count: ", position: 'above')
+                        //     ->sortable()
+                        // ,
 
                         TextColumn::make('banks.name')
                             ->description("Banks: ", position: 'above')
@@ -162,10 +175,7 @@ class CompaniesTable
                         'warehouses',
                         'name',
                         fn($query) => $query
-                            ->when(
-                                auth()->user()->warehouses()->exists(),
-                                fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
-                            )
+                            ->forUserWarehouses(Auth::user())
                             ->orderBy('name')->orderBy('code'),
                     )
                     ->multiple()
