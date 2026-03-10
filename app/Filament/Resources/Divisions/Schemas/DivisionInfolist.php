@@ -116,6 +116,7 @@ class DivisionInfolist
                 Tab::make('PR History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_requests_count ?: null)
+                    ->badgeTooltip('PR count')
                     ->schema([
                         Callout::make()
                             ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Divisi ini.')

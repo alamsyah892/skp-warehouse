@@ -30,39 +30,51 @@ class DivisionsTable
         return $table
             ->columns([
                 Stack::make([
-                    Split::make([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable()
-                            ->size(TextSize::Large)
-                            ->weight(FontWeight::Bold)
-                            ->grow(false)
-                        ,
-                        IconColumn::make('is_active')
-                            ->label('Status')
-                            ->sortable()
-                            ->tooltip(fn($state) => Division::STATUS_LABELS[$state] ?? '-')
-                            ->boolean()
-                            ->trueIcon(Heroicon::CheckBadge)
-                            ->falseIcon(Heroicon::ExclamationTriangle)
-                            ->trueColor('success')
-                            ->falseColor('warning')
-                        ,
-                        TextColumn::make('code')
-                            ->searchable()
-                            ->sortable()
-                            ->badge()
-                            ->fontFamily(FontFamily::Mono)
-                            ->icon(Heroicon::Hashtag)
-                            ->iconColor('primary')
-                            ->grow(false)
+                    Stack::make([
+                        Split::make([
+                            TextColumn::make('name')
+                                ->searchable()
+                                ->sortable()
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->grow(false)
+                            ,
+                            IconColumn::make('is_active')
+                                ->label('Status')
+                                ->sortable()
+                                ->tooltip(fn($state) => Division::STATUS_LABELS[$state] ?? '-')
+                                ->boolean()
+                                ->trueIcon(Heroicon::CheckBadge)
+                                ->falseIcon(Heroicon::ExclamationTriangle)
+                                ->trueColor('success')
+                                ->falseColor('warning')
+                            ,
+                            TextColumn::make('code')
+                                ->searchable()
+                                ->sortable()
+                                ->badge()
+                                ->fontFamily(FontFamily::Mono)
+                                ->icon(Heroicon::Hashtag)
+                                ->iconColor('primary')
+                                ->grow(false)
+                            ,
+                        ]),
+                        TextColumn::make('description')
+                            ->placeholder('-')
+                            ->color('gray')
                         ,
                     ]),
-                    TextColumn::make('description')
-                        ->placeholder('-')
-                        ->color('gray')
-                    ,
-                ]),
+
+                    Split::make([
+                        TextColumn::make('purchase_requests_count')
+                            ->label('PR Count')
+                            ->sortable()
+                            ->icon(Heroicon::OutlinedClipboardDocumentList)
+                            ->iconColor('primary')
+                            ->description("PR count: ", position: 'above')
+                        ,
+                    ]),
+                ])->space(2),
                 Panel::make([
                     Stack::make([
                         TimestampPanel::make(),
@@ -73,10 +85,10 @@ class DivisionsTable
                             ->limitList(3)
                         ,
 
-                        TextColumn::make('purchase_requests_count')
-                            ->description("PR count: ", position: 'above')
-                            ->sortable()
-                        ,
+                        // TextColumn::make('purchase_requests_count')
+                        //     ->description("PR count: ", position: 'above')
+                        //     ->sortable()
+                        // ,
                     ])->space(2),
                 ])->collapsible(),
             ])
