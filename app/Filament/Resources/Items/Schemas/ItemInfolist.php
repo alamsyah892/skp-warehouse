@@ -104,6 +104,8 @@ class ItemInfolist
                     ->schema([
                         TextEntry::make('category.parent_full_path')
                             ->label('Category')
+                            ->icon(Heroicon::Swatch)
+                            ->iconColor('primary')
                         ,
 
                         TextEntry::make('description')
@@ -132,9 +134,10 @@ class ItemInfolist
         return Tabs::make()
             ->columnSpanFull()
             ->tabs([
-                Tab::make('PR History')
+                Tab::make('PR Item History')
                     ->icon(Heroicon::OutlinedClipboardDocumentList)
                     ->badge(fn($record) => $record->purchase_request_items_count ?: null)
+                    ->badgeTooltip('PR Items count')
                     ->schema([
                         Callout::make()
                             ->description('Riwayat semua Pengajuan Pembelian yang terkait dengan Item ini.')

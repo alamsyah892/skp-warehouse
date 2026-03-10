@@ -32,45 +32,57 @@ class ItemsTable
         return $table
             ->columns([
                 Stack::make([
-                    Split::make([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable()
-                            ->size(TextSize::Large)
-                            ->weight(FontWeight::Bold)
-                            ->grow(false)
-                        ,
-                        IconColumn::make('is_active')
-                            ->label('Status')
-                            ->sortable()
-                            ->tooltip(fn($state) => Item::STATUS_LABELS[$state] ?? '-')
-                            ->boolean()
-                            ->trueIcon(Heroicon::CheckBadge)
-                            ->falseIcon(Heroicon::ExclamationTriangle)
-                            ->trueColor('success')
-                            ->falseColor('warning')
-                        ,
-                        TextColumn::make('code')
-                            ->searchable()
-                            ->sortable()
-                            ->badge()
-                            ->fontFamily(FontFamily::Mono)
-                            ->icon(Heroicon::Hashtag)
+                    Stack::make([
+                        Split::make([
+                            TextColumn::make('name')
+                                ->searchable()
+                                ->sortable()
+                                ->size(TextSize::Large)
+                                ->weight(FontWeight::Bold)
+                                ->grow(false)
+                            ,
+                            IconColumn::make('is_active')
+                                ->label('Status')
+                                ->sortable()
+                                ->tooltip(fn($state) => Item::STATUS_LABELS[$state] ?? '-')
+                                ->boolean()
+                                ->trueIcon(Heroicon::CheckBadge)
+                                ->falseIcon(Heroicon::ExclamationTriangle)
+                                ->trueColor('success')
+                                ->falseColor('warning')
+                            ,
+                            TextColumn::make('code')
+                                ->searchable()
+                                ->sortable()
+                                ->badge()
+                                ->fontFamily(FontFamily::Mono)
+                                ->icon(Heroicon::Hashtag)
+                                ->iconColor('primary')
+                                ->grow(false)
+                            ,
+                        ]),
+                        TextColumn::make('category.parent_full_path')
+                            ->color('gray')
+                            ->icon(Heroicon::Swatch)
                             ->iconColor('primary')
-                            ->grow(false)
+                        ,
+
+                        TextColumn::make('description')
+                            ->placeholder('-')
+                            ->color('gray')
                         ,
                     ]),
-                    TextColumn::make('category.parent_full_path')
-                        ->color('gray')
-                        ->icon(Heroicon::Swatch)
-                        ->iconColor('primary')
-                    ,
 
-                    TextColumn::make('description')
-                        ->placeholder('-')
-                        ->color('gray')
-                    ,
-                ]),
+                    Split::make([
+                        TextColumn::make('purchase_request_items_count')
+                            ->label('PR Items Count')
+                            ->sortable()
+                            ->icon(Heroicon::OutlinedClipboardDocumentList)
+                            ->iconColor('primary')
+                            ->description("PR Items count: ", position: 'above')
+                        ,
+                    ]),
+                ])->space(2),
                 Panel::make([
                     Stack::make([
                         Split::make([
@@ -87,10 +99,10 @@ class ItemsTable
 
                         TimestampPanel::make(),
 
-                        TextColumn::make('purchase_request_items_count')
-                            ->description("PR count: ", position: 'above')
-                            ->sortable()
-                        ,
+                        // TextColumn::make('purchase_request_items_count')
+                        //     ->description("PR count: ", position: 'above')
+                        //     ->sortable()
+                        // ,
                     ])->space(2),
                 ])->collapsible(),
             ])

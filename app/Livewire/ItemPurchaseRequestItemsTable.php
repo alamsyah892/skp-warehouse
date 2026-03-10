@@ -29,6 +29,12 @@ class ItemPurchaseRequestItemsTable extends TableWidget
                 PurchaseRequestItem::query()
                     ->where('item_id', $this->record->id)
                     ->forUserWarehouses(Auth::user())
+                    ->with([
+                        'purchaseRequest.warehouse',
+                        'purchaseRequest.company',
+                        'purchaseRequest.division',
+                        'purchaseRequest.project',
+                    ])
             )
             ->columns([
                 TextColumn::make('purchaseRequest.number')
@@ -93,6 +99,38 @@ class ItemPurchaseRequestItemsTable extends TableWidget
 
             ])
             ->filters([
+                SelectFilter::make('warehouse')
+                    ->label('Warehouse')
+                    ->relationship('purchaseRequest.warehouse', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('company')
+                    ->label('Company')
+                    ->relationship('purchaseRequest.company', 'alias')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('division')
+                    ->label('Division')
+                    ->relationship('purchaseRequest.division', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
+                SelectFilter::make('project')
+                    ->label('Project')
+                    ->relationship('purchaseRequest.project', 'name')
+                    ->multiple()
+                    ->searchable()
+                    ->preload()
+                ,
+
                 // TrashedFilter::make()->native(false),
             ])
             ->recordActions([
