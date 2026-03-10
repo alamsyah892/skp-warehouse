@@ -3,21 +3,18 @@
 namespace App\Filament\Resources\ItemCategories\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
-use App\Filament\Resources\Items\ItemResource;
+use App\Livewire\ItemCategoryItemsTable;
 use App\Models\ItemCategory;
-use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Callout;
-use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 
@@ -150,39 +147,7 @@ class ItemCategoryInfolist
                             ->columnSpanFull()
                         ,
 
-                        RepeatableEntry::make('items')
-                            ->table([
-                                TableColumn::make('Item Name'),
-                                TableColumn::make('Item Code'),
-                            ])
-                            ->schema([
-                                TextEntry::make('name')
-                                    ->url(
-                                        fn($record) => ItemResource::getUrl('view', [
-                                            'record' => $record->id,
-                                        ])
-                                    )
-                                    ->openUrlInNewTab() // optional
-                                    ->color('primary')
-                                    ->icon(Heroicon::ArrowTopRightOnSquare)
-                                    ->iconPosition(IconPosition::After)
-                                ,
-                                TextEntry::make('code')
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->icon(Heroicon::Hashtag)
-                                    ->iconColor('primary')
-                                    ->badge()
-                                    ->wrap(false)
-                                ,
-                            ])
-                            ->visible(fn($record) => $record->items_count > 0)
-                        ,
-                        EmptyState::make('No item yet')
-                            ->description('No item has been recorded yet.')
-                            ->icon(Heroicon::OutlinedCube)
-                            ->visible(fn($record) => $record->items_count == 0)
-                            ->contained(false)
-                        ,
+                        Livewire::make(ItemCategoryItemsTable::class),
                     ])
                 ,
 

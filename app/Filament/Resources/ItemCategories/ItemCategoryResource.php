@@ -83,34 +83,9 @@ class ItemCategoryResource extends Resource
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
-        
+
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);
-    }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Item Category');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Item Category');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Item Category', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Item Category', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Item Category', $record);
     }
 }
