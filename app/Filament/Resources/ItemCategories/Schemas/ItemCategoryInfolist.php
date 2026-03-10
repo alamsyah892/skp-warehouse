@@ -111,6 +111,8 @@ class ItemCategoryInfolist
 
                                 return ($level && isset(ItemCategory::LEVEL_LABELS[$level])) ? ItemCategory::LEVEL_LABELS[$level] : 'Parent';
                             })
+                            ->icon(Heroicon::Swatch)
+                            ->iconColor('primary')
                             ->placeholder('-')
                         ,
 
@@ -139,6 +141,7 @@ class ItemCategoryInfolist
                 Tab::make('Items')
                     ->icon(Heroicon::OutlinedCube)
                     ->badge(fn($record) => $record->items_count ?: null)
+                    ->badgeTooltip('Items count')
                     ->schema([
                         Callout::make()
                             ->description('Item yang terkait dengan Kategori Item ini.')

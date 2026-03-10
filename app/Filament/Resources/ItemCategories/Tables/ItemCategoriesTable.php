@@ -32,41 +32,53 @@ class ItemCategoriesTable
         return $table
             ->columns([
                 Stack::make([
-                    Split::make([
-                        TextColumn::make('name')
-                            ->searchable()
-                            ->sortable()
-                            ->weight(FontWeight::Bold)
-                            ->size(TextSize::Large)
-                        ,
-                        TextColumn::make('code')
-                            ->searchable()
-                            ->sortable()
-                            ->fontFamily(FontFamily::Mono)
-                            ->icon(Heroicon::Hashtag)
+                    Stack::make([
+                        Split::make([
+                            TextColumn::make('name')
+                                ->searchable()
+                                ->sortable()
+                                ->weight(FontWeight::Bold)
+                                ->size(TextSize::Large)
+                            ,
+                            TextColumn::make('code')
+                                ->searchable()
+                                ->sortable()
+                                ->fontFamily(FontFamily::Mono)
+                                ->icon(Heroicon::Hashtag)
+                                ->iconColor('primary')
+                                ->grow(false)
+                                ->badge()
+                            ,
+
+                            TextColumn::make('level')
+                                ->formatStateUsing(fn(int|null $state) => ItemCategory::LEVEL_LABELS[$state] ?? '')
+                                ->color(fn(int|null $state) => ItemCategory::LEVEL_COLOR[$state] ?? 'default')
+                                ->grow(false)
+                                ->badge()
+                                ->size(TextSize::Large)
+                            ,
+                        ]),
+                        TextColumn::make('parent_path')
+                            ->icon(Heroicon::Swatch)
                             ->iconColor('primary')
-                            ->grow(false)
-                            ->badge()
                         ,
 
-                        TextColumn::make('level')
-                            ->formatStateUsing(fn(int|null $state) => ItemCategory::LEVEL_LABELS[$state] ?? '')
-                            ->color(fn(int|null $state) => ItemCategory::LEVEL_COLOR[$state] ?? 'default')
-                            ->grow(false)
-                            ->badge()
-                            ->size(TextSize::Large)
+                        TextColumn::make('description')
+                            ->placeholder('-')
+                            ->color('gray')
                         ,
                     ]),
-                    TextColumn::make('parent_path')
-                        ->icon(Heroicon::Swatch)
-                        ->iconColor('primary')
-                    ,
 
-                    TextColumn::make('description')
-                        ->placeholder('-')
-                        ->color('gray')
-                    ,
-                ]),
+                    Split::make([
+                        TextColumn::make('items_count')
+                            ->label('Items Count')
+                            ->sortable()
+                            ->icon(Heroicon::OutlinedCube)
+                            ->iconColor('primary')
+                            ->description("Items count: ", position: 'above')
+                        ,
+                    ]),
+                ])->space(2),
                 Panel::make([
                     Stack::make([
                         TextColumn::make('allow_po')
@@ -80,10 +92,10 @@ class ItemCategoriesTable
 
                         TimestampPanel::make(),
 
-                        TextColumn::make('items_count')
-                            ->description("Items count: ", position: 'above')
-                            ->sortable()
-                        ,
+                        // TextColumn::make('items_count')
+                        //     ->description("Items count: ", position: 'above')
+                        //     ->sortable()
+                        // ,
 
                         TextColumn::make('items.name')
                             ->description("Items ", position: 'above')
