@@ -34,4 +34,17 @@ class PurchaseRequestItem extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
+    public function scopeForUserWarehouses($query, $user)
+    {
+        $warehouseIds = $user->warehouses()->pluck('warehouses.id');
+
+        if ($warehouseIds->isEmpty()) {
+            return $query; // tampilkan semua
+        }
+
+        return $query->whereHas('purchaseRequest', function ($q) use ($warehouseIds) {
+            $q->whereIn('warehouse_id', $warehouseIds);
+        });
+    }
 }

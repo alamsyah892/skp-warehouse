@@ -7,7 +7,6 @@ use App\Models\Item;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -18,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Illuminate\Support\Facades\Auth;
 
 class ItemCategoryItemsTable extends TableWidget
 {
@@ -30,22 +30,18 @@ class ItemCategoryItemsTable extends TableWidget
             ->query(
                 Item::query()
                     ->where('category_id', $this->record->id)
-                    ->withCount('purchaseRequestItems')
+                    ->withCount(['purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user())])
             )
             ->columns([
                 TextColumn::make('name')
                     ->description(fn($record): string => $record->description)
                     ->searchable()
                     ->sortable()
-                    ->size(TextSize::Large)
                     ->weight(FontWeight::Bold)
-                    ->grow(false)
                     ->wrap()
                 ,
                 IconColumn::make('is_active')
                     ->label('Status')
-                    ->sortable()
-                    ->tooltip(fn($state) => Item::STATUS_LABELS[$state] ?? '-')
                     ->boolean()
                     ->trueIcon(Heroicon::CheckBadge)
                     ->falseIcon(Heroicon::ExclamationTriangle)
@@ -59,7 +55,8 @@ class ItemCategoryItemsTable extends TableWidget
                     ->fontFamily(FontFamily::Mono)
                     ->icon(Heroicon::Hashtag)
                     ->iconColor('primary')
-                    ->grow(false)
+                    ->copyable()
+                    ->copyMessage('Email address copied')
                 ,
 
                 TextColumn::make('unit')
@@ -80,7 +77,6 @@ class ItemCategoryItemsTable extends TableWidget
                     ->sortable()
                     ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true)
-                    ->alignEnd()
                 ,
 
                 TextColumn::make('created_at')

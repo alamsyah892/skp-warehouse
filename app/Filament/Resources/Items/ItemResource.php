@@ -17,6 +17,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 set_time_limit(60);
@@ -70,8 +71,7 @@ class ItemResource extends Resource
 
         $query
             ->withCount([
-                'purchaseRequestItems',
-                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3)),
+                'purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user()),
             ])
         ;
 
@@ -86,38 +86,12 @@ class ItemResource extends Resource
 
         $query
             ->with([
-                'purchaseRequestItems' => fn($query) => $query->orderByDesc('purchase_request_id'),
-                // 'purchaseRequestItems' => fn($query) => $query->where('created_at', '>=', now()->subMonths(3))->orderByDesc('purchase_request_id'),
+                'purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user())->orderByDesc('purchase_request_id'),
             ])
         ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);
-    }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Item');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Item');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Item', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Item', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Item', $record);
     }
 }

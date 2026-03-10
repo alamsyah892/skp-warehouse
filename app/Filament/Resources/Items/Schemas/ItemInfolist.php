@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Items\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Livewire\ItemPurchaseRequestItemsTable;
 use App\Models\Item;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -11,6 +12,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -140,45 +142,47 @@ class ItemInfolist
                             ->color(null)
                         ,
 
-                        RepeatableEntry::make('purchaseRequestItems')
-                            ->columnSpanFull()
-                            ->table([
-                                TableColumn::make('Purchase request number'),
-                                TableColumn::make('Warehouse'),
-                                TableColumn::make('Company'),
-                                TableColumn::make('Division'),
-                                TableColumn::make('Project'),
-                                TableColumn::make('Qty'),
-                                // TableColumn::make('Deskripsi'),
-                            ])
-                            ->schema([
-                                TextEntry::make('purchaseRequest.number')
-                                    ->url(
-                                        fn($record) => PurchaseRequestResource::getUrl('view', [
-                                            'record' => $record->purchaseRequest,
-                                        ])
-                                    )
-                                    ->openUrlInNewTab() // optional
-                                    ->color('primary')
-                                    ->icon(Heroicon::ArrowTopRightOnSquare)
-                                    ->iconPosition('after')
-                                    ->wrap(false)
-                                ,
-                                TextEntry::make('purchaseRequest.warehouse.name'),
-                                TextEntry::make('purchaseRequest.company.alias'),
-                                TextEntry::make('purchaseRequest.division.name'),
-                                TextEntry::make('purchaseRequest.project.name'),
-                                TextEntry::make('qty')->numeric()->alignEnd(),
-                                // TextEntry::make('description'),
-                            ])
-                            ->visible(fn($record) => $record->purchase_request_items_count > 0)
-                        ,
-                        EmptyState::make('No purchase request item yet')
-                            ->description('No purchase request item has been recorded yet.')
-                            ->icon(Heroicon::OutlinedClipboardDocumentList)
-                            ->visible(fn($record) => $record->purchase_request_items_count == 0)
-                            ->contained(false)
-                        ,
+                        Livewire::make(ItemPurchaseRequestItemsTable::class),
+
+                        // RepeatableEntry::make('purchaseRequestItems')
+                        //     ->columnSpanFull()
+                        //     ->table([
+                        //         TableColumn::make('Purchase request number'),
+                        //         TableColumn::make('Warehouse'),
+                        //         TableColumn::make('Company'),
+                        //         TableColumn::make('Division'),
+                        //         TableColumn::make('Project'),
+                        //         TableColumn::make('Qty'),
+                        //         // TableColumn::make('Deskripsi'),
+                        //     ])
+                        //     ->schema([
+                        //         TextEntry::make('purchaseRequest.number')
+                        //             // ->url(
+                        //             //     fn($record) => PurchaseRequestResource::getUrl('view', [
+                        //             //         'record' => $record->purchaseRequest,
+                        //             //     ])
+                        //             // )
+                        //             ->openUrlInNewTab() // optional
+                        //             ->color('primary')
+                        //             ->icon(Heroicon::ArrowTopRightOnSquare)
+                        //             ->iconPosition('after')
+                        //             ->wrap(false)
+                        //         ,
+                        //         TextEntry::make('purchaseRequest.warehouse.name'),
+                        //         TextEntry::make('purchaseRequest.company.alias'),
+                        //         TextEntry::make('purchaseRequest.division.name'),
+                        //         TextEntry::make('purchaseRequest.project.name'),
+                        //         TextEntry::make('qty')->numeric()->alignEnd(),
+                        //         // TextEntry::make('description'),
+                        //     ])
+                        //     ->visible(fn($record) => $record->purchase_request_items_count > 0)
+                        // ,
+                        // EmptyState::make('No purchase request item yet')
+                        //     ->description('No purchase request item has been recorded yet.')
+                        //     ->icon(Heroicon::OutlinedClipboardDocumentList)
+                        //     ->visible(fn($record) => $record->purchase_request_items_count == 0)
+                        //     ->contained(false)
+                        // ,
                     ])
                 ,
 
