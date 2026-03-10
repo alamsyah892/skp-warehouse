@@ -60,6 +60,17 @@ class Warehouse extends Model
         return $this->belongsToMany(User::class);
     }
 
+    public function scopeForUserWarehouses($query, $user)
+    {
+        $warehouseIds = $user->warehouses()->pluck('warehouses.id');
+
+        if ($warehouseIds->isEmpty()) {
+            return $query; // tampilkan semua
+        }
+
+        return $query->whereIn('warehouse_id', $warehouseIds)->whereIn('warehouse_id', $warehouseIds);
+    }
+
     public function purchaseRequests(): HasMany
     {
         return $this->hasMany(PurchaseRequest::class);
