@@ -8,6 +8,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
 
 class PurchaseRequestForm
@@ -30,6 +31,7 @@ class PurchaseRequestForm
                     ->searchable()
                     ->preload()
                     ->live()
+                    ->afterStateUpdated(fn($set) => $set('project_id', null))
                     ->afterStateUpdated(fn($set) => $set('warehouse_address_id', null))
                     ->required()
                     ->disabledOn('edit')
@@ -40,8 +42,7 @@ class PurchaseRequestForm
                     ->relationship(
                         'warehouseAddress',
                         'address',
-                        fn($query, $get) =>
-                        $query->where('warehouse_id', $get('warehouse_id'))
+                        fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
                     )
                     ->searchable()
                     ->preload()
@@ -55,6 +56,8 @@ class PurchaseRequestForm
                     )
                     ->searchable()
                     ->preload()
+                    ->live()
+                    ->afterStateUpdated(fn($set) => $set('project_id', null))
                     ->required()
                     ->disabledOn('edit')
                     ->dehydrated()
@@ -63,7 +66,23 @@ class PurchaseRequestForm
                     ->relationship(
                         'division',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code'),
+                        // fn($query) => $query->orderBy('name')->orderBy('code'),
+                        function ($query, $get) {
+                            $companyId = $get('company_id');
+
+                            $query
+                                ->when($companyId, function ($q) use ($companyId) {
+                                    $q->whereHas(
+                                        'companies',
+                                        fn($qq) =>
+                                        $qq->where('companies.id', $companyId)
+                                    );
+                                })
+
+                                ->orderBy('name')
+                                ->orderBy('code')
+                            ;
+                        }
                     )
                     ->searchable()
                     ->preload()
@@ -75,7 +94,33 @@ class PurchaseRequestForm
                     ->relationship(
                         'project',
                         'name',
-                        fn($query) => $query->orderBy('name')->orderBy('code'),
+                        function ($query, $get) {
+                            $warehouseId = $get('warehouse_id');
+                            $companyId = $get('company_id');
+
+                            $query
+                                ->when($companyId, function ($q) use ($companyId) {
+                                    $q->whereHas(
+                                        'companies',
+                                        fn($qq) =>
+                                        $qq->where('companies.id', $companyId)
+                                    );
+                                })
+                                ->when($warehouseId, function ($q) use ($warehouseId) {
+                                    $q->where(function ($qq) use ($warehouseId) {
+                                        $qq->whereHas(
+                                            'warehouses',
+                                            fn($w) =>
+                                            $w->where('warehouses.id', $warehouseId)
+                                        )
+                                            ->orWhereDoesntHave('warehouses');
+                                    });
+                                })
+
+                                ->orderBy('name')
+                                ->orderBy('code')
+                            ;
+                        }
                     )
                     ->searchable(['name', 'code'])
                     ->getOptionLabelFromRecordUsing(
@@ -86,13 +131,7 @@ class PurchaseRequestForm
                     ->disabledOn('edit')
                     ->dehydrated()
                 ,
-                // Select::make('user_id')
-                //     ->relationship('user', 'name')
-                //     ->required(),
-                // TextInput::make('type')
-                //     ->required()
-                //     ->numeric()
-                //     ->default(1),
+
                 TextInput::make('number')
                     ->required()
                     ->readOnly()
@@ -105,20 +144,36 @@ class PurchaseRequestForm
                 TextInput::make('boq'),
                 Textarea::make('notes')
                     ->columnSpanFull(),
+
+                TextEntry::make('info')
+                    ->label('Revision History')
+                    ->placeholder('-')
+                    ->visibleOn('edit')
+                    ->columnSpanFull()
+                    ->formatStateUsing(
+                        fn($state) =>
+                        collect(explode("\n", $state))
+                            ->map(fn($line) => "• " . e($line))
+                            ->implode('<br>')
+                    )
+                    ->html()
+                    ->color('gray')
+                ,
+
                 Textarea::make('info')
                     ->label('Revision Info')
+                    ->placeholder("Ubah quantity Item A / Ubah Item B menjadi Item C")
+                    ->visibleOn('edit')
+                    ->required()
+                    ->afterStateHydrated(fn($component) => $component->state(null))
                     ->columnSpanFull()
-                    ->visible(fn(string $operation) => $operation === 'edit')
-                    ->required(fn(string $operation) => $operation === 'edit')
-                    ->rule(function ($record) {
-                        return "different:{$record->info}";
-                    })
                 ,
 
                 Select::make('status')
                     ->options(PurchaseRequest::STATUS_LABELS)
                     ->native(false)
                     ->required()
+                    ->visibleOn('edit')
                 ,
 
                 Repeater::make('purchaseRequestItems')

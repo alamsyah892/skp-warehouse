@@ -272,8 +272,16 @@ class PurchaseRequestInfolist
                     ->color('gray')
                 ,
                 TextEntry::make('info')
+                    ->label('Revision Info')
                     ->columnSpanFull()
                     ->placeholder('-')
+                    ->formatStateUsing(
+                        fn($state) =>
+                        collect(explode("\n", $state))
+                            ->map(fn($line) => "• " . e($line))
+                            ->implode('<br>')
+                    )
+                    ->html()
                     ->color('gray')
                 ,
 
