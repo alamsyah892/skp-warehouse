@@ -105,6 +105,54 @@ class PurchaseRequest extends Model
                 });
             }
         });
+
+
+        static::creating(function ($record) {
+            $record->user_id = auth()->id();
+            $record->type = self::TYPE_PURCHASE;
+
+
+            $year = now()->format('y');
+            $month = now()->format('m');
+
+            $warehouse = $record->warehouse->code;
+            $company = $record->company->code;
+            $division = $record->division->code;
+            $project = $record->project->code;
+
+            $prefix = "BPPB/{$year}/{$month}/{$warehouse}{$company}{$division}{$project}";
+
+            $lastNumber = static::where('number', 'like', "{$prefix}/%")
+                ->count() + 1;
+
+            $sequence = str_pad($lastNumber, 3, '0', STR_PAD_LEFT);
+
+            $record->number = "{$prefix}/{$sequence}";
+
+
+            $record->status = self::STATUS_DRAFT;
+        });
+
+        static::updating(function ($record) {
+
+            if ($record->isDirty() && $record->status !== 'draft') {
+
+                $number = $record->number;
+                $rev = 0;
+
+                if (preg_match('/-Rev\.(\d+)$/', $number, $matches)) {
+                    $rev = (int) $matches[1];
+                }
+
+                $rev++;
+
+                $revNumber = str_pad($rev, 2, '0', STR_PAD_LEFT);
+
+                $baseNumber = preg_replace('/-Rev\.\d+$/', '', $number);
+
+                $record->number = "{$baseNumber}-Rev.{$revNumber}";
+            }
+        });
     }
 
     /* ================= RELATION ================= */

@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\DefaultEmptyString;
+use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,6 +12,8 @@ class PurchaseRequestItem extends Model
 {
     /** @use HasFactory<\Database\Factories\PurchaseRequestItemFactory> */
     use HasFactory;
+
+    use LogsAllFillable, DefaultEmptyString;
 
     protected $fillable = [
         'purchase_request_id',
