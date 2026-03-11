@@ -133,19 +133,16 @@ class PurchaseRequest extends Model
             $record->status = self::STATUS_DRAFT;
         });
 
+
         static::updating(function ($record) {
-
             if ($record->isDirty() && $record->status !== 'draft') {
-
                 $number = $record->number;
-                $rev = 0;
 
+                $rev = 0;
                 if (preg_match('/-Rev\.(\d+)$/', $number, $matches)) {
                     $rev = (int) $matches[1];
                 }
-
                 $rev++;
-
                 $revNumber = str_pad($rev, 2, '0', STR_PAD_LEFT);
 
                 $baseNumber = preg_replace('/-Rev\.\d+$/', '', $number);
