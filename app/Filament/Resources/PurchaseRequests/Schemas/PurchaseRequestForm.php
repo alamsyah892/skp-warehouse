@@ -72,11 +72,14 @@ class PurchaseRequestForm
 
                             $query
                                 ->when($companyId, function ($q) use ($companyId) {
-                                    $q->whereHas(
-                                        'companies',
-                                        fn($qq) =>
-                                        $qq->where('companies.id', $companyId)
-                                    );
+                                    $q
+                                        ->whereHas(
+                                            'companies',
+                                            fn($qq) =>
+                                            $qq->where('companies.id', $companyId)
+                                        )
+                                        ->orWhereDoesntHave('companies')
+                                    ;
                                 })
 
                                 ->orderBy('name')
@@ -100,23 +103,29 @@ class PurchaseRequestForm
 
                             $query
                                 ->when($companyId, function ($q) use ($companyId) {
-                                    $q->whereHas(
-                                        'companies',
-                                        fn($qq) =>
-                                        $qq->where('companies.id', $companyId)
-                                    );
+                                    $q
+                                        ->whereHas(
+                                            'companies',
+                                            fn($qq) =>
+                                            $qq->where('companies.id', $companyId)
+                                        )
+                                        ->orWhereDoesntHave('companies')
+                                    ;
                                 })
                                 ->when($warehouseId, function ($q) use ($warehouseId) {
                                     $q->where(function ($qq) use ($warehouseId) {
-                                        $qq->whereHas(
-                                            'warehouses',
-                                            fn($w) =>
-                                            $w->where('warehouses.id', $warehouseId)
-                                        )
-                                            ->orWhereDoesntHave('warehouses');
+                                        $qq
+                                            ->whereHas(
+                                                'warehouses',
+                                                fn($w) =>
+                                                $w->where('warehouses.id', $warehouseId)
+                                            )
+                                            ->orWhereDoesntHave('warehouses')
+                                        ;
                                     });
                                 })
 
+                                ->where('allow_po', true)
                                 ->orderBy('name')
                                 ->orderBy('code')
                             ;
