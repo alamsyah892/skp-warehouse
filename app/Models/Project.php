@@ -53,9 +53,12 @@ class Project extends Model
 
             $userWarehouseIds = auth()->user()->warehouses->pluck('id');
             if ($userWarehouseIds->isNotEmpty()) {
-                $builder->whereHas('warehouses', function ($q) use ($userWarehouseIds) {
-                    $q->whereIn('warehouses.id', $userWarehouseIds);
-                });
+                $builder
+                    ->whereHas('warehouses', function ($q) use ($userWarehouseIds) {
+                        $q->whereIn('warehouses.id', $userWarehouseIds);
+                    })
+                    ->orWhereDoesntHave('warehouses')
+                ;
             }
         });
     }
