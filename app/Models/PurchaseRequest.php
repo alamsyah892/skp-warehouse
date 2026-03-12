@@ -34,14 +34,17 @@ class PurchaseRequest extends Model
     public const STATUS_ORDERED = 5;
     public const STATUS_FINISH = 6;
 
-    public const STATUS_LABELS = [
-        self::STATUS_DRAFT => 'Draft',
-        self::STATUS_CANCELED => 'Canceled',
-        self::STATUS_WAITING => 'Waiting',
-        self::STATUS_RECEIVED => 'Received',
-        self::STATUS_ORDERED => 'Ordered',
-        self::STATUS_FINISH => 'Finish',
-    ];
+    public static function getStatusLabels(): array
+    {
+        return [
+            self::STATUS_DRAFT => __('purchase-request.status.draft'),
+            self::STATUS_CANCELED => __('purchase-request.status.canceled'),
+            self::STATUS_WAITING => __('purchase-request.status.waiting'),
+            self::STATUS_RECEIVED => __('purchase-request.status.received'),
+            self::STATUS_ORDERED => __('purchase-request.status.ordered'),
+            self::STATUS_FINISH => __('purchase-request.status.finish'),
+        ];
+    }
 
     public const STATUS_COLORS = [
         self::STATUS_DRAFT => 'gray',
@@ -135,7 +138,7 @@ class PurchaseRequest extends Model
 
 
         static::updating(function ($record) {
-            if ($record->isDirty() && $record->status !== 'draft') {
+            if ($record->isDirty() && $record->status !== self::STATUS_DRAFT) {
                 $number = $record->number;
 
                 $rev = 0;
