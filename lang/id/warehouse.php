@@ -3,10 +3,16 @@
 declare(strict_types=1);
 
 return [
-    'model_label' => 'Gudang',
-    'plural_model_label' => 'Gudang',
+    'model.label' => 'Gudang',
+    'plural_model.label' => 'Gudang',
 
 
-    'main_info_section_label' => 'Informasi Gudang',
-    'main_info_section_description' => 'Informasi utama dan identitas dasar Gudang.',
+    'section.main_info.label' => 'Informasi Gudang',
+    'section.main_info.description' => 'Informasi utama dan identitas dasar gudang.',
+
+    'section.other_info.label' => 'Informasi Lainnya',
+    'section.other_info.description' => 'Informasi lain terkait gudang.',
+
+    'section.related_data.label' => 'Data Terkait',
+    'section.related_data.description' => 'Daftar entitas yang terhubung dengan gudang ini.',
 ];

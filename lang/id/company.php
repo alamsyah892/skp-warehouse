@@ -3,10 +3,16 @@
 declare(strict_types=1);
 
 return [
-    'model_label' => 'Perusahaan (Gudang Kecil)',
-    'plural_model_label' => 'Perusahaan (Gudang Kecil)',
+    'model.label' => 'Perusahaan',
+    'plural_model.label' => 'Perusahaan',
 
 
-    'main_info_section_label' => 'Informasi Perusahaan (Gudang Kecil)',
-    'main_info_section_description' => 'Informasi utama dan identitas dasar Perusahaan (Gudang Kecil).',
+    'section.main_info.label' => 'Informasi Perusahaan',
+    'section.main_info.description' => 'Informasi utama dan identitas dasar perusahaan.',
+
+    'section.other_info.label' => 'Informasi Lainnya',
+    'section.other_info.description' => 'Informasi lain terkait perusahaan.',
+
+    'section.related_data.label' => 'Data Terkait',
+    'section.related_data.description' => 'Daftar entitas yang terhubung dengan perusahaan ini.',
 ];

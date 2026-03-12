@@ -3,15 +3,14 @@
 declare(strict_types=1);
 
 return [
-    'model_label' => 'Pengajuan Pembelian',
-    'plural_model_label' => 'Pengajuan Pembelian',
+    'model.label' => 'Pengajuan Pembelian',
+    'plural_model.label' => 'Pengajuan Pembelian',
 
 
-    'number_label' => 'Nomor',
-    'boq_label' => 'RAB',
-    'notes_label' => 'Catatan',
-    'info_label' => 'Informasi Revisi',
-    'info_placeholder' => 'Ubah quantity Item A / Ubah Item B menjadi Item C',
+    'warehouse_address.label' => 'Alamat Pengiriman (Gudang)',
+    'company.label' => 'Perusahaan (Gudang Kecil)',
+
+    'number.label' => 'Nomor',
 
     'status' => [
         'all' => 'Semua',
@@ -23,29 +22,26 @@ return [
         'finish' => 'Selesai',
     ],
 
-    'company_label' => 'Perusahaan (Gudang Kecil)',
-    'warehouse_address_label' => 'Alamat Pengiriman (Gudang)',
+    'boq.label' => 'RAB',
+    'notes.label' => 'Catatan',
+    'info.label' => 'Informasi Revisi',
+    'info.placeholder' => 'Ubah quantity Item A / Ubah Item B menjadi Item C',
 
-    'revision_history_label' => 'Riwayat Revisi',
+    'revision_history.label' => 'Riwayat Revisi',
 
-
-    'main_info_section_label' => 'Informasi Pengajuan Pembelian',
-    'main_info_section_description' => 'Informasi utama dari pengajuan pembelian.',
-
-    'warehouse_project_fieldset_label' => 'Gudang Proyek',
-    'info_fieldset_label' => 'Informasi Pengajuan Pembelian',
-
-    'other_info_section_label' => 'Informasi Lainnya',
-    'other_info_section_description' => 'Informasi tambahan dari pengajuan pembelian.',
+    'purchase_request_items.label' => 'Item Pengajuan Pembelian',
+    'purchase_request_items_count.label' => 'Jumlah Item',
 
 
-    'items_section_label' => 'Item Pengajuan Pembelian',
-    'items_section_description' => 'Item yang dipesan pada pengajuan pembelian ini.',
-    'items_count' => 'Jumlah Item',
+    'section.main_info.label' => 'Informasi Pengajuan Pembelian',
+    'section.main_info.description' => 'Informasi utama dari pengajuan pembelian.',
 
-    'items_label' => 'Item Pengajuan Pembelian',
+    'section.other_info.label' => 'Informasi Lainnya',
+    'section.other_info.description' => 'Informasi tambahan dari pengajuan pembelian.',
 
-    'item_code_label' => 'Kode Item',
-    'item_name_label' => 'Nama Item',
-    'item_unit_label' => 'Satuan Item',
+    'section.purchase_request_items.label' => 'Item Pengajuan Pembelian',
+    'section.purchase_request_items.description' => 'Item yang dipesan pada pengajuan pembelian ini.',
+
+    'fieldset.warehouse_project.label' => 'Gudang Proyek',
+    'fieldset.info.label' => 'Informasi Pengajuan Pembelian',
 ];
