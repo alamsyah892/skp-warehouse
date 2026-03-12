@@ -21,6 +21,7 @@ class PurchaseRequestsTable
         return $table
             ->columns([
                 TextColumn::make('number')
+                    ->label(__('purchase-request.number.label'))
                     ->description(fn($record): string => $record->description)
                     ->searchable()
                     ->sortable()
@@ -34,19 +35,24 @@ class PurchaseRequestsTable
                 //     ->toggleable(isToggledHiddenByDefault: true)
                 // ,
                 TextColumn::make('warehouse.name')
+                    ->label(__('warehouse.model.label'))
                     ->wrap()
                 ,
                 TextColumn::make('company.alias')
+                    ->label(__('company.model.label'))
+                    ->wrapHeader()
                     ->wrap()
                 ,
                 TextColumn::make('division.name')
+                    ->label(__('division.model.label'))
                     ->wrap()
                 ,
                 TextColumn::make('project.name')
+                    ->label(__('project.model.label'))
                     ->wrap()
                 ,
                 TextColumn::make('warehouseAddress.address')
-                    ->label('Warehouse Address')
+                    ->label(__('purchase-request.warehouse_address.label'))
                     ->wrapHeader()
                     ->placeholder('-')
                     ->color('gray')
@@ -54,6 +60,7 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('created_at')
+                    ->label(__('common.created_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
@@ -64,7 +71,7 @@ class PurchaseRequestsTable
                     ->view('filament.user-profile')
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
                     ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
                     ->badge()
                     ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
@@ -80,7 +87,7 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('boq')
-                    ->label('BOQ')
+                    ->label(__('purchase-request.boq.label'))
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
@@ -88,7 +95,8 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('purchase_request_items_count')
-                    ->label("PR Items count")
+                    ->label(__('purchase-request.purchase_request_items_count.label'))
+                    ->wrapHeader()
                     ->sortable()
                     ->color('gray')
                     ->wrap()
@@ -96,6 +104,7 @@ class PurchaseRequestsTable
                 ,
 
                 TextColumn::make('updated_at')
+                    ->label(__('common.updated_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
@@ -104,6 +113,7 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('deleted_at')
+                    ->label(__('common.deleted_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
@@ -115,6 +125,7 @@ class PurchaseRequestsTable
             ])
             ->filters([
                 SelectFilter::make('warehouse')
+                    ->label(__('warehouse.model.label'))
                     ->relationship(
                         'warehouse',
                         'name',
@@ -131,6 +142,7 @@ class PurchaseRequestsTable
                 ,
 
                 SelectFilter::make('company')
+                    ->label(__('company.model.label'))
                     ->relationship(
                         'company',
                         'alias',
@@ -142,6 +154,7 @@ class PurchaseRequestsTable
                 ,
 
                 SelectFilter::make('division')
+                    ->label(__('division.model.label'))
                     ->relationship(
                         'division',
                         'name',
@@ -153,6 +166,7 @@ class PurchaseRequestsTable
                 ,
 
                 SelectFilter::make('project')
+                    ->label(__('project.model.label'))
                     ->relationship(
                         'project',
                         'name',
@@ -162,11 +176,6 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->preload()
                 ,
-
-                // SelectFilter::make(name: 'status')
-                //     ->options(PurchaseRequest::STATUS_LABELS)
-                //     ->native(false)
-                // ,
 
                 TrashedFilter::make()->native(false),
             ])
@@ -180,7 +189,6 @@ class PurchaseRequestsTable
             ->contentGrid([])
             ->paginated([5, 10, 25, 50, 100])
             ->defaultPaginationPageOption(10)
-
         ;
     }
 }

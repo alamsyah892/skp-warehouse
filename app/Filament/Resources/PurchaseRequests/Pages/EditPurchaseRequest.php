@@ -3,11 +3,12 @@
 namespace App\Filament\Resources\PurchaseRequests\Pages;
 
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Models\PurchaseRequest;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
-use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Icons\Heroicon;
 
 class EditPurchaseRequest extends EditRecord
 {
@@ -16,8 +17,10 @@ class EditPurchaseRequest extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
-            ViewAction::make(),
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->icon(Heroicon::Trash)
+                ->button()
+            ,
             ForceDeleteAction::make(),
             RestoreAction::make(),
         ];
@@ -27,7 +30,7 @@ class EditPurchaseRequest extends EditRecord
     {
         $record = $this->record;
 
-        if ($record->status !== 'draft') {
+        if ($record->status !== PurchaseRequest::STATUS_DRAFT) {
 
             $oldInfo = $record->info ?? '';
 

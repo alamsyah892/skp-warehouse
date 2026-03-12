@@ -30,6 +30,16 @@ class PurchaseRequestResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'number';
 
+    public static function getModelLabel(): string
+    {
+        return __('purchase-request.model.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('purchase-request.plural_model.label');
+    }
+
     public static function form(Schema $schema): Schema
     {
         return PurchaseRequestForm::configure($schema);

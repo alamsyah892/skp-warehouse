@@ -36,20 +36,21 @@ class PurchaseRequestForm
                                 '2xl' => 3,
                             ])
                             ->schema([
-                                Section::make('Purchase Request Information')
+                                Section::make('Form ' . __('purchase-request.section.main_info.label'))
                                     ->icon(Heroicon::ClipboardDocumentList)
                                     ->iconColor('primary')
-                                    ->description('Informasi utama dari Purchase Request.')
+                                    ->description(__('purchase-request.section.main_info.description'))
                                     ->collapsible()
                                     ->columnSpanFull()
                                     ->columns(2)
                                     ->compact()
                                     ->schema([
-                                        Fieldset::make('Warehouse & Project')
+                                        Fieldset::make(__('purchase-request.fieldset.warehouse_project.label'))
                                             ->columns(1)
                                             ->contained(false)
                                             ->schema([
                                                 Select::make('warehouse_id')
+                                                    ->label(__('warehouse.model.label'))
                                                     ->relationship(
                                                         'warehouse',
                                                         'name',
@@ -72,12 +73,13 @@ class PurchaseRequestForm
                                                     ->dehydrated()
                                                 ,
                                                 Select::make('warehouse_address_id')
-                                                    ->label('Warehouse Address')
+                                                    ->label(__('purchase-request.warehouse_address.label'))
                                                     ->relationship(
                                                         'warehouseAddress',
                                                         'address',
                                                         fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
                                                     )
+                                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
                                                     ->searchable()
                                                     ->preload()
                                                     ->default(null)
@@ -87,6 +89,7 @@ class PurchaseRequestForm
                                                     )
                                                 ,
                                                 Select::make('company_id')
+                                                    ->label(__('purchase-request.company.label'))
                                                     ->relationship(
                                                         'company',
                                                         'alias',
@@ -98,12 +101,12 @@ class PurchaseRequestForm
                                                     ->afterStateUpdated(fn($set) => $set('project_id', null))
                                                     ->required()
                                                     ->disabled(
-                                                        fn($get, string $operation) =>
-                                                        $operation === 'edit' || blank($get('warehouse_id'))
+                                                        fn($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id'))
                                                     )
                                                     ->dehydrated()
                                                 ,
                                                 Select::make('division_id')
+                                                    ->label(__('division.model.label'))
                                                     ->relationship(
                                                         'division',
                                                         'name',
@@ -137,6 +140,7 @@ class PurchaseRequestForm
                                                     ->dehydrated()
                                                 ,
                                                 Select::make('project_id')
+                                                    ->label(__('project.model.label'))
                                                     ->relationship(
                                                         'project',
                                                         'name',
@@ -175,9 +179,7 @@ class PurchaseRequestForm
                                                         }
                                                     )
                                                     ->searchable(['name', 'code'])
-                                                    ->getOptionLabelFromRecordUsing(
-                                                        fn($record) => "{$record->code} | {$record->name}"
-                                                    )
+                                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
                                                     ->preload()
                                                     ->required()
                                                     ->disabled(
@@ -189,21 +191,24 @@ class PurchaseRequestForm
                                             ])
                                         ,
 
-                                        Fieldset::make('Request Info')
+                                        Fieldset::make(__('purchase-request.fieldset.info.label'))
                                             ->columns(1)
                                             ->contained(false)
                                             ->schema([
                                                 TextInput::make('number')
+                                                    ->label(__('purchase-request.number.label'))
                                                     ->required()
                                                     ->readOnly()
                                                     ->visibleOn('edit')
                                                     ->dehydrated(false)
                                                 ,
                                                 Textarea::make('description')
-                                                    ->columnSpanFull(),
+                                                    ->label(__('common.description.label'))
+                                                    ->columnSpanFull()
+                                                ,
 
                                                 Select::make('status')
-                                                    ->options(PurchaseRequest::STATUS_LABELS)
+                                                    ->options(PurchaseRequest::getStatusLabels())
                                                     ->native(false)
                                                     ->required()
                                                     ->visibleOn('edit')
@@ -214,37 +219,54 @@ class PurchaseRequestForm
                                     ->columnOrder(1)
                                 ,
 
-                                Repeater::make('purchaseRequestItems')
-                                    // ->hiddenLabel()
-                                    ->relationship()
+                                Section::make('Form ' . __('purchase-request.section.purchase_request_items.label'))
+                                    ->icon(Heroicon::OutlinedCube)
+                                    ->iconColor('primary')
+                                    ->description(__('purchase-request.section.purchase_request_items.description'))
+                                    ->collapsible()
                                     ->columnSpanFull()
-                                    ->columns(3)
+                                    ->columns(2)
+                                    ->compact()
                                     ->schema([
-                                        Select::make('item')
-                                            ->relationship('item', 'name')
-                                            ->required()
-                                            ->searchable()
-                                            ->preload()
-                                            ->columnSpan(2),
-                                        TextInput::make('qty')
-                                            ->required()
-                                            ->numeric()
-                                        // ->helperText('Example: 123')
-                                        // ->columnSpan(2)
-                                        ,
-                                        Textarea::make('description')
-                                            // ->required()
+                                        Repeater::make('purchaseRequestItems')
+                                            ->label(__('purchase-request.purchase_request_items.label'))
+                                            ->hiddenLabel()
+                                            ->relationship()
                                             ->columnSpanFull()
-                                        // ->helperText('Example: Untuk perbaikan')
+                                            ->columns(3)
+                                            ->schema([
+                                                Select::make('item')
+                                                    ->label(
+                                                        __('item.related.code.label') .
+                                                        ' | ' .
+                                                        __('item.related.name.label')
+                                                    )
+                                                    ->relationship('item', 'name')
+                                                    ->required()
+                                                    ->searchable()
+                                                    ->preload()
+                                                    ->columnSpan(2)
+                                                ,
+                                                TextInput::make('qty')
+                                                    ->required()
+                                                    ->numeric()
+                                                // ->helperText('Example: 123')
+                                                // ->columnSpan(2)
+                                                ,
+                                                Textarea::make('description')
+                                                    ->label(__('common.description.label'))
+                                                    ->columnSpanFull()
+                                                // ->helperText('Example: Untuk perbaikan')
+                                                ,
+                                            ])
+                                            ->collapsible()
+                                            // ->live()
+                                            ->deleteAction(
+                                                fn(Action $action) => $action->requiresConfirmation(),
+                                            )
+                                            ->minItems(1)
                                         ,
                                     ])
-                                    // ->collapsed()
-                                    // ->live()
-                                    ->deleteAction(
-                                        fn(Action $action) => $action->requiresConfirmation(),
-                                    )
-                                    ->addActionLabel('Add new item')
-                                    ->minItems(1)
                                     ->columnOrder(3)
                                 ,
 
@@ -257,30 +279,34 @@ class PurchaseRequestForm
                                 '2xl' => 1,
                             ])
                             ->schema([
-                                Section::make('Other Information')
+                                Section::make('Form ' . __('purchase-request.section.other_info.label'))
                                     ->icon(Heroicon::InformationCircle)
                                     ->iconColor('primary')
-                                    ->description('Informasi lain terkait Purchase Request.')
+                                    ->description(__('purchase-request.section.other_info.description'))
                                     ->collapsible()
                                     ->columnSpanFull()
                                     ->columns(1)
                                     ->compact()
                                     ->schema([
                                         TextInput::make('memo'),
-                                        TextInput::make('boq'),
+                                        TextInput::make('boq')
+                                            ->label(__('purchase-request.boq.label'))
+                                        ,
                                         Textarea::make('notes')
-                                            ->columnSpanFull(),
+                                            ->label(__('purchase-request.notes.label'))
+                                            ->columnSpanFull()
+                                        ,
 
                                         Textarea::make('info')
-                                            ->label('Revision Info')
-                                            ->placeholder("Ubah quantity Item A / Ubah Item B menjadi Item C")
+                                            ->label(__('purchase-request.info.label'))
+                                            ->placeholder(__('purchase-request.info.placeholder'))
                                             ->visibleOn('edit')
                                             ->required()
                                             ->afterStateHydrated(fn($component) => $component->state(null))
                                             ->columnSpanFull()
                                         ,
                                         TextEntry::make('info')
-                                            ->label('Revision History')
+                                            ->label(__('purchase-request.revision_history.label'))
                                             ->placeholder('-')
                                             ->visibleOn('edit')
                                             ->columnSpanFull()
@@ -300,20 +326,7 @@ class PurchaseRequestForm
                         ,
                     ])
                 ,
-                // Section::make()
-                //     ->columns([
-                //         'sm' => 3,
-                //         'xl' => 6,
-                //         '2xl' => 8,
-                //     ])
-                //     ->schema([
-
-
-                //     ])
-                // ,
-
-
-
-            ]);
+            ])
+        ;
     }
 }

@@ -3,12 +3,13 @@
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Filament\Components\Infolists\ActivityLogTab;
+// use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
+// use Filament\Actions\EditAction;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Callout;
-use Filament\Schemas\Components\EmptyState;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
@@ -64,13 +65,12 @@ class PurchaseRequestInfolist
 
     protected static function dataSection(): Section
     {
-        return Section::make('Purchase Request Information')
+        return Section::make(__('purchase-request.section.main_info.label'))
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
-            ->description('Informasi utama dari Purchase Request.')
+            ->description(__('purchase-request.section.main_info.description'))
             // ->afterHeader([
-            //     Action::make('edit')
-            //         ->label('Edit')
+            //     EditAction::make()
             //         ->icon(Heroicon::PencilSquare)
             //         ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record]))
             //     ,
@@ -94,40 +94,43 @@ class PurchaseRequestInfolist
                         ,
 
                         TextEntry::make('warehouse.name')
-                            ->label('Warehouse')
                             ->hiddenLabel()
                             ->icon(Heroicon::HomeModern)
                             ->iconColor('primary')
                         ,
                         TextEntry::make('company.alias')
-                            ->label('Company')
                             ->hiddenLabel()
                             ->icon(Heroicon::BuildingOffice2)
                             ->iconColor('primary')
                         ,
                         TextEntry::make('division.name')
-                            ->label('Division')
                             ->hiddenLabel()
                             ->icon(Heroicon::Briefcase)
                             ->iconColor('primary')
                         ,
                         TextEntry::make('project.name')
-                            ->label('Project')
                             ->hiddenLabel()
                             ->icon(Heroicon::Square3Stack3d)
                             ->iconColor('primary')
                         ,
 
                         TextEntry::make('warehouseAddress.address')
-                            ->label('Warehouse Address')
+                            ->label(__('purchase-request.warehouse_address.label'))
                             ->columnSpanFull()
                             ->color('gray')
                             ->icon(Heroicon::MapPin)
                             ->iconColor('primary')
                             ->placeholder('-')
+                            ->formatStateUsing(
+                                fn($state, $record) =>
+                                collect([$state, $record->warehouseAddress?->city])
+                                    ->filter()
+                                    ->join(' - ') ?: '-'
+                            )
                         ,
 
                         TextEntry::make('description')
+                            ->label(__('common.description.label'))
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
@@ -145,32 +148,11 @@ class PurchaseRequestInfolist
                         ,
 
                         TextEntry::make('user')
-                            ->label('Requested By')
                             ->view('filament.user-profile')
                         ,
 
-                        // ImageEntry::make('user.avatar_url')
-                        //     ->label('User')
-                        //     ->imageSize(40)
-                        //     ->circular()
-                        //     ->disk('public')
-                        //     ->defaultImageUrl(
-                        //         function ($record) {
-                        //             $name = urlencode($record->user->name);
-                        //             return url("https://ui-avatars.com/api/?name={$name}&background=random&color=fff");
-                        //         }
-                        //     )
-                        //     ->extraImgAttributes([
-                        //         'alt' => 'Image',
-                        //         'loading' => 'lazy',
-                        //     ])
-                        // ,
-                        // TextEntry::make('user.name')
-                        //     ->hiddenLabel()
-                        // ,
-
                         TextEntry::make('status')
-                            ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                            ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
                             ->icon(fn($state): mixed => PurchaseRequest::STATUS_ICONS[$state])
                             ->badge()
                             ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
@@ -186,69 +168,67 @@ class PurchaseRequestInfolist
         return Tabs::make()
             ->columnSpanFull()
             ->tabs([
-                Tab::make('Purchase Request Items')
+                Tab::make(__('purchase-request.section.purchase_request_items.label'))
                     ->icon(Heroicon::OutlinedCube)
                     ->badge(fn($record) => $record->purchase_request_items_count ?: null)
+                    ->badgeTooltip(__('purchase-request.purchase_request_items_count.label'))
                     ->schema([
                         Callout::make()
-                            ->description('Item yang dipesan untuk Purchase Request ini.')
+                            ->description(__('purchase-request.section.purchase_request_items.description'))
                             ->info()
                             ->color(null)
                         ,
 
                         RepeatableEntry::make('purchaseRequestItems')
-                            ->label('Purchase Request Items')
                             ->hiddenLabel()
                             ->table([
-                                TableColumn::make('Item Code'),
-                                TableColumn::make('Item Name'),
-                                TableColumn::make('Item Unit'),
+                                TableColumn::make(__('item.related.code.label')),
+                                TableColumn::make(__('item.related.name.label')),
+                                TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make('Qty'),
-                                TableColumn::make('Description'),
+                                TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
                                 TextEntry::make('item.code')
+                                    ->label(__('item.related.code.label'))
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
                                     ->icon(Heroicon::Hashtag)
                                     ->badge()
                                 ,
                                 TextEntry::make('item.name')
+                                    ->label(__('item.related.name.label'))
                                     ->wrap()
                                 ,
-                                TextEntry::make('item.unit'),
+                                TextEntry::make('item.unit')
+                                    ->label(__('item.related.unit.label'))
+                                ,
                                 TextEntry::make('qty')
                                     ->numeric()
                                     ->alignment(Alignment::Center)
                                 ,
                                 TextEntry::make('description')
+                                    ->label(__('common.description.label'))
                                     ->color('gray')
                                     ->placeholder('-')
                                     ->wrap()
                                 ,
                             ])
-                            ->visible(fn($record) => $record->purchase_request_items_count > 0)
-                        ,
-                        EmptyState::make('No Purchase Request Item yet')
-                            ->description('No Purchase Request Item has been recorded yet.')
-                            ->icon(Heroicon::OutlinedCube)
-                            ->visible(fn($record) => $record->purchase_request_items_count == 0)
-                            ->contained(false)
                         ,
                     ])
                 ,
 
-                ActivityLogTab::make('Activity Logs'),
+                ActivityLogTab::make(__('common.log_activity.label')),
             ])
         ;
     }
 
     protected static function otherInfoSection(): Section
     {
-        return Section::make('Other Information')
+        return Section::make(__('purchase-request.section.other_info.label'))
             ->icon(Heroicon::InformationCircle)
             ->iconColor('primary')
-            ->description('Informasi lain terkait Purchase Request.')
+            ->description(__('purchase-request.section.other_info.description'))
             ->collapsible()
             ->columnSpanFull()
             ->columns(2)
@@ -262,17 +242,18 @@ class PurchaseRequestInfolist
                     ->placeholder('-')
                 ,
                 TextEntry::make('boq')
-                    ->label('BOQ')
+                    ->label(__('purchase-request.boq.label'))
                     ->color('gray')
                     ->placeholder('-')
                 ,
                 TextEntry::make('notes')
+                    ->label(__('purchase-request.notes.label'))
                     ->columnSpanFull()
                     ->placeholder('-')
                     ->color('gray')
                 ,
                 TextEntry::make('info')
-                    ->label('Revision Info')
+                    ->label(__('purchase-request.info.label'))
                     ->columnSpanFull()
                     ->placeholder('-')
                     ->formatStateUsing(
@@ -286,14 +267,17 @@ class PurchaseRequestInfolist
                 ,
 
                 TextEntry::make('created_at')->date()
+                    ->label(__('common.created_at.label'))
                     ->color('gray')
                     ->size(TextSize::Small)
                 ,
                 TextEntry::make('updated_at')->date()
+                    ->label(__('common.updated_at.label'))
                     ->color('gray')
                     ->size(TextSize::Small)
                 ,
                 TextEntry::make('deleted_at')->date()
+                    ->label(__('common.deleted_at.label'))
                     ->color('gray')
                     ->size(TextSize::Small)
                     ->visible(fn($state) => $state != null)
@@ -305,21 +289,5 @@ class PurchaseRequestInfolist
     protected static function relatedDataSection(): Section|string
     {
         return '';
-        return Section::make('Related Data')
-            ->icon(Heroicon::Link)
-            ->iconColor('primary')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-                Callout::make()
-                    ->description('Daftar entitas yang terhubung dengan Purchase Request ini.')
-                    ->info()
-                    ->color(null)
-                    ->columnSpanFull()
-                ,
-            ])
-        ;
     }
 }

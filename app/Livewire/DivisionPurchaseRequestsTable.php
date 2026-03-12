@@ -74,7 +74,7 @@ class DivisionPurchaseRequestsTable extends TableWidget
                     ->view('filament.user-profile')
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::STATUS_LABELS[$state])
+                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
                     ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
                     ->badge()
                     ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
