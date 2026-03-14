@@ -12,6 +12,7 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
+use Zvizvi\UserFields\Components\UserSelect;
 
 class RoleForm
 {
@@ -36,7 +37,7 @@ class RoleForm
                                 ,
                             ]),
                             Section::make('Related Data')->schema([
-                                Select::make('users')
+                                UserSelect::make('users')
                                     ->relationship('users', 'name', function ($query) {
                                         $query->orderBy('name', 'asc');
                                         // If the user is not an owner, hide the role "Project Owner"
