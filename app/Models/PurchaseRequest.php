@@ -19,6 +19,8 @@ class PurchaseRequest extends Model
     use SoftDeletes;
     use LogsAllFillable, DefaultEmptyString;
 
+    public const MODEL_ALIAS = 'BPPB';
+
     public const TYPE_PURCHASE = 1;
     public const TYPE_LOAN = 2;
 
@@ -114,6 +116,7 @@ class PurchaseRequest extends Model
             $record->user_id = auth()->id();
             $record->type = self::TYPE_PURCHASE;
 
+            $modelAlias = self::MODEL_ALIAS;
 
             $year = now()->format('y');
             $month = now()->format('m');
@@ -123,7 +126,7 @@ class PurchaseRequest extends Model
             $division = $record->division->code;
             $project = $record->project->code;
 
-            $prefix = "BPPB/{$year}/{$month}/{$warehouse}{$company}{$division}{$project}";
+            $prefix = "{$modelAlias}/{$year}/{$month}/{$warehouse}{$company}{$division}{$project}";
 
             $lastNumber = static::where('number', 'like', "{$prefix}/%")
                 ->count() + 1;
