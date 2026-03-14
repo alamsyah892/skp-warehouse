@@ -13,6 +13,7 @@ use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Zvizvi\UserFields\Components\UserColumn;
 
 class PurchaseRequestsTable
 {
@@ -66,9 +67,13 @@ class PurchaseRequestsTable
                     ->sortable()
                     ->wrap()
                 ,
-                ViewColumn::make('user_profile')
+                // ViewColumn::make('user_profile')
+                //     ->label('User')
+                //     ->view('filament.user-profile')
+                // ,
+                UserColumn::make('user')
                     ->label('User')
-                    ->view('filament.user-profile')
+                    ->wrap()
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])

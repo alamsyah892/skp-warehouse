@@ -2,9 +2,7 @@
 
 namespace App\Providers\Filament;
 
-// use Andreia\FilamentNordTheme\FilamentNordThemePlugin;
 use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
-// use Caresome\FilamentNeobrutalism\NeobrutalismeTheme;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -129,14 +127,6 @@ class AdminPanelProvider extends PanelProvider
                     ->iconRenderHook(PanelsRenderHook::USER_MENU_BEFORE)
                     ->withModeSwitcher()
                 ,
-                // NeobrutalismeTheme::make()
-                //     ->customize([
-                //         'border-width' => '2px',
-                //         'shadow-offset-md' => '3px',
-                //         'radius-md' => '0.5rem',
-                //     ])
-                // ,
-                // FilamentNordThemePlugin::make(),
 
                 EnvironmentIndicatorPlugin::make()
                     ->visible(fn() => auth()->user()?->hasRole('Project Owner'))

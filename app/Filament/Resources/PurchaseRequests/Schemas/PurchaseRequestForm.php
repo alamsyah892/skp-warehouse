@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Models\Item;
 use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -235,19 +236,25 @@ class PurchaseRequestForm
                                             ->columnSpanFull()
                                             ->columns(3)
                                             ->schema([
-                                                Select::make('item')
+                                                Select::make('item_id')
                                                     ->label(
                                                         __('item.related.code.label') .
                                                         ' | ' .
                                                         __('item.related.name.label')
                                                     )
                                                     ->relationship('item', 'name')
+                                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
                                                     ->required()
-                                                    ->searchable()
-                                                    ->preload()
+                                                    ->searchable(['code', 'name'])
                                                     ->columnSpan(2)
                                                 ,
                                                 TextInput::make('qty')
+                                                    ->suffix(function ($get) {
+                                                        $item = Item::find($get('item_id'));
+
+                                                        return $item?->unit ?? '';
+                                                    })
                                                     ->required()
                                                     ->numeric()
                                                 // ->helperText('Example: 123')
@@ -269,7 +276,6 @@ class PurchaseRequestForm
                                     ])
                                     ->columnOrder(3)
                                 ,
-
                             ])
                         ,
 
@@ -315,6 +321,7 @@ class PurchaseRequestForm
                                                 collect(explode("\n", $state))
                                                     ->map(fn($line) => "• " . e($line))
                                                     ->implode('<br>')
+
                                             )
                                             ->html()
                                             ->color('gray')

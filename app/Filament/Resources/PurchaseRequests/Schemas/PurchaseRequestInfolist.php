@@ -20,6 +20,7 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
+use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseRequestInfolist
 {
@@ -147,8 +148,12 @@ class PurchaseRequestInfolist
                             ->iconColor('primary')
                         ,
 
-                        TextEntry::make('user')
-                            ->view('filament.user-profile')
+                        // TextEntry::make('user')
+                        //     ->view('filament.user-profile')
+                        // ,
+
+                        UserEntry::make('user')
+                            ->wrapped()
                         ,
 
                         TextEntry::make('status')
