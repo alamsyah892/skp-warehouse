@@ -21,6 +21,7 @@ class PurchaseRequestItem extends Model
 
         'qty',
         'description',
+        'sort',
     ];
 
     protected array $defaultEmptyStringFields = [

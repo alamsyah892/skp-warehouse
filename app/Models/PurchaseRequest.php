@@ -189,6 +189,6 @@ class PurchaseRequest extends Model
 
     public function purchaseRequestItems(): HasMany
     {
-        return $this->hasMany(PurchaseRequestItem::class);
+        return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
     }
 }
