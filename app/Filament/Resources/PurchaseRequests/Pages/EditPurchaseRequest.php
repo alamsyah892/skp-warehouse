@@ -34,8 +34,16 @@ class EditPurchaseRequest extends EditRecord
 
             $oldInfo = $record->info ?? '';
 
-            preg_match_all('/Rev\.(\d+)/', $oldInfo, $matches);
-            $lastRev = !empty($matches[1]) ? max($matches[1]) : 0;
+            // ambil rev dari info
+            preg_match_all('/Rev\.(\d+)/', $oldInfo, $infoMatches);
+            $lastInfoRev = !empty($infoMatches[1]) ? max($infoMatches[1]) : 0;
+
+            // ambil rev dari number
+            preg_match('/Rev\.(\d+)/', $record->number ?? '', $numberMatch);
+            $lastNumberRev = $numberMatch[1] ?? 0;
+
+            // ambil yang terbesar
+            $lastRev = max($lastInfoRev, $lastNumberRev);
 
             $newRev = $lastRev + 1;
             $revNumber = str_pad($newRev, 2, '0', STR_PAD_LEFT);

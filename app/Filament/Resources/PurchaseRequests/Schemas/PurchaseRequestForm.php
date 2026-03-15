@@ -336,7 +336,23 @@ class PurchaseRequestForm
                                                 fn($record, $operation) =>
                                                 $operation === 'edit' && !$record?->isDraft()
                                             )
-                                            ->required()
+                                            ->required(function ($get, $record) {
+
+                                                $watchedFields = [
+                                                    'description',
+                                                    // 'qty',
+                                                    // 'price',
+                                                    // 'supplier_id',
+                                                ];
+
+                                                foreach ($watchedFields as $field) {
+                                                    if ($get($field) !== $record->{$field}) {
+                                                        return true;
+                                                    }
+                                                }
+
+                                                return false;
+                                            })
                                             ->afterStateHydrated(fn($component) => $component->state(null))
                                             ->columnSpanFull()
                                         ,

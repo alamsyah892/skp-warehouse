@@ -73,7 +73,7 @@ class PurchaseRequestsTable
                     ->wrapped()
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
+                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
                     ->icon(fn($state) => PurchaseRequest::getStatusIcon($state))
                     ->badge()
                     ->color(fn($state) => PurchaseRequest::getStatusColor($state))

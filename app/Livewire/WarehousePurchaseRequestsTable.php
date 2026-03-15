@@ -85,7 +85,7 @@ class WarehousePurchaseRequestsTable extends TableWidget
                     ->wrapped()
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
+                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
                     ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
                     ->badge()
                     ->color(fn($state) => PurchaseRequest::getStatusColor($state))

@@ -73,48 +73,11 @@ class PurchaseRequestInfolist
             ->iconColor('primary')
             ->description(__('purchase-request.section.main_info.description'))
             // ->afterHeader(
-            // EditAction::make()
-            //     ->icon(Heroicon::PencilSquare)
-            //     ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record]))
-            // ,
+            //     EditAction::make()
+            //         ->icon(Heroicon::PencilSquare)
+            //         ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record])),
             // )
-            ->footer(
-                function ($record) {
-                    // Tombol status mengikuti flow
-                    return collect($record->getNextStatuses())
-                        ->map(function ($status) use ($record) {
-
-                        return Action::make('changeStatus' . $status)
-                            ->label(PurchaseRequest::getStatusLabels()[$status])
-                            ->color(
-                                $status === PurchaseRequest::STATUS_CANCELED
-                                ? 'danger'
-                                : PurchaseRequest::getStatusColor($status)
-                            )
-                            ->icon(PurchaseRequest::getStatusIcon($status))
-                            ->requiresConfirmation()
-                            ->modalHeading(
-                                $status === PurchaseRequest::STATUS_CANCELED
-                                ? 'Batalkan pengajuan?'
-                                : 'Ubah status pengajuan?'
-                            )
-                            ->modalDescription('Perubahan status akan tercatat di sistem.')
-                            ->action(function () use ($status, $record) {
-                                $record->update([
-                                    'status' => $status,
-                                ]);
-
-                                Notification::make()
-                                    ->success()
-                                    ->title('Status berhasil diubah')
-                                    ->send();
-                            });
-                    })
-                        ->values()
-                        ->all()
-                    ; // return array action
-                }
-            )
+            ->footer(fn($record) => self::dataSectionFooter($record))
             ->collapsible()
             ->columnSpanFull()
             ->columns(3)
@@ -192,7 +155,7 @@ class PurchaseRequestInfolist
                         ,
 
                         TextEntry::make('status')
-                            ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
+                            ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
                             ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
                             ->badge()
                             ->color(fn($state) => PurchaseRequest::getStatusColor($state))
@@ -203,6 +166,41 @@ class PurchaseRequestInfolist
         ;
     }
 
+    protected static function dataSectionFooter($record): array
+    {
+        return collect($record->getNextStatuses())->map(function ($status) use ($record) {
+            return Action::make('changeStatus' . $status)
+                ->label(__(PurchaseRequest::getStatusActionLabel($status)))
+                ->color(PurchaseRequest::getStatusColor($status))
+                ->icon(PurchaseRequest::getStatusIcon($status))
+                ->requiresConfirmation()
+                ->modalHeading(
+                    __(PurchaseRequest::getStatusActionLabel($status)) .
+                    ' ' .
+                    __('purchase-request.model.label')
+                )
+                ->modalDescription(
+                    __(
+                        'purchase-request.action.note',
+                        ['status' => __(PurchaseRequest::getStatusActionLabel($status))]
+                    )
+                )
+                ->action(function () use ($status, $record) {
+                    $record->changeStatus($status);
+
+                    Notification::make()
+                        ->success()
+                        ->title(__('purchase-request.action.changed'))
+                        ->send()
+                    ;
+                })
+            ;
+        })
+            ->values()
+            ->all()
+        ; // return array action
+    }
+
     protected static function tabSection(): Tabs
     {
         return Tabs::make()
@@ -210,7 +208,7 @@ class PurchaseRequestInfolist
             ->tabs([
                 Tab::make(__('purchase-request.section.purchase_request_items.label'))
                     ->icon(Heroicon::OutlinedCube)
-                    ->badge(fn($record) => $record->purchase_request_items_count ?: null)
+                    ->badge(fn($record) => $record->purchaseRequestItems?->count() ?: null)
                     ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
                     ->schema([
                         Callout::make()

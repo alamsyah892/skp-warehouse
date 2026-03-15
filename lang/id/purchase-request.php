@@ -25,7 +25,7 @@ return [
         'all' => 'Semua',
         'draft' => 'Draft',
         'canceled' => 'Dibatalkan',
-        'waiting' => 'Diajukan',
+        'requested' => 'Diajukan',
         'approved' => 'Disetujui',
         'ordered' => 'Dipesan',
         'finished' => 'Selesai',
@@ -100,6 +100,19 @@ return [
         'info' => [
             'label' => 'Informasi Pengajuan Pembelian',
         ],
+    ],
+
+    'action' => [
+        'label' => [
+            'draft' => 'Draft',
+            'canceled' => 'Batalkan',
+            'requested' => 'Ajukan',
+            'approved' => 'Setujui',
+            'ordered' => 'Dipesan',
+            'finished' => 'Selesaikan',
+        ],
+        'note' => 'Ubah status pengajuan pembelian ini menjadi :status',
+        'changed' => 'Status berhasil diubah',
     ],
 
 ];

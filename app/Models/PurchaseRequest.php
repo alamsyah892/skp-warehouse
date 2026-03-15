@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class PurchaseRequest extends Model
 {
@@ -50,104 +51,79 @@ class PurchaseRequest extends Model
     ];
 
 
+    /* ================= MODEL ALIAS ================= */
     public const MODEL_ALIAS = 'BPPB';
 
-
-    /* ================= TYPE ================= */
-    public const TYPE_PURCHASE = 1;
-    public const TYPE_LOAN = 2;
-    public const TYPE_LABELS = [
-        self::TYPE_PURCHASE => 'Pengajuan Pembelian',
-        self::TYPE_LOAN => 'Pengajuan Peminjaman',
-    ];
-
+    /* ================= TYPE PURCHASE REQUEST ================= */
+    public const TYPE_PURCHASE_REQUEST = 1;
 
     /* ================= STATUS ================= */
-    // default status when creating new purchase request
     public const STATUS_DRAFT = 1;
-
-    // can be set from any status (except finished), and can be set back to waiting
     public const STATUS_CANCELED = 2;
-
-    // after submit, waiting for approval. can be set to canceled, or set to approved if approved
-    public const STATUS_WAITING = 3;
-
-    // after approved, waiting for order. can be set to canceled, or set to ordered if items are ordered
+    public const STATUS_REQUESTED = 3;
     public const STATUS_APPROVED = 4;
-
-    // after items are ordered, waiting for delivery. can be set to canceled, or set to finished if items are delivered
     public const STATUS_ORDERED = 5;
-
-    // all items have been delivered and the request is complete. can not be changed anymore
     public const STATUS_FINISHED = 6;
 
     public const STATUSES = [
-
         self::STATUS_DRAFT => [
             'label' => 'purchase-request.status.draft',
+            'action_label' => 'purchase-request.action.label.draft',
             'color' => 'gray',
             'icon' => Heroicon::OutlinedPencilSquare,
         ],
-
         self::STATUS_CANCELED => [
             'label' => 'purchase-request.status.canceled',
+            'action_label' => 'purchase-request.action.label.canceled',
             'color' => 'danger',
             'icon' => Heroicon::OutlinedXCircle,
         ],
-
-        self::STATUS_WAITING => [
-            'label' => 'purchase-request.status.waiting',
+        self::STATUS_REQUESTED => [
+            'label' => 'purchase-request.status.requested',
+            'action_label' => 'purchase-request.action.label.requested',
             'color' => 'warning',
             'icon' => Heroicon::OutlinedClock,
         ],
-
         self::STATUS_APPROVED => [
             'label' => 'purchase-request.status.approved',
+            'action_label' => 'purchase-request.action.label.approved',
             'color' => 'primary',
             'icon' => Heroicon::OutlinedInboxArrowDown,
         ],
-
         self::STATUS_ORDERED => [
             'label' => 'purchase-request.status.ordered',
+            'action_label' => 'purchase-request.action.label.ordered',
             'color' => 'info',
             'icon' => Heroicon::OutlinedShoppingCart,
         ],
-
         self::STATUS_FINISHED => [
             'label' => 'purchase-request.status.finished',
+            'action_label' => 'purchase-request.action.label.finished',
             'color' => 'success',
             'icon' => Heroicon::OutlinedCheckCircle,
         ],
-
     ];
 
     public const STATUS_FLOW = [
-
         self::STATUS_DRAFT => [
             self::STATUS_CANCELED,
-            self::STATUS_WAITING,
-        ],
-
+            self::STATUS_REQUESTED,
+        ], // default status when creating new purchase request, can be set to requested or canceled
         self::STATUS_CANCELED => [
-            self::STATUS_WAITING,
-        ],
-
-        self::STATUS_WAITING => [
+            self::STATUS_REQUESTED,
+        ], // can be set from any status (except finished), and can be set back to requested
+        self::STATUS_REQUESTED => [
             self::STATUS_CANCELED,
             self::STATUS_APPROVED,
-        ],
-
+        ], // requested for approval. can be set to canceled, or set to approved if approved
         self::STATUS_APPROVED => [
             self::STATUS_CANCELED,
-            self::STATUS_ORDERED,
-        ],
-
+        ], // after approved, can be set to canceled, or set to ordered if items are ordered
         self::STATUS_ORDERED => [
             self::STATUS_CANCELED,
             self::STATUS_FINISHED,
-        ],
-
-        self::STATUS_FINISHED => [],
+        ], // after items are ordered, requested for delivery. can be set to canceled, or set to finished if items are delivered
+        self::STATUS_FINISHED => [],// all items have been delivered and the request is complete. can not be changed anymore
     ];
 
 
@@ -158,7 +134,7 @@ class PurchaseRequest extends Model
                 return;
             }
 
-            $userWarehouseIds = auth()->user()->warehouses->pluck('id');
+            $userWarehouseIds = auth()->user()->warehouses()->pluck('warehouses.id');
             if ($userWarehouseIds->isNotEmpty()) {
                 $builder->whereHas('warehouse', function ($q) use ($userWarehouseIds) {
                     $q->whereIn('warehouses.id', $userWarehouseIds);
@@ -168,70 +144,24 @@ class PurchaseRequest extends Model
 
 
         static::creating(function ($record) {
-            $record->user_id = auth()->id();
-            $record->type = self::TYPE_PURCHASE;
-
+            $record->user_id ??= auth()->id();
+            $record->type = self::TYPE_PURCHASE_REQUEST;
             $record->number = self::generateNumber($record);
-
             $record->status = self::STATUS_DRAFT;
         });
 
 
         static::updating(function ($record) {
+            $dirty = $record->getDirty();
+
+            if (array_keys($dirty) === ['status']) {
+                return;
+            }
+
             if ($record->isDirty() && $record->status !== self::STATUS_DRAFT) {
-                $record->number = self::generateRevisionNumber($record->number);
+                $record->number = $record->incrementRevision();
             }
         });
-    }
-
-
-    /* ================= NUMBER GENERATORS ================= */
-    protected static function generateNumber(self $record): string
-    {
-        $year = now()->format('y');
-        $month = now()->format('m');
-
-        $prefix = sprintf(
-            '%s/%s/%s/%s%s%s%s',
-            self::MODEL_ALIAS,
-            $year,
-            $month,
-            $record->warehouse->code,
-            $record->company->code,
-            $record->division->code,
-            $record->project->code,
-        );
-
-        $last = static::where('number', 'like', "{$prefix}/%")
-            ->latest('id')
-            ->value('number');
-
-        $lastSequence = 0;
-
-        if ($last && preg_match('/\/(\d+)$/', $last, $match)) {
-            $lastSequence = (int) $match[1];
-        }
-
-        $sequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
-
-        return "{$prefix}/{$sequence}";
-    }
-
-    protected static function generateRevisionNumber(string $number): string
-    {
-        $rev = 0;
-
-        if (preg_match('/-Rev\.(\d+)$/', $number, $match)) {
-            $rev = (int) $match[1];
-        }
-
-        $rev++;
-
-        $revNumber = str_pad($rev, 2, '0', STR_PAD_LEFT);
-
-        $baseNumber = preg_replace('/-Rev\.\d+$/', '', $number);
-
-        return "{$baseNumber}-Rev.{$revNumber}";
     }
 
 
@@ -273,13 +203,27 @@ class PurchaseRequest extends Model
 
 
     /* ================= STATUS HELPERS ================= */
+    protected static ?array $statusLabels = null;
+
     public static function getStatusLabels(): array
     {
-        return collect(self::STATUSES)
-            ->mapWithKeys(fn($meta, $status) => [
-                $status => __($meta['label'])
-            ])
-            ->toArray();
+        if (static::$statusLabels === null) {
+            static::$statusLabels = collect(self::STATUSES)
+                ->mapWithKeys(fn($meta, $status) => [$status => __($meta['label'])])
+                ->toArray();
+        }
+
+        return static::$statusLabels;
+    }
+
+    public static function getStatusLabel(int $status): string
+    {
+        return __(self::STATUSES[$status]['label']);
+    }
+
+    public static function getStatusActionLabel(int $status): string
+    {
+        return __(self::STATUSES[$status]['action_label']);
     }
 
     public static function getStatusColor(int $status): string
@@ -291,11 +235,6 @@ class PurchaseRequest extends Model
     {
         return self::STATUSES[$status]['icon'];
     }
-
-    // public function getStatusLabelAttribute(): string
-    // {
-    //     return __(self::STATUSES[$this->status]['label'] ?? $this->status);
-    // }
 
     /* ================= STATUS WORKFLOW ================= */
     public function getNextStatuses(): array
@@ -321,7 +260,7 @@ class PurchaseRequest extends Model
 
     public function isWaiting(): bool
     {
-        return $this->status === self::STATUS_WAITING;
+        return $this->status === self::STATUS_REQUESTED;
     }
 
     public function isApproved(): bool
@@ -339,4 +278,69 @@ class PurchaseRequest extends Model
         return $this->status === self::STATUS_FINISHED;
     }
 
+    public function changeStatus(int $newStatus): void
+    {
+        if (!$this->canChangeStatusTo($newStatus)) {
+            throw new \Exception("Invalid status transition");
+        }
+
+        $this->update([
+            'status' => $newStatus,
+        ]);
+    }
+
+
+    /* ================= NUMBER GENERATORS ================= */
+    protected static function generateNumber(self $record): string
+    {
+        return DB::transaction(function () use ($record) {
+
+            $year = now()->format('y');
+            $month = now()->format('m');
+
+            $prefix = sprintf(
+                '%s/%s/%s/%s%s%s%s',
+                self::MODEL_ALIAS,
+                $year,
+                $month,
+                $record->warehouse->code,
+                $record->company->code,
+                $record->division->code,
+                $record->project->code,
+            );
+
+            $last = static::where('number', 'like', "{$prefix}/%")
+                ->lockForUpdate()
+                ->orderByDesc('number')
+                ->value('number');
+
+            $lastSequence = 0;
+
+            if ($last && preg_match('/\/(\d+)$/', $last, $match)) {
+                $lastSequence = (int) $match[1];
+            }
+
+            $sequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
+
+            return "{$prefix}/{$sequence}";
+        });
+    }
+
+    public function getCurrentRevision(): int
+    {
+        if (preg_match('/-Rev\.(\d+)$/', $this->number, $match)) {
+            return (int) $match[1];
+        }
+
+        return 0;
+    }
+
+    public function incrementRevision(): string
+    {
+        $rev = $this->getCurrentRevision() + 1;
+
+        $base = preg_replace('/-Rev\.\d+$/', '', $this->number);
+
+        return sprintf('%s-Rev.%02d', $base, $rev);
+    }
 }
