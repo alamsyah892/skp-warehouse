@@ -6,9 +6,11 @@ use App\Filament\Components\Infolists\ActivityLogTab;
 // use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
 // use Filament\Actions\EditAction;
+use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -70,12 +72,49 @@ class PurchaseRequestInfolist
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
             ->description(__('purchase-request.section.main_info.description'))
-            // ->afterHeader([
-            //     EditAction::make()
-            //         ->icon(Heroicon::PencilSquare)
-            //         ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record]))
-            //     ,
-            // ])
+            // ->afterHeader(
+            // EditAction::make()
+            //     ->icon(Heroicon::PencilSquare)
+            //     ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record]))
+            // ,
+            // )
+            ->footer(
+                function ($record) {
+                    // Tombol status mengikuti flow
+                    return collect($record->getNextStatuses())
+                        ->map(function ($status) use ($record) {
+
+                        return Action::make('changeStatus' . $status)
+                            ->label(PurchaseRequest::getStatusLabels()[$status])
+                            ->color(
+                                $status === PurchaseRequest::STATUS_CANCELED
+                                ? 'danger'
+                                : PurchaseRequest::getStatusColor($status)
+                            )
+                            ->icon(PurchaseRequest::getStatusIcon($status))
+                            ->requiresConfirmation()
+                            ->modalHeading(
+                                $status === PurchaseRequest::STATUS_CANCELED
+                                ? 'Batalkan pengajuan?'
+                                : 'Ubah status pengajuan?'
+                            )
+                            ->modalDescription('Perubahan status akan tercatat di sistem.')
+                            ->action(function () use ($status, $record) {
+                                $record->update([
+                                    'status' => $status,
+                                ]);
+
+                                Notification::make()
+                                    ->success()
+                                    ->title('Status berhasil diubah')
+                                    ->send();
+                            });
+                    })
+                        ->values()
+                        ->all()
+                    ; // return array action
+                }
+            )
             ->collapsible()
             ->columnSpanFull()
             ->columns(3)
@@ -148,19 +187,15 @@ class PurchaseRequestInfolist
                             ->iconColor('primary')
                         ,
 
-                        // TextEntry::make('user')
-                        //     ->view('filament.user-profile')
-                        // ,
-
                         UserEntry::make('user')
                             ->wrapped()
                         ,
 
                         TextEntry::make('status')
                             ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
-                            ->icon(fn($state): mixed => PurchaseRequest::STATUS_ICONS[$state])
+                            ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
                             ->badge()
-                            ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                            ->color(fn($state) => PurchaseRequest::getStatusColor($state))
                         ,
                     ])
                 ,
@@ -176,7 +211,7 @@ class PurchaseRequestInfolist
                 Tab::make(__('purchase-request.section.purchase_request_items.label'))
                     ->icon(Heroicon::OutlinedCube)
                     ->badge(fn($record) => $record->purchase_request_items_count ?: null)
-                    ->badgeTooltip(__('purchase-request.purchase_request_items_count.label'))
+                    ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
                     ->schema([
                         Callout::make()
                             ->description(__('purchase-request.section.purchase_request_items.description'))
@@ -187,6 +222,7 @@ class PurchaseRequestInfolist
                         RepeatableEntry::make('purchaseRequestItems')
                             ->hiddenLabel()
                             ->table([
+                                TableColumn::make('#'),
                                 TableColumn::make(__('item.related.code.label')),
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
@@ -194,6 +230,8 @@ class PurchaseRequestInfolist
                                 TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
+                                TextEntry::make('sort')->label('#'),
+
                                 TextEntry::make('item.code')
                                     ->label(__('item.related.code.label'))
                                     ->fontFamily(FontFamily::Mono)

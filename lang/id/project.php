@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'model.label' => 'Proyek',
-    'plural_model.label' => 'Proyek',
+    'model.plural_label' => 'Proyek',
 
 
     'section.main_info.label' => 'Informasi Proyek',

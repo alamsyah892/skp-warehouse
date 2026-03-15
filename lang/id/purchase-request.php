@@ -3,45 +3,103 @@
 declare(strict_types=1);
 
 return [
-    'model.label' => 'Pengajuan Pembelian',
-    'plural_model.label' => 'Pengajuan Pembelian',
 
+    'model' => [
+        'label' => 'Pengajuan Pembelian',
+        'plural_label' => 'Pengajuan Pembelian',
+    ],
 
-    'warehouse_address.label' => 'Alamat Pengiriman (Gudang)',
-    'company.label' => 'Perusahaan (Gudang Kecil)',
+    'warehouse_address' => [
+        'label' => 'Alamat Pengiriman (Gudang)',
+    ],
 
-    'number.label' => 'Nomor',
+    'company' => [
+        'label' => 'Perusahaan (Gudang Kecil)',
+    ],
+
+    'number' => [
+        'label' => 'Nomor',
+    ],
 
     'status' => [
         'all' => 'Semua',
         'draft' => 'Draft',
         'canceled' => 'Dibatalkan',
-        'waiting' => 'Menunggu',
-        'received' => 'Diterima',
+        'waiting' => 'Diajukan',
+        'approved' => 'Disetujui',
         'ordered' => 'Dipesan',
-        'finish' => 'Selesai',
+        'finished' => 'Selesai',
     ],
 
-    'boq.label' => 'RAB',
-    'notes.label' => 'Catatan',
-    'info.label' => 'Informasi Revisi',
-    'info.placeholder' => 'Ubah quantity Item A / Ubah Item B menjadi Item C',
+    'description' => [
+        'placeholder' => 'Tuliskan deskripsi permintaan pembelian',
+        'helper' => 'Contoh: Pembelian material untuk pekerjaan pondasi proyek A',
+    ],
 
-    'revision_history.label' => 'Riwayat Revisi',
+    'memo' => [
+        'placeholder' => 'Memo internal',
+        'helper' => 'Contoh: Pembelian urgent untuk kebutuhan lapangan, Nomor Memo: MEMO-001',
+    ],
 
-    'purchase_request_items.label' => 'Item Pengajuan Pembelian',
-    'purchase_request_items_count.label' => 'Jumlah Item',
+    'boq' => [
+        'label' => 'RAB',
+        'placeholder' => 'Tuliskan nomor RAB terkait',
+        'helper' => 'Contoh: RAB-PRJ-001',
+    ],
 
+    'notes' => [
+        'label' => 'Catatan',
+        'placeholder' => 'Catatan tambahan',
+        'helper' => 'Contoh: Barang harus dikirim sebelum tanggal 25',
+    ],
 
-    'section.main_info.label' => 'Informasi Pengajuan Pembelian',
-    'section.main_info.description' => 'Informasi utama dari pengajuan pembelian.',
+    'info' => [
+        'label' => 'Informasi Revisi',
+        'placeholder' => 'Tuliskan alasan revisi',
+        'helper' => 'Contoh: Revisi jumlah barang karena kebutuhan proyek bertambah',
+    ],
 
-    'section.other_info.label' => 'Informasi Lainnya',
-    'section.other_info.description' => 'Informasi tambahan dari pengajuan pembelian.',
+    'revision_history' => [
+        'label' => 'Riwayat Revisi',
+    ],
 
-    'section.purchase_request_items.label' => 'Item Pengajuan Pembelian',
-    'section.purchase_request_items.description' => 'Item yang dipesan pada pengajuan pembelian ini.',
+    'purchase_request_items' => [
+        'label' => 'Item Pengajuan Pembelian',
+        'count_label' => 'Jumlah Item',
+    ],
 
-    'fieldset.warehouse_project.label' => 'Gudang Proyek',
-    'fieldset.info.label' => 'Informasi Pengajuan Pembelian',
+    'purchase_request_item' => [
+        'description' => [
+            'placeholder' => 'Deskripsi item yang dipesan',
+            'helper' => 'Contoh: merk, spesifikasi, dll',
+        ],
+    ],
+
+    'section' => [
+        'main_info' => [
+            'label' => 'Informasi Pengajuan Pembelian',
+            'description' => 'Informasi utama dari pengajuan pembelian.',
+        ],
+
+        'other_info' => [
+            'label' => 'Informasi Lainnya',
+            'description' => 'Informasi tambahan dari pengajuan pembelian.',
+        ],
+
+        'purchase_request_items' => [
+            'label' => 'Item Pengajuan Pembelian',
+            'description' => 'Item yang dipesan pada pengajuan pembelian ini.',
+        ],
+    ],
+
+    'fieldset' => [
+        'warehouse_project' => [
+            'label' => 'Gudang Proyek',
+        ],
+
+        'info' => [
+            'label' => 'Informasi Pengajuan Pembelian',
+        ],
+    ],
+
 ];

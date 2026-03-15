@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'model.label' => 'Divisi',
-    'plural_model.label' => 'Divisi',
+    'model.plural_label' => 'Divisi',
 
 
     'section.main_info.label' => 'Informasi Divisi',

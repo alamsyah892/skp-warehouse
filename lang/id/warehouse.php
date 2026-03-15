@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'model.label' => 'Gudang',
-    'plural_model.label' => 'Gudang',
+    'model.plural_label' => 'Gudang',
 
 
     'section.main_info.label' => 'Informasi Gudang',

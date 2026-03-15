@@ -36,33 +36,33 @@ class ListPurchaseRequests extends ListRecords
             ,
             PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_DRAFT] => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_DRAFT))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_DRAFT])
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_DRAFT))
                 ->badge($getStatusBadge(PurchaseRequest::STATUS_DRAFT))
             ,
             PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_CANCELED] => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_CANCELED))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_CANCELED])
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_CANCELED))
             // ->badge($getStatusBadge(PurchaseRequest::STATUS_CANCELED))
             ,
             PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_WAITING] => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_WAITING))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_WAITING])
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_WAITING))
                 ->badge($getStatusBadge(PurchaseRequest::STATUS_WAITING))
             ,
-            PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_RECEIVED] => Tab::make()
-                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_RECEIVED))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_RECEIVED])
-                ->badge($getStatusBadge(PurchaseRequest::STATUS_RECEIVED))
+            PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_APPROVED] => Tab::make()
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_APPROVED))
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_APPROVED))
+                ->badge($getStatusBadge(PurchaseRequest::STATUS_APPROVED))
             ,
             PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_ORDERED] => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_ORDERED))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_ORDERED])
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_ORDERED))
                 ->badge($getStatusBadge(PurchaseRequest::STATUS_ORDERED))
             ,
-            PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_FINISH] => Tab::make()
-                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_FINISH))
-                ->icon(PurchaseRequest::STATUS_ICONS[PurchaseRequest::STATUS_FINISH])
-            // ->badge($getStatusBadge(PurchaseRequest::STATUS_FINISH))
+            PurchaseRequest::getStatusLabels()[PurchaseRequest::STATUS_FINISHED] => Tab::make()
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequest::STATUS_FINISHED))
+                ->icon(PurchaseRequest::getStatusIcon(PurchaseRequest::STATUS_FINISHED))
+            // ->badge($getStatusBadge(PurchaseRequest::STATUS_FINISHED))
             ,
         ];
     }

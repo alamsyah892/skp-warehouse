@@ -8,7 +8,7 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ViewColumn;
+use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
@@ -40,7 +40,7 @@ class PurchaseRequestsTable
                     ->wrap()
                 ,
                 TextColumn::make('company.alias')
-                    ->label(__('company.model.label'))
+                    ->label(__('purchase-request.company.label'))
                     ->wrapHeader()
                     ->wrap()
                 ,
@@ -54,6 +54,7 @@ class PurchaseRequestsTable
                 ,
                 TextColumn::make('warehouseAddress.address')
                     ->label(__('purchase-request.warehouse_address.label'))
+                    ->searchable()
                     ->wrapHeader()
                     ->placeholder('-')
                     ->color('gray')
@@ -67,19 +68,15 @@ class PurchaseRequestsTable
                     ->sortable()
                     ->wrap()
                 ,
-                // ViewColumn::make('user_profile')
-                //     ->label('User')
-                //     ->view('filament.user-profile')
-                // ,
                 UserColumn::make('user')
-                    ->label('User')
                     ->wrap()
+                    ->wrapped()
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
-                    ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
+                    ->icon(fn($state) => PurchaseRequest::getStatusIcon($state))
                     ->badge()
-                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                    ->color(fn($state) => PurchaseRequest::getStatusColor($state))
                     ->grow(false)
                     ->sortable()
                 ,
@@ -100,7 +97,7 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('purchase_request_items_count')
-                    ->label(__('purchase-request.purchase_request_items_count.label'))
+                    ->label(__('purchase-request.purchase_request_items.count_label'))
                     ->wrapHeader()
                     ->sortable()
                     ->color('gray')
@@ -147,7 +144,7 @@ class PurchaseRequestsTable
                 ,
 
                 SelectFilter::make('company')
-                    ->label(__('company.model.label'))
+                    ->label(__('purchase-request.company.label'))
                     ->relationship(
                         'company',
                         'alias',
@@ -177,8 +174,9 @@ class PurchaseRequestsTable
                         'name',
                         fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
+                    ->searchable(['code', 'name'])
                     ->multiple()
-                    ->searchable()
                     ->preload()
                 ,
 
@@ -193,6 +191,7 @@ class PurchaseRequestsTable
 
             ->contentGrid([])
             ->paginated([5, 10, 25, 50, 100])
+            ->paginationMode(PaginationMode::Default)
             ->defaultPaginationPageOption(10)
         ;
     }

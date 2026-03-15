@@ -37,7 +37,7 @@ class PurchaseRequestResource extends Resource
 
     public static function getPluralModelLabel(): string
     {
-        return __('purchase-request.plural_model.label');
+        return __('purchase-request.model.plural_label');
     }
 
     public static function form(Schema $schema): Schema
@@ -93,7 +93,7 @@ class PurchaseRequestResource extends Resource
 
         $query
             ->with([
-                'purchaseRequestItems' => fn($query) => $query->orderBy('id'),
+                'purchaseRequestItems',
             ])
         ;
 

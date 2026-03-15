@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
     'model.label' => 'Item',
-    'plural_model.label' => 'Item',
+    'model.plural_label' => 'Item',
 
 
     'related.code.label' => 'Kode Item',

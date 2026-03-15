@@ -9,13 +9,13 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Columns\ViewColumn;
 use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Zvizvi\UserFields\Components\UserColumn;
 
 class DivisionPurchaseRequestsTable extends TableWidget
 {
@@ -24,13 +24,17 @@ class DivisionPurchaseRequestsTable extends TableWidget
     public function table(Table $table): Table
     {
         return $table
-            ->heading(null)
+            ->heading(__('purchase-request.model.label') . " | " . __('division.model.label') . " {$this->record->name}")
             ->query(
                 PurchaseRequest::query()
+                    ->withCount([
+                        'purchaseRequestItems',
+                    ])
                     ->where('division_id', $this->record->id)
             )
             ->columns([
                 TextColumn::make('number')
+                    ->label(__('purchase-request.number.label'))
                     ->description(fn($record): string => $record->description)
                     ->searchable()
                     ->sortable()
@@ -44,19 +48,25 @@ class DivisionPurchaseRequestsTable extends TableWidget
                 //     ->toggleable(isToggledHiddenByDefault: true)
                 // ,
                 TextColumn::make('warehouse.name')
+                    ->label(__('warehouse.model.label'))
                     ->wrap()
                 ,
                 TextColumn::make('company.alias')
+                    ->label(__('purchase-request.company.label'))
+                    ->wrapHeader()
                     ->wrap()
                 ,
                 // TextColumn::make('division.name')
+                //     ->label(__('division.model.label'))
                 //     ->wrap()
                 // ,
                 TextColumn::make('project.name')
+                    ->label(__('project.model.label'))
                     ->wrap()
                 ,
                 TextColumn::make('warehouseAddress.address')
-                    ->label('Warehouse Address')
+                    ->label(__('purchase-request.warehouse_address.label'))
+                    ->searchable()
                     ->wrapHeader()
                     ->placeholder('-')
                     ->color('gray')
@@ -64,20 +74,21 @@ class DivisionPurchaseRequestsTable extends TableWidget
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('created_at')
+                    ->label(__('common.created_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
                     ->wrap()
                 ,
-                ViewColumn::make('user_profile')
-                    ->label('User')
-                    ->view('filament.user-profile')
+                UserColumn::make('user')
+                    ->wrap()
+                    ->wrapped()
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabels()[$state])
-                    ->icon(fn($state) => PurchaseRequest::STATUS_ICONS[$state])
+                    ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
                     ->badge()
-                    ->color(fn($state) => PurchaseRequest::STATUS_COLORS[$state])
+                    ->color(fn($state) => PurchaseRequest::getStatusColor($state))
                     ->grow(false)
                     ->sortable()
                 ,
@@ -90,15 +101,24 @@ class DivisionPurchaseRequestsTable extends TableWidget
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('boq')
-                    ->label('BOQ')
+                    ->label(__('purchase-request.boq.label'))
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
+                TextColumn::make('purchase_request_items_count')
+                    ->label(__('purchase-request.purchase_request_items.count_label'))
+                    ->wrapHeader()
+                    ->sortable()
+                    ->color('gray')
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
 
                 TextColumn::make('updated_at')
+                    ->label(__('common.updated_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
@@ -107,6 +127,7 @@ class DivisionPurchaseRequestsTable extends TableWidget
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('deleted_at')
+                    ->label(__('common.deleted_at.label'))
                     ->wrapHeader()
                     ->date()
                     ->sortable()
@@ -118,6 +139,7 @@ class DivisionPurchaseRequestsTable extends TableWidget
             ])
             ->filters([
                 SelectFilter::make('warehouse')
+                    ->label(__('warehouse.model.label'))
                     ->relationship(
                         'warehouse',
                         'name',
@@ -134,6 +156,7 @@ class DivisionPurchaseRequestsTable extends TableWidget
                 ,
 
                 SelectFilter::make('company')
+                    ->label(__('purchase-request.company.label'))
                     ->relationship(
                         'company',
                         'alias',
@@ -145,6 +168,7 @@ class DivisionPurchaseRequestsTable extends TableWidget
                 ,
 
                 // SelectFilter::make('division')
+                //     ->label(__('division.model.label'))
                 //     ->relationship(
                 //         'division',
                 //         'name',
@@ -156,14 +180,22 @@ class DivisionPurchaseRequestsTable extends TableWidget
                 // ,
 
                 SelectFilter::make('project')
+                    ->label(__('project.model.label'))
                     ->relationship(
                         'project',
                         'name',
                         fn($query) => $query->orderBy('name')->orderBy('code'),
                     )
+                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
+                    ->searchable(['code', 'name'])
                     ->multiple()
-                    ->searchable()
                     ->preload()
+                ,
+
+                SelectFilter::make('status')
+                    ->options(PurchaseRequest::getStatusLabels())
+                    // ->multiple()
+                    ->native(false)
                 ,
 
                 TrashedFilter::make()->native(false),
