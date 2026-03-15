@@ -20,44 +20,9 @@ class PurchaseRequest extends Model
     use SoftDeletes;
     use LogsAllFillable, DefaultEmptyString;
 
-    protected $fillable = [
-        'company_id',
-        'warehouse_id',
-        'warehouse_address_id',
-        'division_id',
-        'project_id',
-        'user_id',
-
-        'type',
-
-        'number',
-        'description',
-        'memo',
-        'boq',
-        'notes',
-
-        'info',
-
-        'status',
-    ];
-
-    protected array $defaultEmptyStringFields = [
-        'description',
-        'memo',
-        'boq',
-        'notes',
-
-        'info',
-    ];
-
-
-    /* ================= MODEL ALIAS ================= */
     public const MODEL_ALIAS = 'BPPB';
-
-    /* ================= TYPE PURCHASE REQUEST ================= */
     public const TYPE_PURCHASE_REQUEST = 1;
 
-    /* ================= STATUS ================= */
     public const STATUS_DRAFT = 1;
     public const STATUS_CANCELED = 2;
     public const STATUS_REQUESTED = 3;
@@ -104,28 +69,35 @@ class PurchaseRequest extends Model
         ],
     ];
 
-    public const STATUS_FLOW = [
-        self::STATUS_DRAFT => [
-            self::STATUS_CANCELED,
-            self::STATUS_REQUESTED,
-        ], // default status when creating new purchase request, can be set to requested or canceled
-        self::STATUS_CANCELED => [
-            self::STATUS_REQUESTED,
-        ], // can be set from any status (except finished), and can be set back to requested
-        self::STATUS_REQUESTED => [
-            self::STATUS_CANCELED,
-            self::STATUS_APPROVED,
-        ], // requested for approval. can be set to canceled, or set to approved if approved
-        self::STATUS_APPROVED => [
-            self::STATUS_CANCELED,
-        ], // after approved, can be set to canceled, or set to ordered if items are ordered
-        self::STATUS_ORDERED => [
-            self::STATUS_CANCELED,
-            self::STATUS_FINISHED,
-        ], // after items are ordered, requested for delivery. can be set to canceled, or set to finished if items are delivered
-        self::STATUS_FINISHED => [],// all items have been delivered and the request is complete. can not be changed anymore
+    protected $fillable = [
+        'company_id',
+        'warehouse_id',
+        'warehouse_address_id',
+        'division_id',
+        'project_id',
+        'user_id',
+
+        'type',
+
+        'number',
+        'description',
+        'memo',
+        'boq',
+        'notes',
+
+        'info',
+
+        'status',
     ];
 
+    protected array $defaultEmptyStringFields = [
+        'description',
+        'memo',
+        'boq',
+        'notes',
+
+        'info',
+    ];
 
     protected static function booted(): void
     {
@@ -142,14 +114,12 @@ class PurchaseRequest extends Model
             }
         });
 
-
         static::creating(function ($record) {
             $record->user_id ??= auth()->id();
             $record->type = self::TYPE_PURCHASE_REQUEST;
             $record->number = self::generateNumber($record);
             $record->status = self::STATUS_DRAFT;
         });
-
 
         static::updating(function ($record) {
             $dirty = $record->getDirty();
@@ -163,7 +133,6 @@ class PurchaseRequest extends Model
             }
         });
     }
-
 
     /* ================= RELATION ================= */
     public function company(): BelongsTo
@@ -201,7 +170,6 @@ class PurchaseRequest extends Model
         return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
     }
 
-
     /* ================= STATUS HELPERS ================= */
     protected static ?array $statusLabels = null;
 
@@ -237,6 +205,28 @@ class PurchaseRequest extends Model
     }
 
     /* ================= STATUS WORKFLOW ================= */
+    public const STATUS_FLOW = [
+        self::STATUS_DRAFT => [
+            self::STATUS_CANCELED,
+            self::STATUS_REQUESTED,
+        ], // default status when creating new purchase request, can be set to requested or canceled
+        self::STATUS_CANCELED => [
+            self::STATUS_REQUESTED,
+        ], // can be set from any status (except finished), and can be set back to requested
+        self::STATUS_REQUESTED => [
+            self::STATUS_CANCELED,
+            self::STATUS_APPROVED,
+        ], // requested for approval. can be set to canceled, or set to approved if approved
+        self::STATUS_APPROVED => [
+            self::STATUS_CANCELED,
+        ], // after approved, can be set to canceled, or set to ordered if items are ordered
+        self::STATUS_ORDERED => [
+            self::STATUS_CANCELED,
+            self::STATUS_FINISHED,
+        ], // after items are ordered, requested for delivery. can be set to canceled, or set to finished if items are delivered
+        self::STATUS_FINISHED => [],// all items have been delivered and the request is complete. can not be changed anymore
+    ];
+
     public function getNextStatuses(): array
     {
         return self::STATUS_FLOW[$this->status] ?? [];
@@ -245,6 +235,17 @@ class PurchaseRequest extends Model
     public function canChangeStatusTo(int $status): bool
     {
         return in_array($status, $this->getNextStatuses(), true);
+    }
+
+    public function changeStatus(int $newStatus): void
+    {
+        if (!$this->canChangeStatusTo($newStatus)) {
+            throw new \Exception("Invalid status transition");
+        }
+
+        $this->update([
+            'status' => $newStatus,
+        ]);
     }
 
     /* ================= STATUS CHECKERS ================= */
@@ -277,18 +278,6 @@ class PurchaseRequest extends Model
     {
         return $this->status === self::STATUS_FINISHED;
     }
-
-    public function changeStatus(int $newStatus): void
-    {
-        if (!$this->canChangeStatusTo($newStatus)) {
-            throw new \Exception("Invalid status transition");
-        }
-
-        $this->update([
-            'status' => $newStatus,
-        ]);
-    }
-
 
     /* ================= NUMBER GENERATORS ================= */
     protected static function generateNumber(self $record): string
@@ -326,15 +315,6 @@ class PurchaseRequest extends Model
         });
     }
 
-    public function getCurrentRevision(): int
-    {
-        if (preg_match('/-Rev\.(\d+)$/', $this->number, $match)) {
-            return (int) $match[1];
-        }
-
-        return 0;
-    }
-
     public function incrementRevision(): string
     {
         $rev = $this->getCurrentRevision() + 1;
@@ -342,5 +322,14 @@ class PurchaseRequest extends Model
         $base = preg_replace('/-Rev\.\d+$/', '', $this->number);
 
         return sprintf('%s-Rev.%02d', $base, $rev);
+    }
+
+    public function getCurrentRevision(): int
+    {
+        if (preg_match('/-Rev\.(\d+)$/', $this->number, $match)) {
+            return (int) $match[1];
+        }
+
+        return 0;
     }
 }
