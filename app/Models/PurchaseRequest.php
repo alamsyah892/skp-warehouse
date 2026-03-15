@@ -122,13 +122,29 @@ class PurchaseRequest extends Model
         });
 
         static::updating(function ($record) {
+            $watchedFields = [
+                'description',
+                // 'qty',
+                // 'price',
+                // 'supplier_id',
+            ];
+
             $dirty = $record->getDirty();
 
-            if (array_keys($dirty) === ['status']) {
+            $changedWatchedField = false;
+
+            foreach ($watchedFields as $field) {
+                if (array_key_exists($field, $dirty)) {
+                    $changedWatchedField = true;
+                    break;
+                }
+            }
+
+            if (!$changedWatchedField) {
                 return;
             }
 
-            if ($record->isDirty() && $record->status !== self::STATUS_DRAFT) {
+            if ($record->status !== self::STATUS_DRAFT) {
                 $record->number = $record->incrementRevision();
             }
         });

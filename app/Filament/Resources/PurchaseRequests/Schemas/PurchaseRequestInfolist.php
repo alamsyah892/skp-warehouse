@@ -275,9 +275,6 @@ class PurchaseRequestInfolist
             ->columns(2)
             ->compact()
             ->schema([
-                // TextEntry::make('type')
-                //     ->numeric(),
-
                 TextEntry::make('memo')
                     ->color('gray')
                     ->placeholder('-')

@@ -31,10 +31,6 @@ class PurchaseRequestsTable
                     ->weight(FontWeight::Bold)
                     ->wrap()
                 ,
-                // TextColumn::make('type')
-                //     ->formatStateUsing(fn($state) => PurchaseRequest::TYPE_LABELS[$state])
-                //     ->toggleable(isToggledHiddenByDefault: true)
-                // ,
                 TextColumn::make('warehouse.name')
                     ->label(__('warehouse.model.label'))
                     ->wrap()
