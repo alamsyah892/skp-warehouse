@@ -246,7 +246,7 @@ class PurchaseRequestInfolist
                                 ,
                                 TextEntry::make('qty')
                                     ->numeric()
-                                    ->alignment(Alignment::Center)
+                                    ->alignment(Alignment::End)
                                 ,
                                 TextEntry::make('description')
                                     ->label(__('common.description.label'))
