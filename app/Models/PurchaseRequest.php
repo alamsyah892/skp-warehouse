@@ -99,6 +99,11 @@ class PurchaseRequest extends Model
         'info',
     ];
 
+    public const WATCHED_FIELDS = [
+        'warehouse_address_id',
+        'description',
+    ];
+
     protected static function booted(): void
     {
         static::addGlobalScope('user_warehouses', function ($builder) {
@@ -108,13 +113,18 @@ class PurchaseRequest extends Model
 
             $userWarehouseIds = auth()->user()->warehouses()->pluck('warehouses.id');
             if ($userWarehouseIds->isNotEmpty()) {
-                $builder->whereHas('warehouse', function ($q) use ($userWarehouseIds) {
-                    $q->whereIn('warehouses.id', $userWarehouseIds);
-                });
+                $builder->whereIn('warehouse_id', $userWarehouseIds);
             }
         });
 
         static::creating(function ($record) {
+            $record->loadMissing([
+                'warehouse',
+                'company',
+                'division',
+                'project',
+            ]);
+
             $record->user_id ??= auth()->id();
             $record->type = self::TYPE_PURCHASE_REQUEST;
             $record->number = self::generateNumber($record);
@@ -122,18 +132,11 @@ class PurchaseRequest extends Model
         });
 
         static::updating(function ($record) {
-            $watchedFields = [
-                'description',
-                // 'qty',
-                // 'price',
-                // 'supplier_id',
-            ];
-
             $dirty = $record->getDirty();
 
             $changedWatchedField = false;
 
-            foreach ($watchedFields as $field) {
+            foreach (self::WATCHED_FIELDS as $field) {
                 if (array_key_exists($field, $dirty)) {
                     $changedWatchedField = true;
                     break;
@@ -304,14 +307,15 @@ class PurchaseRequest extends Model
             $month = now()->format('m');
 
             $prefix = sprintf(
-                '%s/%s/%s/%s%s%s%s',
+                // '%s/%s/%s/%s%s%s%s',
+                '%s/%s/%s/%s/%s',
                 self::MODEL_ALIAS,
                 $year,
                 $month,
-                $record->warehouse->code,
-                $record->company->code,
+                // $record->warehouse->code,
+                // $record->company->code,
+                $record->project->po_code,
                 $record->division->code,
-                $record->project->code,
             );
 
             $last = static::where('number', 'like', "{$prefix}/%")

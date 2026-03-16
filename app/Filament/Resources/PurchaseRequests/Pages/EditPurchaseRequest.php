@@ -34,13 +34,9 @@ class EditPurchaseRequest extends EditRecord
             return $data;
         }
 
-        $watchedFields = [
-            'description',
-        ];
-
         $needsRevision = false;
 
-        foreach ($watchedFields as $field) {
+        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
             if (($data[$field] ?? null) != $record->{$field}) {
                 $needsRevision = true;
                 break;

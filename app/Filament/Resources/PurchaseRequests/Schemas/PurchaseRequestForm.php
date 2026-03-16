@@ -92,10 +92,12 @@ class PurchaseRequestForm
                             ->searchable()
                             ->preload()
                             ->live()
-                            ->afterStateUpdated(fn($set) => $set('company_id', null))
-                            ->afterStateUpdated(fn($set) => $set('division_id', null))
-                            ->afterStateUpdated(fn($set) => $set('project_id', null))
-                            ->afterStateUpdated(fn($set) => $set('warehouse_address_id', null))
+                            ->afterStateUpdated(function ($set) {
+                                $set('company_id', null);
+                                $set('division_id', null);
+                                $set('project_id', null);
+                                $set('warehouse_address_id', null);
+                            })
                             ->required()
                             ->disabledOn('edit')
                             ->dehydrated()
@@ -203,6 +205,7 @@ class PurchaseRequestForm
                             ->preload()
                             ->default(null)
                             ->disabled(fn($get) => blank($get('warehouse_id')))
+                            ->live()
                         ,
                     ])
                 ,
@@ -224,6 +227,7 @@ class PurchaseRequestForm
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-request.description.placeholder'))
                             ->helperText(__('purchase-request.description.helper'))
+                            ->live()
                             ->autosize()
                             ->columnSpanFull()
                         ,
@@ -291,9 +295,11 @@ class PurchaseRequestForm
                         TextInput::make('qty')
                             ->placeholder('0')
                             ->suffix(function ($get) {
-                                $item = Item::find($get('item_id'));
+                                $item = Item::query()
+                                    ->select('unit')
+                                    ->find($get('item_id'));
 
-                                return $item?->unit ?? '';
+                                return $item?->unit;
                             })
                             ->minValue(0.01)
                             ->required()
@@ -358,15 +364,8 @@ class PurchaseRequestForm
                         $operation === 'edit' && !$record?->isDraft()
                     )
                     ->required(function ($get, $record) {
-                        $watchedFields = [
-                            'description',
-                            // 'qty',
-                            // 'price',
-                            // 'supplier_id',
-                        ];
-
-                        foreach ($watchedFields as $field) {
-                            if ($get($field) !== $record->{$field}) {
+                        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
+                            if (trim((string) $get($field)) !== trim((string) $record->{$field})) {
                                 return true;
                             }
                         }
