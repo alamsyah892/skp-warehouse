@@ -220,7 +220,7 @@ class PurchaseRequestInfolist
                         RepeatableEntry::make('purchaseRequestItems')
                             ->hiddenLabel()
                             ->table([
-                                TableColumn::make('#'),
+                                TableColumn::make('#')->wrapHeader(false),
                                 TableColumn::make(__('item.related.code.label')),
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
@@ -228,7 +228,7 @@ class PurchaseRequestInfolist
                                 TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
-                                TextEntry::make('sort')->label('#'),
+                                TextEntry::make('sort')->label('#')->wrap(false),
 
                                 TextEntry::make('item.code')
                                     ->label(__('item.related.code.label'))
@@ -239,7 +239,6 @@ class PurchaseRequestInfolist
                                 ,
                                 TextEntry::make('item.name')
                                     ->label(__('item.related.name.label'))
-                                    ->wrap()
                                 ,
                                 TextEntry::make('item.unit')
                                     ->label(__('item.related.unit.label'))
@@ -252,7 +251,6 @@ class PurchaseRequestInfolist
                                     ->label(__('common.description.label'))
                                     ->color('gray')
                                     ->placeholder('-')
-                                    ->wrap()
                                 ,
                             ])
                         ,
