@@ -294,13 +294,11 @@ class PurchaseRequestForm
                         ,
                         TextInput::make('qty')
                             ->placeholder('0')
-                            ->suffix(function ($get) {
-                                $item = Item::query()
-                                    ->select('unit')
-                                    ->find($get('item_id'));
-
-                                return $item?->unit;
-                            })
+                            ->suffix(
+                                fn($get) => Item::query()
+                                    ->whereKey($get('item_id'))
+                                    ->value('unit')
+                            )
                             ->minValue(0.01)
                             ->required()
                             ->numeric()
@@ -320,6 +318,7 @@ class PurchaseRequestForm
                         fn(Action $action) => $action->requiresConfirmation(),
                     )
                     ->minItems(1)
+                    ->live()
                 ,
             ])
             ->columnOrder(3)
@@ -359,33 +358,19 @@ class PurchaseRequestForm
                     ->placeholder(__('purchase-request.info.placeholder'))
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
-                    ->visible(
-                        fn($record, $operation) =>
-                        $operation === 'edit' && !$record?->isDraft()
-                    )
-                    ->required(function ($get, $record) {
-                        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
-                            if (trim((string) $get($field)) !== trim((string) $record->{$field})) {
-                                return true;
-                            }
-                        }
-
-                        return false;
-                    })
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->isDraft())
+                    ->required(fn($get, $record) => self::watchedFieldsChanged($record, $get()))
+                    ->disabled(fn($get, $record) => !self::watchedFieldsChanged($record, $get()))
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->columnSpanFull()
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
                     ->placeholder('-')
-                    ->visible(
-                        fn($record, $operation) =>
-                        $operation === 'edit' && !$record?->isDraft()
-                    )
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->isDraft())
                     ->columnSpanFull()
                     ->formatStateUsing(
-                        fn($state) =>
-                        collect(explode("\n", $state))
+                        fn($state) => collect(explode("\n", $state))
                             ->map(fn($line) => "• " . e($line))
                             ->implode('<br>')
                     )
@@ -420,5 +405,42 @@ class PurchaseRequestForm
             ])
             ->columnOrder(2)
         ;
+    }
+
+    protected static function watchedFieldsChanged($record, $data): bool
+    {
+        if (!$record) {
+            return false;
+        }
+
+        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
+            $old = $record->getOriginal($field);
+            $new = $data[$field] ?? null;
+
+            if ((string) $old !== (string) $new) {
+                return true;
+            }
+        }
+
+        // item change detection
+        $existing = $record->purchaseRequestItems
+            ->map(fn($item) => [
+                'item_id' => (string) $item->item_id,
+                'qty' => (string) $item->qty,
+                'description' => (string) $item->description,
+            ])
+            ->values()
+            ->toArray();
+
+        $incoming = collect($data['purchaseRequestItems'] ?? [])
+            ->map(fn($item) => [
+                'item_id' => (string) ($item['item_id'] ?? null),
+                'qty' => (string) ($item['qty'] ?? null),
+                'description' => (string) ($item['description'] ?? null),
+            ])
+            ->values()
+            ->toArray();
+
+        return $existing !== $incoming;
     }
 }

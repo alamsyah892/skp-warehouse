@@ -28,43 +28,45 @@ class EditPurchaseRequest extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $record = $this->record;
-
-        if ($record->status === PurchaseRequest::STATUS_DRAFT) {
+        $info = $data['info'] ?? null;
+        if (!$info) {
             return $data;
         }
 
-        $needsRevision = false;
+        $record = $this->record;
 
+        $changedWatchedField = false;
         foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
-            if (($data[$field] ?? null) != $record->{$field}) {
-                $needsRevision = true;
+            $old = $record->getOriginal($field);
+            $new = $data[$field] ?? null;
+
+            if ((string) $old !== (string) $new) {
+                $changedWatchedField = true;
                 break;
             }
         }
 
-        // kalau tidak ada perubahan penting → jangan tambah rev
-        if (!$needsRevision) {
+        $itemsChanged = $this->itemsChanged($data);
+
+        if (!$changedWatchedField && !$itemsChanged) {
             $data['info'] = $record->info;
             return $data;
         }
 
         $oldInfo = $record->info ?? '';
 
-        preg_match_all('/Rev\.(\d+)/', $oldInfo, $infoMatches);
-        $lastInfoRev = !empty($infoMatches[1]) ? max($infoMatches[1]) : 0;
-
-        preg_match('/Rev\.(\d+)/', $record->number ?? '', $numberMatch);
+        preg_match('/-Rev\.(\d+)$/', $record->number ?? '', $numberMatch);
         $lastNumberRev = $numberMatch[1] ?? 0;
 
-        $lastRev = max($lastInfoRev, $lastNumberRev);
-
-        $newRev = $lastRev + 1;
+        $newRev = $lastNumberRev + 1;
         $revNumber = str_pad($newRev, 2, '0', STR_PAD_LEFT);
 
         $newLine = "Rev.{$revNumber} - {$data['info']}";
 
         $data['info'] = trim($oldInfo . "\n" . $newLine);
+
+        // revision number
+        $record->number = $record->incrementRevision();
 
         return $data;
     }
@@ -75,5 +77,31 @@ class EditPurchaseRequest extends EditRecord
             'number',
             'info',
         ]);
+    }
+
+    protected function itemsChanged(array $data): bool
+    {
+        $record = $this->record;
+
+        // item change detection
+        $existing = $record->purchaseRequestItems
+            ->map(fn($item) => [
+                'item_id' => (string) $item->item_id,
+                'qty' => (string) $item->qty,
+                'description' => (string) $item->description,
+            ])
+            ->values()
+            ->toArray();
+
+        $incoming = collect($data['purchaseRequestItems'] ?? [])
+            ->map(fn($item) => [
+                'item_id' => (string) ($item['item_id'] ?? null),
+                'qty' => (string) ($item['qty'] ?? null),
+                'description' => (string) ($item['description'] ?? null),
+            ])
+            ->values()
+            ->toArray();
+
+        return $existing !== $incoming;
     }
 }

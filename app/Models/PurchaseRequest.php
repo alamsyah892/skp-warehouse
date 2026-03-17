@@ -130,27 +130,6 @@ class PurchaseRequest extends Model
             $record->number = self::generateNumber($record);
             $record->status = self::STATUS_DRAFT;
         });
-
-        static::updating(function ($record) {
-            $dirty = $record->getDirty();
-
-            $changedWatchedField = false;
-
-            foreach (self::WATCHED_FIELDS as $field) {
-                if (array_key_exists($field, $dirty)) {
-                    $changedWatchedField = true;
-                    break;
-                }
-            }
-
-            if (!$changedWatchedField) {
-                return;
-            }
-
-            if ($record->status !== self::STATUS_DRAFT) {
-                $record->number = $record->incrementRevision();
-            }
-        });
     }
 
     /* ================= RELATION ================= */
@@ -188,6 +167,7 @@ class PurchaseRequest extends Model
     {
         return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
     }
+
 
     /* ================= STATUS HELPERS ================= */
     protected static ?array $statusLabels = null;
@@ -230,6 +210,7 @@ class PurchaseRequest extends Model
             self::STATUS_REQUESTED,
         ], // default status when creating new purchase request, can be set to requested or canceled
         self::STATUS_CANCELED => [
+                // self::STATUS_DRAFT,
             self::STATUS_REQUESTED,
         ], // can be set from any status (except finished), and can be set back to requested
         self::STATUS_REQUESTED => [
@@ -302,19 +283,17 @@ class PurchaseRequest extends Model
     protected static function generateNumber(self $record): string
     {
         return DB::transaction(function () use ($record) {
-
             $year = now()->format('y');
             $month = now()->format('m');
 
             $prefix = sprintf(
-                // '%s/%s/%s/%s%s%s%s',
-                '%s/%s/%s/%s/%s',
+                '%s/%s/%s/%s/%s', // '%s/%s/%s/%s%s%s%s',
                 self::MODEL_ALIAS,
                 $year,
                 $month,
                 // $record->warehouse->code,
                 // $record->company->code,
-                $record->project->po_code,
+                $record->project->po_code, // $record->project->code,
                 $record->division->code,
             );
 
@@ -325,7 +304,7 @@ class PurchaseRequest extends Model
 
             $lastSequence = 0;
 
-            if ($last && preg_match('/\/(\d+)$/', $last, $match)) {
+            if ($last && preg_match('/\/(\d+)(?:-Rev\.\d+)?$/', $last, $match)) {
                 $lastSequence = (int) $match[1];
             }
 
