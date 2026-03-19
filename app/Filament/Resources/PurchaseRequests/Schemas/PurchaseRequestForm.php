@@ -248,8 +248,7 @@ class PurchaseRequestForm
                                     return false;
                                 }
 
-                                $allowed = PurchaseRequest::STATUS_FLOW[$current] ?? [];
-                                return !in_array($value, $allowed, true);
+                                return $record && !$record->canChangeStatusTo($value);
                             })
                             ->visibleOn('edit')
                         ,

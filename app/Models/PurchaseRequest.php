@@ -111,7 +111,13 @@ class PurchaseRequest extends Model
                 return;
             }
 
-            $userWarehouseIds = auth()->user()->warehouses()->pluck('warehouses.id');
+            $user = auth()->user();
+
+            if (!$user) {
+                return;
+            }
+
+            $userWarehouseIds = $user->warehouses()->pluck('warehouses.id');
             if ($userWarehouseIds->isNotEmpty()) {
                 $builder->whereIn('warehouse_id', $userWarehouseIds);
             }
@@ -204,37 +210,125 @@ class PurchaseRequest extends Model
     }
 
     /* ================= STATUS WORKFLOW ================= */
-    public const STATUS_FLOW = [
+    public const STATUS_FLOW_WITH_ROLE = [
         self::STATUS_DRAFT => [
-            self::STATUS_CANCELED,
-            self::STATUS_REQUESTED,
+            self::STATUS_CANCELED => [
+                'Project Owner',
+                'Administrator',
+                'Logistic',
+                'Logistic Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
+            self::STATUS_REQUESTED => [
+                'Project Owner',
+                'Administrator',
+                'Logistic',
+                'Logistic Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
         ], // default status when creating new purchase request, can be set to requested or canceled
         self::STATUS_CANCELED => [
                 // self::STATUS_DRAFT,
-            self::STATUS_REQUESTED,
+            self::STATUS_REQUESTED => [
+                'Project Owner',
+                'Administrator',
+                'Logistic',
+                'Logistic Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
         ], // can be set from any status (except finished), and can be set back to requested
         self::STATUS_REQUESTED => [
-            self::STATUS_CANCELED,
-            self::STATUS_APPROVED,
+            self::STATUS_CANCELED => [
+                'Project Owner',
+                'Administrator',
+                'Quantity Surveyor',
+                'Audit',
+                'Audit Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
+            self::STATUS_APPROVED => [
+                'Project Owner',
+                'Administrator',
+                'Quantity Surveyor',
+                'Audit',
+                'Audit Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
         ], // requested for approval. can be set to canceled, or set to approved if approved
         self::STATUS_APPROVED => [
-            self::STATUS_CANCELED,
+            self::STATUS_CANCELED => [
+                'Project Owner',
+                'Administrator',
+                'Quantity Surveyor',
+                'Audit',
+                'Audit Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
+            self::STATUS_ORDERED => [
+                'Project Owner',
+                'Administrator',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
         ], // after approved, can be set to canceled, or set to ordered if items are ordered
         self::STATUS_ORDERED => [
-            self::STATUS_CANCELED,
-            self::STATUS_FINISHED,
+            self::STATUS_CANCELED => [
+                'Project Owner',
+                'Administrator',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
+            self::STATUS_FINISHED => [
+                'Project Owner',
+                'Administrator',
+                'Logistic',
+                'Logistic Manager',
+                'Purchasing',
+                'Purchasing Manager',
+            ],
         ], // after items are ordered, requested for delivery. can be set to canceled, or set to finished if items are delivered
         self::STATUS_FINISHED => [],// all items have been delivered and the request is complete. can not be changed anymore
     ];
 
     public function getNextStatuses(): array
     {
-        return self::STATUS_FLOW[$this->status] ?? [];
+        return collect(self::STATUS_FLOW_WITH_ROLE[$this->status] ?? [])
+            ->keys()
+            ->filter(fn($status) => $this->canChangeStatusTo($status))
+            ->values()
+            ->toArray();
     }
 
-    public function canChangeStatusTo(int $status): bool
+    public function canChangeStatusTo(int $newStatus, $user = null): bool
     {
-        return in_array($status, $this->getNextStatuses(), true);
+        $user ??= auth()->user();
+
+        if (!$user) {
+            return false;
+        }
+
+        $flow = self::STATUS_FLOW_WITH_ROLE[$this->status] ?? [];
+
+        if (!array_key_exists($newStatus, $flow)) {
+            return false;
+        }
+
+        // owner rule
+        if (
+            $this->status === self::STATUS_DRAFT &&
+            in_array($newStatus, [self::STATUS_CANCELED, self::STATUS_REQUESTED], true) &&
+            $this->user_id === $user->id
+        ) {
+            return true;
+        }
+
+        return $user->hasAnyRole($flow[$newStatus]);
     }
 
     public function changeStatus(int $newStatus): void
