@@ -28,44 +28,27 @@ class EditPurchaseRequest extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        $info = $data['info'] ?? null;
-        if (!$info) {
-            return $data;
-        }
-
         $record = $this->record;
 
-        $changedWatchedField = false;
-        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
-            $old = $record->getOriginal($field);
-            $new = $data[$field] ?? null;
+        $newInfo = $data['info'] ?? null;
+        $watchedFieldsChanged = self::watchedFieldsChanged($record, $data);
 
-            if ((string) $old !== (string) $new) {
-                $changedWatchedField = true;
-                break;
-            }
-        }
-
-        $itemsChanged = $this->itemsChanged($data);
-
-        if (!$changedWatchedField && !$itemsChanged) {
+        if (!$newInfo || !$watchedFieldsChanged) {
             $data['info'] = $record->info;
+
             return $data;
         }
+
 
         $oldInfo = $record->info ?? '';
 
         preg_match('/-Rev\.(\d+)$/', $record->number ?? '', $numberMatch);
         $lastNumberRev = $numberMatch[1] ?? 0;
-
         $newRev = $lastNumberRev + 1;
         $revNumber = str_pad($newRev, 2, '0', STR_PAD_LEFT);
-
         $newLine = "Rev.{$revNumber} - {$data['info']}";
 
         $data['info'] = trim($oldInfo . "\n" . $newLine);
-
-        // revision number
         $record->number = $record->incrementRevision();
 
         return $data;
@@ -79,25 +62,36 @@ class EditPurchaseRequest extends EditRecord
         ]);
     }
 
-    protected function itemsChanged(array $data): bool
+    public static function watchedFieldsChanged($record, $data): bool
     {
-        $record = $this->record;
+        if (!$record) {
+            return false;
+        }
+
+        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
+            $old = $record->getOriginal($field);
+            $new = $data[$field] ?? null;
+
+            if ((string) $old !== (string) $new) {
+                return true;
+            }
+        }
 
         // item change detection
         $existing = $record->purchaseRequestItems
             ->map(fn($item) => [
-                'item_id' => (string) $item->item_id,
-                'qty' => (string) $item->qty,
-                'description' => (string) $item->description,
+                'item_id' => (int) $item->item_id,
+                'qty' => (float) $item->qty,
+                'description' => trim((string) $item->description),
             ])
             ->values()
             ->toArray();
 
         $incoming = collect($data['purchaseRequestItems'] ?? [])
             ->map(fn($item) => [
-                'item_id' => (string) ($item['item_id'] ?? null),
-                'qty' => (string) ($item['qty'] ?? null),
-                'description' => (string) ($item['description'] ?? null),
+                'item_id' => (int) ($item['item_id'] ?? 0),
+                'qty' => (float) ($item['qty'] ?? 0),
+                'description' => trim((string) ($item['description'] ?? '')),
             ])
             ->values()
             ->toArray();

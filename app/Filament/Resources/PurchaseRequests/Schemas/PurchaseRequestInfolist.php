@@ -182,7 +182,7 @@ class PurchaseRequestInfolist
                 ->modalDescription(
                     __(
                         'purchase-request.action.note',
-                        ['status' => __(PurchaseRequest::getStatusActionLabel($status))]
+                        ['status' => __(PurchaseRequest::getStatusLabel($status))]
                     )
                 )
                 ->action(function () use ($status, $record) {
@@ -289,12 +289,12 @@ class PurchaseRequestInfolist
                     ->color('gray')
                 ,
                 TextEntry::make('info')
-                    ->label(__('purchase-request.info.label'))
-                    ->columnSpanFull()
+                    ->label(__('purchase-request.revision_history.label'))
                     ->placeholder('-')
+                    ->visible(fn($record) => !$record?->isDraft())
+                    ->columnSpanFull()
                     ->formatStateUsing(
-                        fn($state) =>
-                        collect(explode("\n", $state))
+                        fn($state) => collect(explode("\n", $state))
                             ->map(fn($line) => "• " . e($line))
                             ->implode('<br>')
                     )

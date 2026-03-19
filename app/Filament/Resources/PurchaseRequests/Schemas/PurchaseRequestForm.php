@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Filament\Resources\PurchaseRequests\Pages\EditPurchaseRequest;
 use App\Models\Item;
 use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
@@ -359,8 +360,8 @@ class PurchaseRequestForm
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
                     ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->isDraft())
-                    ->required(fn($get, $record) => self::watchedFieldsChanged($record, $get()))
-                    ->disabled(fn($get, $record) => !self::watchedFieldsChanged($record, $get()))
+                    ->required(fn($get, $record) => EditPurchaseRequest::watchedFieldsChanged($record, $get()) === true)
+                    ->disabled(fn($get, $record) => EditPurchaseRequest::watchedFieldsChanged($record, $get()) === false)
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->columnSpanFull()
                 ,
@@ -405,42 +406,5 @@ class PurchaseRequestForm
             ])
             ->columnOrder(2)
         ;
-    }
-
-    protected static function watchedFieldsChanged($record, $data): bool
-    {
-        if (!$record) {
-            return false;
-        }
-
-        foreach (PurchaseRequest::WATCHED_FIELDS as $field) {
-            $old = $record->getOriginal($field);
-            $new = $data[$field] ?? null;
-
-            if ((string) $old !== (string) $new) {
-                return true;
-            }
-        }
-
-        // item change detection
-        $existing = $record->purchaseRequestItems
-            ->map(fn($item) => [
-                'item_id' => (string) $item->item_id,
-                'qty' => (string) $item->qty,
-                'description' => (string) $item->description,
-            ])
-            ->values()
-            ->toArray();
-
-        $incoming = collect($data['purchaseRequestItems'] ?? [])
-            ->map(fn($item) => [
-                'item_id' => (string) ($item['item_id'] ?? null),
-                'qty' => (string) ($item['qty'] ?? null),
-                'description' => (string) ($item['description'] ?? null),
-            ])
-            ->values()
-            ->toArray();
-
-        return $existing !== $incoming;
     }
 }
