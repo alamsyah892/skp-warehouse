@@ -318,6 +318,34 @@ class PurchaseRequestInfolist
                     ->size(TextSize::Small)
                     ->visible(fn($state) => $state != null)
                 ,
+
+                RepeatableEntry::make('statusLogs')
+                    ->label('Status Timeline')
+                    ->schema([
+                        TextEntry::make('to_status')
+                            ->hiddenLabel()
+                            ->formatStateUsing(function ($state, $record) {
+                                $status = PurchaseRequest::getStatusLabel($state);
+                                $user = $record->user?->name ?? 'System';
+                                $date = $record->created_at->format('M d, Y');
+
+                                return "{$date} - {$status} by {$user}";
+                            })
+                            ->icon(fn($state) => PurchaseRequest::getStatusIcon($state))
+                            ->iconColor(fn($state) => PurchaseRequest::getStatusColor($state))
+                        ,
+
+                        TextEntry::make('note')
+                            ->label('')
+                            ->visible(fn($state) => filled($state))
+                            ->formatStateUsing(fn($state) => "Note: {$state}")
+                            ->color('gray')
+                            ->columnSpanFull()
+                        ,
+                    ])
+                    ->columnSpanFull()
+                    ->contained(false)
+                ,
             ])
         ;
     }

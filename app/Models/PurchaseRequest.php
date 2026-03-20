@@ -135,6 +135,28 @@ class PurchaseRequest extends Model
             $record->type = self::TYPE_PURCHASE_REQUEST;
             $record->number = self::generateNumber($record);
             $record->status = self::STATUS_DRAFT;
+
+            $record->statusLogs()->create([
+                'user_id' => $record->user_id,
+                'from_status' => null,
+                'to_status' => self::STATUS_DRAFT,
+            ]);
+        });
+
+        static::updated(function ($record) {
+            if (!$record->wasChanged('status')) {
+                return;
+            }
+
+            $oldStatus = $record->getOriginal('status');
+            $newStatus = $record->status;
+
+            $record->statusLogs()->create([
+                'user_id' => auth()->id(),
+                'from_status' => $oldStatus,
+                'to_status' => $newStatus,
+                'note' => null, // ❗ tidak bisa ambil dari form
+            ]);
         });
     }
 
@@ -172,6 +194,11 @@ class PurchaseRequest extends Model
     public function purchaseRequestItems(): HasMany
     {
         return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
+    }
+
+    public function statusLogs(): HasMany
+    {
+        return $this->hasMany(PurchaseRequestStatusLog::class);
     }
 
 
@@ -331,15 +358,26 @@ class PurchaseRequest extends Model
         return $user->hasAnyRole($flow[$newStatus]);
     }
 
-    public function changeStatus(int $newStatus): void
+    public function changeStatus(int $newStatus, ?string $note = null): void
     {
         if (!$this->canChangeStatusTo($newStatus)) {
             throw new \Exception("Invalid status transition");
         }
 
-        $this->update([
-            'status' => $newStatus,
-        ]);
+        DB::transaction(function () use ($newStatus, $note) {
+            $oldStatus = $this->status;
+
+            $this->update([
+                'status' => $newStatus,
+            ]);
+
+            $this->statusLogs()->create([
+                'user_id' => auth()->id(),
+                'from_status' => $oldStatus,
+                'to_status' => $newStatus,
+                'note' => $note,
+            ]);
+        });
     }
 
     /* ================= STATUS CHECKERS ================= */

@@ -94,6 +94,7 @@ class PurchaseRequestResource extends Resource
         $query
             ->with([
                 'purchaseRequestItems',
+                'statusLogs' => fn($query) => $query->orderBy('id'),
             ])
         ;
 
