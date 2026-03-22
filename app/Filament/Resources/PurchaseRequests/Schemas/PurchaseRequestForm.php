@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
-use App\Filament\Resources\PurchaseRequests\Pages\EditPurchaseRequest;
+use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
-use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -234,17 +233,12 @@ class PurchaseRequestForm
                         ,
 
                         Select::make('status')
-                            ->options(PurchaseRequest::getStatusLabels())
+                            ->options(fn($record) => $record->getAvailableStatusOptions())
                             ->native(false)
                             // ->live()
                             ->required()
-                            ->disableOptionWhen(function ($value, $get, $record) {
+                            ->disableOptionWhen(function ($value, $record) {
                                 if (!$record) {
-                                    return false;
-                                }
-
-                                $current = $record->status;
-                                if ($value === $current) {
                                     return false;
                                 }
 
@@ -358,16 +352,16 @@ class PurchaseRequestForm
                     ->placeholder(__('purchase-request.info.placeholder'))
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->isDraft())
-                    ->required(fn($get, $record) => EditPurchaseRequest::watchedFieldsChanged($record, $get()) === true)
-                    ->disabled(fn($get, $record) => EditPurchaseRequest::watchedFieldsChanged($record, $get()) === false)
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
+                    ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
+                    ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->columnSpanFull()
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
                     ->placeholder('-')
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->isDraft())
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                     ->columnSpanFull()
                     ->formatStateUsing(
                         fn($state) => collect(explode("\n", $state))

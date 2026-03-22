@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseRequestStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +16,11 @@ class PurchaseRequestStatusLog extends Model
         'note',
     ];
 
+    protected $casts = [
+        'from_status' => PurchaseRequestStatus::class,
+        'to_status' => PurchaseRequestStatus::class,
+    ];
+
     public function purchaseRequest(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequest::class);
@@ -23,15 +29,5 @@ class PurchaseRequestStatusLog extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function getFromStatusLabelAttribute(): string
-    {
-        return PurchaseRequest::getStatusLabel($this->from_status);
-    }
-
-    public function getToStatusLabelAttribute(): string
-    {
-        return PurchaseRequest::getStatusLabel($this->to_status);
     }
 }

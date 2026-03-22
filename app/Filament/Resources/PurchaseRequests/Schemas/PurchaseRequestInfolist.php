@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 // use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
@@ -155,10 +156,38 @@ class PurchaseRequestInfolist
                         ,
 
                         TextEntry::make('status')
-                            ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
-                            ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->icon(fn($state) => $state?->icon())
                             ->badge()
-                            ->color(fn($state) => PurchaseRequest::getStatusColor($state))
+                            ->color(fn($state) => $state?->color())
+                        ,
+
+                        RepeatableEntry::make('statusLogs')
+                            ->label('Status Timeline')
+                            ->schema([
+                                TextEntry::make('to_status')
+                                    ->hiddenLabel()
+                                    ->formatStateUsing(function ($state, $record) {
+                                        $status = $state?->label();
+                                        $user = $record->user?->name ?? 'System';
+                                        $date = $record->created_at->format('M d, Y');
+
+                                        return "{$date} - {$status} by {$user}";
+                                    })
+                                    ->icon(fn($state) => $state?->icon())
+                                    ->iconColor(fn($state) => $state?->color())
+                                ,
+
+                                TextEntry::make('note')
+                                    ->label('')
+                                    ->visible(fn($state) => filled($state))
+                                    ->formatStateUsing(fn($state) => "Note: {$state}")
+                                    ->color('gray')
+                                    ->columnSpanFull()
+                                ,
+                            ])
+                            ->columnSpanFull()
+                            ->contained(false)
                         ,
                     ])
                 ,
@@ -169,20 +198,20 @@ class PurchaseRequestInfolist
     protected static function dataSectionFooter($record): array
     {
         return collect($record->getNextStatuses())->map(function ($status) use ($record) {
-            return Action::make('changeStatus' . $status)
-                ->label(__(PurchaseRequest::getStatusActionLabel($status)))
-                ->color(PurchaseRequest::getStatusColor($status))
-                ->icon(PurchaseRequest::getStatusIcon($status))
+            return Action::make('changeStatus' . $status->value)
+                ->label(__($status->actionLabel()))
+                ->color($status->color())
+                ->icon($status->icon())
                 ->requiresConfirmation()
                 ->modalHeading(
-                    __(PurchaseRequest::getStatusActionLabel($status)) .
+                    __($status->label()) .
                     ' ' .
                     __('purchase-request.model.label')
                 )
                 ->modalDescription(
                     __(
                         'purchase-request.action.note',
-                        ['status' => __(PurchaseRequest::getStatusLabel($status))]
+                        ['status' => __($status->label())]
                     )
                 )
                 ->action(function () use ($status, $record) {
@@ -193,6 +222,8 @@ class PurchaseRequestInfolist
                         ->title(__('purchase-request.action.changed'))
                         ->send()
                     ;
+
+                    return redirect(request()->header('Referer'));
                 })
             ;
         })
@@ -291,7 +322,7 @@ class PurchaseRequestInfolist
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
                     ->placeholder('-')
-                    ->visible(fn($record) => !$record?->isDraft())
+                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                     ->columnSpanFull()
                     ->formatStateUsing(
                         fn($state) => collect(explode("\n", $state))
@@ -317,34 +348,6 @@ class PurchaseRequestInfolist
                     ->color('gray')
                     ->size(TextSize::Small)
                     ->visible(fn($state) => $state != null)
-                ,
-
-                RepeatableEntry::make('statusLogs')
-                    ->label('Status Timeline')
-                    ->schema([
-                        TextEntry::make('to_status')
-                            ->hiddenLabel()
-                            ->formatStateUsing(function ($state, $record) {
-                                $status = PurchaseRequest::getStatusLabel($state);
-                                $user = $record->user?->name ?? 'System';
-                                $date = $record->created_at->format('M d, Y');
-
-                                return "{$date} - {$status} by {$user}";
-                            })
-                            ->icon(fn($state) => PurchaseRequest::getStatusIcon($state))
-                            ->iconColor(fn($state) => PurchaseRequest::getStatusColor($state))
-                        ,
-
-                        TextEntry::make('note')
-                            ->label('')
-                            ->visible(fn($state) => filled($state))
-                            ->formatStateUsing(fn($state) => "Note: {$state}")
-                            ->color('gray')
-                            ->columnSpanFull()
-                        ,
-                    ])
-                    ->columnSpanFull()
-                    ->contained(false)
                 ,
             ])
         ;

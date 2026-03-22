@@ -2,7 +2,6 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Tables;
 
-use App\Models\PurchaseRequest;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
@@ -69,10 +68,10 @@ class PurchaseRequestsTable
                     ->wrapped()
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
-                    ->icon(fn($state) => PurchaseRequest::getStatusIcon($state))
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
                     ->badge()
-                    ->color(fn($state) => PurchaseRequest::getStatusColor($state))
+                    ->color(fn($state) => $state?->color())
                     ->grow(false)
                     ->sortable()
                 ,

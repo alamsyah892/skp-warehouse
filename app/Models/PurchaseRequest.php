@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseRequestStatus;
 use App\Models\Concerns\DefaultEmptyString;
+use App\Models\Concerns\HasDocumentNumber;
+use App\Models\Concerns\HasDocumentRevision;
+use App\Models\Concerns\HasStateMachine;
 use App\Models\Concerns\LogsAllFillable;
-use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Facades\DB;
 
 class PurchaseRequest extends Model
 {
@@ -18,57 +20,12 @@ class PurchaseRequest extends Model
     use HasFactory;
 
     use SoftDeletes;
-    use LogsAllFillable, DefaultEmptyString;
+    use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasStateMachine, HasDocumentRevision;
 
-    public const MODEL_ALIAS = 'BPPB';
-    public const TYPE_PURCHASE_REQUEST = 1;
 
-    public const STATUS_DRAFT = 1;
-    public const STATUS_CANCELED = 2;
-    public const STATUS_REQUESTED = 3;
-    public const STATUS_APPROVED = 4;
-    public const STATUS_ORDERED = 5;
-    public const STATUS_FINISHED = 6;
-
-    public const STATUSES = [
-        self::STATUS_DRAFT => [
-            'label' => 'purchase-request.status.draft',
-            'action_label' => 'purchase-request.action.label.draft',
-            'color' => 'gray',
-            'icon' => Heroicon::OutlinedPencilSquare,
-        ],
-        self::STATUS_CANCELED => [
-            'label' => 'purchase-request.status.canceled',
-            'action_label' => 'purchase-request.action.label.canceled',
-            'color' => 'danger',
-            'icon' => Heroicon::OutlinedXCircle,
-        ],
-        self::STATUS_REQUESTED => [
-            'label' => 'purchase-request.status.requested',
-            'action_label' => 'purchase-request.action.label.requested',
-            'color' => 'warning',
-            'icon' => Heroicon::OutlinedClock,
-        ],
-        self::STATUS_APPROVED => [
-            'label' => 'purchase-request.status.approved',
-            'action_label' => 'purchase-request.action.label.approved',
-            'color' => 'primary',
-            'icon' => Heroicon::OutlinedInboxArrowDown,
-        ],
-        self::STATUS_ORDERED => [
-            'label' => 'purchase-request.status.ordered',
-            'action_label' => 'purchase-request.action.label.ordered',
-            'color' => 'info',
-            'icon' => Heroicon::OutlinedShoppingCart,
-        ],
-        self::STATUS_FINISHED => [
-            'label' => 'purchase-request.status.finished',
-            'action_label' => 'purchase-request.action.label.finished',
-            'color' => 'success',
-            'icon' => Heroicon::OutlinedCheckCircle,
-        ],
-    ];
-
+    /** 
+     * Properties & Casts 
+     */
     protected $fillable = [
         'company_id',
         'warehouse_id',
@@ -99,68 +56,58 @@ class PurchaseRequest extends Model
         'info',
     ];
 
-    public const WATCHED_FIELDS = [
-        'warehouse_address_id',
-        'description',
+    protected $casts = [
+        'status' => PurchaseRequestStatus::class,
     ];
 
+
+    /**
+     * Constants
+     */
+    public const MODEL_ALIAS = 'BPPB';
+    public const TYPE_PURCHASE_REQUEST = 1;
+
+
+    /**
+     * Booted / Events
+     */
     protected static function booted(): void
     {
         static::addGlobalScope('user_warehouses', function ($builder) {
-            if (app()->runningInConsole() || !auth()->check()) {
-                return;
-            }
+            if ($user = auth()->user()) {
+                $userWarehouseIds = $user->warehouses()->pluck('warehouses.id');
 
-            $user = auth()->user();
-
-            if (!$user) {
-                return;
-            }
-
-            $userWarehouseIds = $user->warehouses()->pluck('warehouses.id');
-            if ($userWarehouseIds->isNotEmpty()) {
-                $builder->whereIn('warehouse_id', $userWarehouseIds);
+                if ($userWarehouseIds->isNotEmpty()) {
+                    $builder->whereIn('warehouse_id', $userWarehouseIds);
+                }
             }
         });
 
+
         static::creating(function ($record) {
+            $record->user_id = auth()->id();
+            $record->type = self::TYPE_PURCHASE_REQUEST;
+
             $record->loadMissing([
-                'warehouse',
-                'company',
+                // 'warehouse',
+                // 'company',
                 'division',
                 'project',
             ]);
-
-            $record->user_id ??= auth()->id();
-            $record->type = self::TYPE_PURCHASE_REQUEST;
             $record->number = self::generateNumber($record);
-            $record->status = self::STATUS_DRAFT;
 
-            $record->statusLogs()->create([
-                'user_id' => $record->user_id,
-                'from_status' => null,
-                'to_status' => self::STATUS_DRAFT,
-            ]);
+            $record->status = PurchaseRequestStatus::DRAFT;
         });
 
-        static::updated(function ($record) {
-            if (!$record->wasChanged('status')) {
-                return;
-            }
-
-            $oldStatus = $record->getOriginal('status');
-            $newStatus = $record->status;
-
-            $record->statusLogs()->create([
-                'user_id' => auth()->id(),
-                'from_status' => $oldStatus,
-                'to_status' => $newStatus,
-                'note' => null, // ❗ tidak bisa ambil dari form
-            ]);
+        static::created(function ($record) {
+            $record->setStatusLog(PurchaseRequestStatus::DRAFT);
         });
     }
 
-    /* ================= RELATION ================= */
+
+    /**
+     * Relationships
+     */
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
@@ -202,265 +149,94 @@ class PurchaseRequest extends Model
     }
 
 
-    /* ================= STATUS HELPERS ================= */
-    protected static ?array $statusLabels = null;
-
-    public static function getStatusLabels(): array
+    /**
+     * Core Logic (State Machine)
+     */
+    protected function getStatusField(): string
     {
-        if (static::$statusLabels === null) {
-            static::$statusLabels = collect(self::STATUSES)
-                ->mapWithKeys(fn($meta, $status) => [$status => __($meta['label'])])
-                ->toArray();
-        }
-
-        return static::$statusLabels;
+        return 'status';
     }
 
-    public static function getStatusLabel(int $status): string
+    protected function getStatusEnumClass(): string
     {
-        return __(self::STATUSES[$status]['label']);
+        return PurchaseRequestStatus::class;
     }
 
-    public static function getStatusActionLabel(int $status): string
+    protected function canUserTransition($newStatus, $user, array $flow): bool
     {
-        return __(self::STATUSES[$status]['action_label']);
-    }
-
-    public static function getStatusColor(int $status): string
-    {
-        return self::STATUSES[$status]['color'] ?? 'gray';
-    }
-
-    public static function getStatusIcon(int $status)
-    {
-        return self::STATUSES[$status]['icon'];
-    }
-
-    /* ================= STATUS WORKFLOW ================= */
-    public const STATUS_FLOW_WITH_ROLE = [
-        self::STATUS_DRAFT => [
-            self::STATUS_CANCELED => [
-                'Project Owner',
-                'Administrator',
-                'Logistic',
-                'Logistic Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-            self::STATUS_REQUESTED => [
-                'Project Owner',
-                'Administrator',
-                'Logistic',
-                'Logistic Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-        ], // default status when creating new purchase request, can be set to requested or canceled
-        self::STATUS_CANCELED => [
-                // self::STATUS_DRAFT,
-            self::STATUS_REQUESTED => [
-                'Project Owner',
-                'Administrator',
-                'Logistic',
-                'Logistic Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-        ], // can be set from any status (except finished), and can be set back to requested
-        self::STATUS_REQUESTED => [
-            self::STATUS_CANCELED => [
-                'Project Owner',
-                'Administrator',
-                'Quantity Surveyor',
-                'Audit',
-                'Audit Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-            self::STATUS_APPROVED => [
-                'Project Owner',
-                'Administrator',
-                'Quantity Surveyor',
-                'Audit',
-                'Audit Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-        ], // requested for approval. can be set to canceled, or set to approved if approved
-        self::STATUS_APPROVED => [
-            self::STATUS_CANCELED => [
-                'Project Owner',
-                'Administrator',
-                'Quantity Surveyor',
-                'Audit',
-                'Audit Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-            self::STATUS_ORDERED => [
-                'Project Owner',
-                'Administrator',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-        ], // after approved, can be set to canceled, or set to ordered if items are ordered
-        self::STATUS_ORDERED => [
-            self::STATUS_CANCELED => [
-                'Project Owner',
-                'Administrator',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-            self::STATUS_FINISHED => [
-                'Project Owner',
-                'Administrator',
-                'Logistic',
-                'Logistic Manager',
-                'Purchasing',
-                'Purchasing Manager',
-            ],
-        ], // after items are ordered, requested for delivery. can be set to canceled, or set to finished if items are delivered
-        self::STATUS_FINISHED => [],// all items have been delivered and the request is complete. can not be changed anymore
-    ];
-
-    public function getNextStatuses(): array
-    {
-        return collect(self::STATUS_FLOW_WITH_ROLE[$this->status] ?? [])
-            ->keys()
-            ->filter(fn($status) => $this->canChangeStatusTo($status))
-            ->values()
-            ->toArray();
-    }
-
-    public function canChangeStatusTo(int $newStatus, $user = null): bool
-    {
-        $user ??= auth()->user();
-
-        if (!$user) {
-            return false;
-        }
-
-        $flow = self::STATUS_FLOW_WITH_ROLE[$this->status] ?? [];
-
-        if (!array_key_exists($newStatus, $flow)) {
-            return false;
-        }
-
         // owner rule
         if (
-            $this->status === self::STATUS_DRAFT &&
-            in_array($newStatus, [self::STATUS_CANCELED, self::STATUS_REQUESTED], true) &&
+            $this->hasStatus(PurchaseRequestStatus::DRAFT) &&
+            in_array($newStatus, [
+                PurchaseRequestStatus::CANCELED,
+                PurchaseRequestStatus::REQUESTED,
+            ], true) &&
             $this->user_id === $user->id
         ) {
             return true;
         }
 
-        return $user->hasAnyRole($flow[$newStatus]);
+        return $user->hasAnyRole($flow[$newStatus->value] ?? []);
     }
 
-    public function changeStatus(int $newStatus, ?string $note = null): void
+
+    /** 
+     * Side Effects
+     */
+    public function setStatusLog($newStatus, $oldStatus = null, string $note = '')
     {
-        if (!$this->canChangeStatusTo($newStatus)) {
-            throw new \Exception("Invalid status transition");
-        }
+        $newStatus = $this->normalizeStatus($newStatus);
+        $oldStatus = $this->normalizeStatus($oldStatus);
 
-        DB::transaction(function () use ($newStatus, $note) {
-            $oldStatus = $this->status;
-
-            $this->update([
-                'status' => $newStatus,
-            ]);
-
-            $this->statusLogs()->create([
-                'user_id' => auth()->id(),
-                'from_status' => $oldStatus,
-                'to_status' => $newStatus,
-                'note' => $note,
-            ]);
-        });
+        $this->statusLogs()->create([
+            'user_id' => auth()->id(),
+            'from_status' => $oldStatus?->value,
+            'to_status' => $newStatus->value,
+            'note' => $note,
+        ]);
     }
 
-    /* ================= STATUS CHECKERS ================= */
-    public function isDraft(): bool
+
+    /**
+     * Public Helpers
+     */
+    public function hasStatus(PurchaseRequestStatus $status): bool
     {
-        return $this->status === self::STATUS_DRAFT;
+        return $this->status === $status;
     }
 
-    public function isCanceled(): bool
+
+    /**
+     * Revision Hooks (for HasDocumentRevision)
+     */
+    protected function getWatchedFields(): array
     {
-        return $this->status === self::STATUS_CANCELED;
+        return [
+            'warehouse_address_id',
+            'description',
+        ];
     }
 
-    public function isWaiting(): bool
+    protected function getRevisionItemsRelation(): ?string
     {
-        return $this->status === self::STATUS_REQUESTED;
+        return 'purchaseRequestItems';
     }
 
-    public function isApproved(): bool
+    protected function mapRevisionItem($item): array
     {
-        return $this->status === self::STATUS_APPROVED;
+        return [
+            'item_id' => (int) $item->item_id,
+            'qty' => (float) $item->qty,
+            'description' => trim((string) $item->description),
+        ];
     }
 
-    public function isOrdered(): bool
+    protected function mapRevisionItemFromArray(array $item): array
     {
-        return $this->status === self::STATUS_ORDERED;
-    }
-
-    public function isFinished(): bool
-    {
-        return $this->status === self::STATUS_FINISHED;
-    }
-
-    /* ================= NUMBER GENERATORS ================= */
-    protected static function generateNumber(self $record): string
-    {
-        return DB::transaction(function () use ($record) {
-            $year = now()->format('y');
-            $month = now()->format('m');
-
-            $prefix = sprintf(
-                '%s/%s/%s/%s/%s', // '%s/%s/%s/%s%s%s%s',
-                self::MODEL_ALIAS,
-                $year,
-                $month,
-                // $record->warehouse->code,
-                // $record->company->code,
-                $record->project->po_code, // $record->project->code,
-                $record->division->code,
-            );
-
-            $last = static::where('number', 'like', "{$prefix}/%")
-                ->lockForUpdate()
-                ->orderByDesc('number')
-                ->value('number');
-
-            $lastSequence = 0;
-
-            if ($last && preg_match('/\/(\d+)(?:-Rev\.\d+)?$/', $last, $match)) {
-                $lastSequence = (int) $match[1];
-            }
-
-            $sequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
-
-            return "{$prefix}/{$sequence}";
-        });
-    }
-
-    public function incrementRevision(): string
-    {
-        $rev = $this->getCurrentRevision() + 1;
-
-        $base = preg_replace('/-Rev\.\d+$/', '', $this->number);
-
-        return sprintf('%s-Rev.%02d', $base, $rev);
-    }
-
-    public function getCurrentRevision(): int
-    {
-        if (preg_match('/-Rev\.(\d+)$/', $this->number, $match)) {
-            return (int) $match[1];
-        }
-
-        return 0;
+        return [
+            'item_id' => (int) ($item['item_id'] ?? 0),
+            'qty' => (float) ($item['qty'] ?? 0),
+            'description' => trim((string) ($item['description'] ?? '')),
+        ];
     }
 }

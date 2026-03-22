@@ -11,10 +11,32 @@ class Role extends RoleModel
     use SoftDeletes;
     use LogsAllFillable;
 
+    public const PROJECT_OWNER = 'Project Owner';
+    public const ADMINISTRATOR = 'Administrator';
+    public const LOGISTIC = 'Logistic';
+    public const LOGISTIC_MANAGER = 'Logistic Manager';
+    public const PURCHASING = 'Purchasing';
+    public const PURCHASING_MANAGER = 'Purchasing Manager';
+    public const QUANTITY_SURVEYOR = 'Quantity Surveyor';
+    public const AUDIT = 'Audit';
+    public const AUDIT_MANAGER = 'Audit Manager';
+
+    public const ALL = [
+        self::PROJECT_OWNER,
+        self::ADMINISTRATOR,
+        self::LOGISTIC,
+        self::LOGISTIC_MANAGER,
+        self::PURCHASING,
+        self::PURCHASING_MANAGER,
+        self::QUANTITY_SURVEYOR,
+        self::AUDIT,
+        self::AUDIT_MANAGER,
+    ];
+
     // Roles yang dianggap super
     public const SUPER_ROLES = [
-        'Project Owner',
-        'Administrator',
+        self::PROJECT_OWNER,
+        self::ADMINISTRATOR,
     ];
 
     protected $fillable = [

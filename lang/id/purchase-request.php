@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 return [
-
     'model' => [
         'label' => 'Pengajuan Pembelian',
         'plural_label' => 'Pengajuan Pembelian',
@@ -23,12 +22,30 @@ return [
 
     'status' => [
         'all' => 'Semua',
-        'draft' => 'Draft',
-        'canceled' => 'Dibatalkan',
-        'requested' => 'Diajukan',
-        'approved' => 'Disetujui',
-        'ordered' => 'Dipesan',
-        'finished' => 'Selesai',
+        'draft' => [
+            'label' => 'Draft',
+            'action_label' => 'Draft',
+        ],
+        'canceled' => [
+            'label' => 'Dibatalkan',
+            'action_label' => 'Batalkan',
+        ],
+        'requested' => [
+            'label' => 'Diajukan',
+            'action_label' => 'Ajukan',
+        ],
+        'approved' => [
+            'label' => 'Disetujui',
+            'action_label' => 'Setujui',
+        ],
+        'ordered' => [
+            'label' => 'Dipesan',
+            'action_label' => 'Dipesan',
+        ],
+        'finished' => [
+            'label' => 'Selesai',
+            'action_label' => 'Selesaikan',
+        ],
     ],
 
     'description' => [
@@ -101,18 +118,4 @@ return [
             'label' => 'Informasi Pengajuan Pembelian',
         ],
     ],
-
-    'action' => [
-        'label' => [
-            'draft' => 'Draft',
-            'canceled' => 'Batalkan',
-            'requested' => 'Ajukan',
-            'approved' => 'Setujui',
-            'ordered' => 'Dipesan',
-            'finished' => 'Selesaikan',
-        ],
-        'note' => 'Ubah status pengajuan pembelian ini menjadi :status',
-        'changed' => 'Status berhasil diubah',
-    ],
-
 ];
