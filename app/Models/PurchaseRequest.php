@@ -73,6 +73,8 @@ class PurchaseRequest extends Model
      */
     protected static function booted(): void
     {
+        parent::boot();
+
         static::addGlobalScope('user_warehouses', function ($builder) {
             if ($user = auth()->user()) {
                 $userWarehouseIds = $user->warehouses()->pluck('warehouses.id');
