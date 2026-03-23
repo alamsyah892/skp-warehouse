@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequest;
 use Filament\Actions\ViewAction;
@@ -85,10 +86,10 @@ class WarehousePurchaseRequestsTable extends TableWidget
                     ->wrapped()
                 ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => PurchaseRequest::getStatusLabel($state))
-                    ->icon(fn($state): mixed => PurchaseRequest::getStatusIcon($state))
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
                     ->badge()
-                    ->color(fn($state) => PurchaseRequest::getStatusColor($state))
+                    ->color(fn($state) => $state?->color())
                     ->grow(false)
                     ->sortable()
                 ,
@@ -193,7 +194,7 @@ class WarehousePurchaseRequestsTable extends TableWidget
                 ,
 
                 SelectFilter::make('status')
-                    ->options(PurchaseRequest::getStatusLabels())
+                    ->options(PurchaseRequestStatus::options())
                     // ->multiple()
                     ->native(false)
                 ,
