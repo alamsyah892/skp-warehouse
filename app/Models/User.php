@@ -3,7 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Andreia\FilamentUiSwitcher\Models\Traits\HasUiPreferences;
+// use Andreia\FilamentUiSwitcher\Models\Traits\HasUiPreferences;
 use App\Models\Concerns\LogsAllFillable;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Models\Contracts\HasAvatar;
@@ -22,7 +22,8 @@ class User extends Authenticatable implements FilamentUser, HasAvatar
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, SoftDeletes, HasRoles;
     use LogsAllFillable;
-    use TwoFactorAuthenticatable, HasUiPreferences;
+    use TwoFactorAuthenticatable;
+    // use HasUiPreferences;
 
     /**
      * The attributes that are mass assignable.

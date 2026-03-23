@@ -2,7 +2,7 @@
 
 namespace App\Providers\Filament;
 
-use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
+// use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -123,10 +123,10 @@ class AdminPanelProvider extends PanelProvider
                     ->enableBrowserSessions(condition: true)
                 ,
 
-                FilamentUiSwitcherPlugin::make()
-                    ->iconRenderHook(PanelsRenderHook::USER_MENU_BEFORE)
-                    ->withModeSwitcher()
-                ,
+                // FilamentUiSwitcherPlugin::make()
+                //     ->iconRenderHook(PanelsRenderHook::USER_MENU_BEFORE)
+                //     ->withModeSwitcher()
+                // ,
 
                 EnvironmentIndicatorPlugin::make()
                     ->visible(fn() => auth()->user()?->hasRole('Project Owner'))
