@@ -46,6 +46,10 @@ return [
             'label' => 'Selesai',
             'action_label' => 'Selesaikan',
         ],
+
+        'action' => [
+            'changed' => 'Status berhasil diubah',
+        ],
     ],
 
     'description' => [

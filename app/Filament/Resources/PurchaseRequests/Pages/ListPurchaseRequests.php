@@ -39,31 +39,37 @@ class ListPurchaseRequests extends ListRecords
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::DRAFT))
                 ->icon(PurchaseRequestStatus::DRAFT->icon())
                 ->badge($getStatusBadge(PurchaseRequestStatus::DRAFT))
+                ->badgeColor(PurchaseRequestStatus::DRAFT->color())
             ,
             PurchaseRequestStatus::CANCELED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::CANCELED))
                 ->icon(PurchaseRequestStatus::CANCELED->icon())
             // ->badge($getStatusBadge(PurchaseRequestStatus::CANCELED))
+            // ->badgeColor(PurchaseRequestStatus::CANCELED->color())
             ,
             PurchaseRequestStatus::REQUESTED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::REQUESTED))
                 ->icon(PurchaseRequestStatus::REQUESTED->icon())
                 ->badge($getStatusBadge(PurchaseRequestStatus::REQUESTED))
+                ->badgeColor(PurchaseRequestStatus::REQUESTED->color())
             ,
             PurchaseRequestStatus::APPROVED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::APPROVED))
                 ->icon(PurchaseRequestStatus::APPROVED->icon())
                 ->badge($getStatusBadge(PurchaseRequestStatus::APPROVED))
+                ->badgeColor(PurchaseRequestStatus::APPROVED->color())
             ,
             PurchaseRequestStatus::ORDERED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::ORDERED))
                 ->icon(PurchaseRequestStatus::ORDERED->icon())
                 ->badge($getStatusBadge(PurchaseRequestStatus::ORDERED))
+                ->badgeColor(PurchaseRequestStatus::ORDERED->color())
             ,
             PurchaseRequestStatus::FINISHED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::FINISHED))
                 ->icon(PurchaseRequestStatus::FINISHED->icon())
             // ->badge($getStatusBadge(PurchaseRequestStatus::FINISHED))
+            // ->badgeColor(PurchaseRequestStatus::FINISHED->color())
             ,
         ];
     }
