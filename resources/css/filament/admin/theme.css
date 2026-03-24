@@ -4,5 +4,6 @@
 @source '../../../../resources/views/filament/**/*';
 
 @source '../../../../vendor/jeffgreco13/filament-breezy/resources/**/*';
-
-/* @source '../../../../vendor/andreia/filament-ui-switcher'; */
+@source '../../../../vendor/awcodes/overlook/resources/**/*.blade.php';
+@import '../../../../vendor/awcodes/filament-sticky-header/resources/css/plugin.css';
+@source '../../../../vendor/awcodes/filament-versions/resources/**/*.blade.php';

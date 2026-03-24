@@ -6,6 +6,8 @@ namespace App\Providers;
 // use Filament\Actions\DeleteBulkAction;
 // use Filament\Actions\ForceDeleteBulkAction;
 // use Filament\Actions\RestoreBulkAction;
+use Filament\Support\Colors\Color;
+use Filament\Support\Facades\FilamentColor;
 use Illuminate\Support\ServiceProvider;
 // use Filament\Tables\Enums\FiltersLayout;
 use Filament\Tables\Table;
@@ -25,6 +27,16 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        FilamentColor::register([
+            'danger' => Color::Rose,
+            'gray' => Color::Gray,
+            'info' => Color::Blue,
+            'primary' => Color::Indigo,
+            'success' => Color::Emerald,
+            'warning' => Color::Orange,
+            'secondary' => Color::Indigo,
+        ]);
+
         //
         Table::configureUsing(function (Table $table): void {
             $table

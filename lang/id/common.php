@@ -12,4 +12,5 @@ return [
     'deleted_at.label' => 'Dihapus Pada',
 
     'log_activity.label' => 'Log Aktivitas',
+    'log_activity.by' => 'oleh',
 ];

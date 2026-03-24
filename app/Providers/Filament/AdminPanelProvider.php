@@ -3,6 +3,24 @@
 namespace App\Providers\Filament;
 
 // use Andreia\FilamentUiSwitcher\FilamentUiSwitcherPlugin;
+use App\Filament\Resources\Banks\BankResource;
+use App\Filament\Resources\Companies\CompanyResource;
+use App\Filament\Resources\Couriers\CourierResource;
+use App\Filament\Resources\Currencies\CurrencyResource;
+use App\Filament\Resources\Divisions\DivisionResource;
+use App\Filament\Resources\ItemCategories\ItemCategoryResource;
+use App\Filament\Resources\Items\ItemResource;
+use App\Filament\Resources\Projects\ProjectResource;
+use App\Filament\Resources\Vendors\VendorResource;
+use App\Filament\Resources\Warehouses\WarehouseResource;
+use Awcodes\Gravatar\GravatarPlugin;
+use Awcodes\Gravatar\GravatarProvider;
+use Awcodes\Overlook\OverlookPlugin;
+use Awcodes\Overlook\Widgets\OverlookWidget;
+use Awcodes\StickyHeader\StickyHeaderPlugin;
+use Awcodes\Versions\VersionsPlugin;
+use Awcodes\Versions\VersionsWidget;
+use CharrafiMed\GlobalSearchModal\GlobalSearchModalPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -39,15 +57,16 @@ class AdminPanelProvider extends PanelProvider
             ->passwordReset()
             ->emailVerification()
             ->profile(isSimple: false)
-            ->colors([
-                'primary' => Color::Amber,
-                // 'danger' => Color::Rose,
-                // 'gray' => Color::Gray,
-                // 'info' => Color::Blue,
-                // 'primary' => Color::Indigo,
-                // 'success' => Color::Emerald,
-                // 'warning' => Color::Orange,
-            ])
+            // ->colors([
+            //     'primary' => Color::Indigo,
+
+            //     'danger' => Color::Rose,
+            //     'gray' => Color::Gray,
+            //     'info' => Color::Blue,
+            //     'primary' => Color::Indigo,
+            //     'success' => Color::Emerald,
+            //     'warning' => Color::Orange,
+            // ])
             ->maxContentWidth(Width::Full)
             ->sidebarWidth('16rem')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
@@ -58,7 +77,9 @@ class AdminPanelProvider extends PanelProvider
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
                 AccountWidget::class,
-                FilamentInfoWidget::class,
+                    // VersionsWidget::class,
+                    // FilamentInfoWidget::class,
+                OverlookWidget::class,
             ])
             ->middleware([
                 EncryptCookies::class,
@@ -102,6 +123,7 @@ class AdminPanelProvider extends PanelProvider
             // ->sidebarCollapsibleOnDesktop()
             // ->topNavigation()
 
+            ->defaultAvatarProvider(GravatarProvider::class)
             ->plugins([
                 BreezyCore::make()
                     ->myProfile(
@@ -123,11 +145,6 @@ class AdminPanelProvider extends PanelProvider
                     ->enableBrowserSessions(condition: true)
                 ,
 
-                // FilamentUiSwitcherPlugin::make()
-                //     ->iconRenderHook(PanelsRenderHook::USER_MENU_BEFORE)
-                //     ->withModeSwitcher()
-                // ,
-
                 EnvironmentIndicatorPlugin::make()
                     ->visible(fn() => auth()->user()?->hasRole('Project Owner'))
                     ->showBadge(true)
@@ -140,6 +157,51 @@ class AdminPanelProvider extends PanelProvider
                     })
                     ->showDebugModeWarningInProduction()
                 ,
+
+                OverlookPlugin::make()
+                    ->sort(2)
+                    ->columns([
+                        'default' => 1,
+                        'sm' => 1,
+                        'md' => 2,
+                        'lg' => 3,
+                        'xl' => 4,
+                        '2xl' => null,
+                    ])
+                    ->includes([
+                        CompanyResource::class,
+                        WarehouseResource::class,
+                        DivisionResource::class,
+                        ProjectResource::class,
+                        ItemCategoryResource::class,
+                        ItemResource::class,
+                        VendorResource::class,
+                        CourierResource::class,
+                        CurrencyResource::class,
+                        BankResource::class,
+                    ])
+                    ->withoutTrashed()
+                ,
+
+                StickyHeaderPlugin::make()
+                    ->floating()
+                    ->colored()
+                ,
+
+                GlobalSearchModalPlugin::make(),
+
+                VersionsPlugin::make(),
+
+                GravatarPlugin::make()
+                    ->default('robohash')
+                    ->size(200)
+                    ->rating('pg')
+                ,
+
+                // FilamentUiSwitcherPlugin::make()
+                //     ->iconRenderHook(PanelsRenderHook::USER_MENU_BEFORE)
+                //     ->withModeSwitcher()
+                // ,
             ])
             // ->authGuard('admin')
         ;
