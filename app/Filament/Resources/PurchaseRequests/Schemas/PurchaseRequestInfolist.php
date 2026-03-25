@@ -174,10 +174,15 @@ class PurchaseRequestInfolist
                                         $user = $record->user?->name ?? 'System';
                                         $date = $record->created_at->format('M d, Y');
 
-                                        return "{$date} - {$status} by {$user}";
+                                        return __('common.log_format_with_date', [
+                                            'date' => $date,
+                                            'status' => $status,
+                                            'user' => $user,
+                                        ]);
                                     })
                                     ->icon(fn($state) => $state?->icon())
                                     ->iconColor(fn($state) => $state?->color())
+                                    ->color('gray')
                                 ,
 
                                 TextEntry::make('note')
