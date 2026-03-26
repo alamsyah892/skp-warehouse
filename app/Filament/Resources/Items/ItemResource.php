@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
-set_time_limit(60);
-
 class ItemResource extends Resource
 {
     protected static ?string $model = Item::class;

@@ -66,7 +66,7 @@ trait HasStateMachine
 
         $user ??= auth()->user();
 
-        if (!$user) {
+        if (!$user || app()->runningInConsole()) {
             return false;
         }
 
