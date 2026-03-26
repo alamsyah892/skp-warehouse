@@ -1,9 +1,8 @@
 {
     "agents": [
-        "codex"
+        "cursor"
     ],
-    "guidelines": true,
-    "packages": [
-        "filament/filament"
-    ]
+    "mcp": true,
+    "nightwatch_mcp": false,
+    "sail": false
 }
