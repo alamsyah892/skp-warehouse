@@ -48,6 +48,7 @@ return [
         ],
 
         'action' => [
+            'note' => 'Konfirmasi perubahan status pengajuan pembelian menjadi :status',
             'changed' => 'Status berhasil diubah',
         ],
     ],

@@ -141,6 +141,7 @@ class PurchaseRequestInfolist
                             ->color('gray')
                             ->placeholder('-')
                         ,
+                        
                     ])
                 ,
                 Grid::make()
@@ -211,13 +212,13 @@ class PurchaseRequestInfolist
                 ->icon($status->icon())
                 ->requiresConfirmation()
                 ->modalHeading(
-                    __($status->label()) .
+                    __($status->actionLabel()) .
                     ' ' .
                     __('purchase-request.model.label')
                 )
                 ->modalDescription(
                     __(
-                        'purchase-request.action.note',
+                        'purchase-request.status.action.note',
                         ['status' => __($status->label())]
                     )
                 )
