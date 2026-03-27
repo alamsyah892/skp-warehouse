@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 return [
     'model' => [
-        'label' => 'Pesanan Pembelian',
-        'plural_label' => 'Pesanan Pembelian',
+        'label' => 'Purchase Order',
+        'plural_label' => 'Purchase Order',
     ],
 
     'warehouse_address' => [

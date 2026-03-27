@@ -70,13 +70,7 @@
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi",
-            "@php artisan filament:upgrade",
-            "@php artisan filament:assets",
-            "@php artisan optimize:clear",
-            "@php artisan filament:optimize-clear",
-            "@php artisan optimize",
-            "@php artisan filament:optimize",
-            "npm run build"
+            "@php artisan filament:upgrade"
         ],
         "post-update-cmd": [
             "@php artisan vendor:publish --tag=laravel-assets --ansi --force",
@@ -85,7 +79,8 @@
             "@php artisan filament:optimize-clear",
             "@php artisan optimize",
             "@php artisan filament:optimize",
-            "npm run build"
+            "npm run build",
+            "@php artisan boost:update --ansi"
         ],
         "post-root-package-install": [
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""

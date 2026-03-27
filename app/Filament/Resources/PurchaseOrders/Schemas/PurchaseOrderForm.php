@@ -151,11 +151,11 @@ class PurchaseOrderForm
                     ->hiddenLabel()
                     ->relationship()
                     ->columnSpanFull()
-                    ->columns(12)
+                    ->columns(4)
                     ->schema([
                         Select::make('purchase_request_item_id')
                             ->label(__('purchase-order.purchase_order_item.source_item.label'))
-                            ->options(function ($get) {
+                            ->getSearchResultsUsing(function (string $search, $get) {
                                 $header = [
                                     'warehouse_id' => $get('../../warehouse_id'),
                                     'company_id' => $get('../../company_id'),
@@ -166,23 +166,35 @@ class PurchaseOrderForm
                                 $header = collect($header)->every(fn($value) => filled($value)) ? $header : null;
 
                                 return PurchaseOrder::getCompatiblePurchaseRequestItemsQuery($header)
-                                    ->limit(200)
-                                    ->get()
-                                    ->mapWithKeys(function (PurchaseRequestItem $purchaseRequestItem) {
-                                        $pr = $purchaseRequestItem->purchaseRequest;
-                                        $item = $purchaseRequestItem->item;
-
-                                        return [
-                                            $purchaseRequestItem->id => "{$pr?->number} | {$item?->code} | {$item?->name}",
-                                        ];
+                                    ->where(function (Builder $query) use ($search) {
+                                        $query->whereHas('item', function ($q) use ($search) {
+                                            $q->where('name', 'like', "%{$search}%")
+                                                ->orWhere('code', 'like', "%{$search}%");
+                                        })
+                                            ->orWhereHas('purchaseRequest', function ($q) use ($search) {
+                                                $q->where('number', 'like', "%{$search}%");
+                                            });
                                     })
+                                    ->limit(50)
+                                    ->get()
+                                    ->mapWithKeys(fn($record) => [
+                                        $record->id => "{$record->item?->code} | {$record->item?->name} | {$record->purchaseRequest?->number}"
+                                    ])
                                     ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value) {
+                                $record = PurchaseRequestItem::with(['item', 'purchaseRequest'])->find($value);
+
+                                if (!$record)
+                                    return null;
+
+                                return "{$record->item?->code} | {$record->item?->name} | {$record->purchaseRequest?->number}";
                             })
                             ->searchable()
                             ->live()
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->required()
-                            ->columnSpan(6)
+                            ->columnSpan(2)
                             ->afterStateUpdated(function ($state, $set) {
                                 if (!$state) {
                                     return;
@@ -202,30 +214,8 @@ class PurchaseOrderForm
                                 $set('../../division_id', $source->purchaseRequest?->division_id);
                                 $set('../../project_id', $source->purchaseRequest?->project_id);
                                 $set('../../warehouse_address_id', $source->purchaseRequest?->warehouse_address_id);
-                            }),
-                        Placeholder::make('source_context')
-                            ->label(__('purchase-order.purchase_order_item.source_item.context'))
-                            ->columnSpan(6)
-                            ->content(function ($get) {
-                                $sourceId = $get('purchase_request_item_id');
-                                if (!$sourceId) {
-                                    return '-';
-                                }
-
-                                $source = PurchaseRequestItem::query()->with(['item', 'purchaseRequest'])->find($sourceId);
-                                if (!$source) {
-                                    return '-';
-                                }
-
-                                return __('purchase-order.purchase_order_item.source_item.context_value', [
-                                    'number' => $source->purchaseRequest?->number ?? '-',
-                                    'code' => $source->item?->code ?? '-',
-                                    'name' => $source->item?->name ?? '-',
-                                    'request_qty' => number_format((float) $source->qty, 2),
-                                    'allocated_qty' => number_format($source->getAllocatedQty(), 2),
-                                    'remaining_qty' => number_format($source->getRemainingQty(), 2),
-                                ]);
-                            }),
+                            })
+                        ,
                         Hidden::make('item_id')->required(),
                         TextInput::make('qty')
                             ->label(__('purchase-order.purchase_order_item.qty.label'))
@@ -258,27 +248,66 @@ class PurchaseOrderForm
                                     }
                                 };
                             })
-                            ->columnSpan(2),
+                            ->columnSpan(1),
                         TextInput::make('price')
                             ->label(__('purchase-order.purchase_order_item.price.label'))
                             ->numeric()
                             ->minValue(0)
                             ->default(0)
                             ->required()
-                            ->columnSpan(2),
+                            ->columnSpan(1),
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
                             ->helperText(__('purchase-order.purchase_order_item.description.helper'))
                             ->autosize()
-                            ->columnSpan(8),
+                            ->columnSpanFull(),
+                        Placeholder::make('source_context')
+                            ->label(__('purchase-order.purchase_order_item.source_item.context'))
+                            ->columnSpan(6)
+                            ->content(function ($get) {
+                                $sourceId = $get('purchase_request_item_id');
+                                if (!$sourceId) {
+                                    return '-';
+                                }
+
+                                $source = PurchaseRequestItem::query()->with(['item', 'purchaseRequest'])->find($sourceId);
+                                if (!$source) {
+                                    return '-';
+                                }
+
+                                return __('purchase-order.purchase_order_item.source_item.context_value', [
+                                    'number' => $source->purchaseRequest?->number ?? '-',
+                                    'code' => $source->item?->code ?? '-',
+                                    'name' => $source->item?->name ?? '-',
+                                    'request_qty' => number_format((float) $source->qty, 2),
+                                    'allocated_qty' => number_format($source->getAllocatedQty(), 2),
+                                    'remaining_qty' => number_format($source->getRemainingQty(), 2),
+                                ]);
+                            }),
                     ])
                     ->reorderable()
                     ->orderColumn('sort')
                     ->itemNumbers()
+                    ->afterStateUpdated(function ($state, $set, $get) {
+                        $subtotal = collect($get('purchaseOrderItems'))
+                            ->sum(fn($item) => (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0));
+                        $set('subtotal', $subtotal);
+                    })
+                    ->afterStateHydrated(function ($state, $set, $get) {
+                        $subtotal = collect($get('purchaseOrderItems'))
+                            ->sum(fn($item) => (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0));
+                        $set('subtotal', $subtotal);
+                    })
                     ->deleteAction(fn(Action $action) => $action->requiresConfirmation())
                     ->minItems(1)
                     ->live(),
+                TextInput::make('subtotal')
+                    ->label('Subtotal')
+                    ->numeric()
+                    ->readOnly()
+                    ->prefix('Rp')
+                    ->dehydrated(false),
             ]);
     }
 
