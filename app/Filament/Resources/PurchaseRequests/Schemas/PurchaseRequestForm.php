@@ -6,6 +6,7 @@ use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -297,6 +298,38 @@ class PurchaseRequestForm
                             ->required()
                             ->numeric()
                         ,
+                        Placeholder::make('allocated_qty')
+                            ->label('Allocated Qty')
+                            ->content(function ($get, $record) {
+                                if ($record) {
+                                    return number_format($record->getAllocatedQty(), 2);
+                                }
+
+                                $itemId = $get('id');
+                                if (!$itemId) {
+                                    return '0.00';
+                                }
+
+                                $source = \App\Models\PurchaseRequestItem::query()->find($itemId);
+
+                                return number_format($source?->getAllocatedQty() ?? 0, 2);
+                            }),
+                        Placeholder::make('remaining_qty')
+                            ->label('Remaining Qty')
+                            ->content(function ($get, $record) {
+                                if ($record) {
+                                    return number_format($record->getRemainingQty(), 2);
+                                }
+
+                                $itemId = $get('id');
+                                if (!$itemId) {
+                                    return '0.00';
+                                }
+
+                                $source = \App\Models\PurchaseRequestItem::query()->find($itemId);
+
+                                return number_format($source?->getRemainingQty() ?? 0, 2);
+                            }),
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))

@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseRequestItem extends Model
 {
@@ -38,6 +40,31 @@ class PurchaseRequestItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function purchaseOrderItems(): HasMany
+    {
+        return $this->hasMany(PurchaseOrderItem::class);
+    }
+
+    public function getAllocatedQty(?int $exceptPurchaseOrderId = null): float
+    {
+        return (float) $this->purchaseOrderItems()
+            ->whereHas('purchaseOrder', function ($query) use ($exceptPurchaseOrderId) {
+                // $query->where('status', '!=', PurchaseOrderStatus::CANCELED);
+    
+                if ($exceptPurchaseOrderId) {
+                    $query->where('id', '!=', $exceptPurchaseOrderId);
+                }
+            })
+            ->sum('qty');
+    }
+
+    public function getRemainingQty(?int $exceptPurchaseOrderId = null): float
+    {
+        $remaining = (float) $this->qty - $this->getAllocatedQty($exceptPurchaseOrderId);
+
+        return max($remaining, 0.0);
     }
 
     public function scopeForUserWarehouses($query, $user)

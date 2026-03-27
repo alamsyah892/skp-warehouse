@@ -141,7 +141,7 @@ class PurchaseRequestInfolist
                             ->color('gray')
                             ->placeholder('-')
                         ,
-                        
+
                     ])
                 ,
                 Grid::make()
@@ -264,6 +264,8 @@ class PurchaseRequestInfolist
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make('Qty'),
+                                TableColumn::make('Allocated Qty'),
+                                TableColumn::make('Remaining Qty'),
                                 TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
@@ -283,6 +285,18 @@ class PurchaseRequestInfolist
                                     ->label(__('item.related.unit.label'))
                                 ,
                                 TextEntry::make('qty')
+                                    ->numeric()
+                                    ->alignment(Alignment::End)
+                                ,
+                                TextEntry::make('allocated_qty')
+                                    ->label('Allocated Qty')
+                                    ->state(fn($record) => $record->getAllocatedQty())
+                                    ->numeric()
+                                    ->alignment(Alignment::End)
+                                ,
+                                TextEntry::make('remaining_qty')
+                                    ->label('Remaining Qty')
+                                    ->state(fn($record) => $record->getRemainingQty())
                                     ->numeric()
                                     ->alignment(Alignment::End)
                                 ,

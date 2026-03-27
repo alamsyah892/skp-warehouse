@@ -1,6 +1,6 @@
 {
     "agents": [
-        "cursor"
+        "gemini"
     ],
     "mcp": true,
     "nightwatch_mcp": false,
