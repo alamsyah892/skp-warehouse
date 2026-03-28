@@ -20,6 +20,7 @@ class PurchaseOrderItemFactory extends Factory
             'item_id' => Item::factory(),
             'qty' => $this->faker->randomFloat(2, 1, 100),
             'price' => $this->faker->randomFloat(2, 1000, 100000),
+            'discount' => $this->faker->randomFloat(2, 0, 1000),
             'description' => $this->faker->sentence(),
             'sort' => 0,
         ];

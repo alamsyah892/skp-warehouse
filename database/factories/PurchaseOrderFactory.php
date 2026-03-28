@@ -35,6 +35,10 @@ class PurchaseOrderFactory extends Factory
             'termin' => $this->faker->word(),
             'notes' => $this->faker->paragraph(),
             'info' => $this->faker->sentence(),
+            'discount' => 0,
+            'tax' => 0,
+            'tax_description' => '',
+            'pembulatan' => 0,
             'status' => PurchaseOrderStatus::DRAFT,
         ];
     }

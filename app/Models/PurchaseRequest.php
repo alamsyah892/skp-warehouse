@@ -11,6 +11,7 @@ use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -41,6 +42,7 @@ class PurchaseRequest extends Model
         'memo',
         'boq',
         'notes',
+        'discount',
 
         'info',
 
@@ -58,6 +60,7 @@ class PurchaseRequest extends Model
 
     protected $casts = [
         'status' => PurchaseRequestStatus::class,
+        'discount' => 'decimal:2',
     ];
 
 
@@ -143,6 +146,11 @@ class PurchaseRequest extends Model
         return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
     }
 
+    public function purchaseOrders(): BelongsToMany
+    {
+        return $this->belongsToMany(PurchaseOrder::class);
+    }
+
     public function statusLogs(): HasMany
     {
         return $this->hasMany(PurchaseRequestStatusLog::class);
@@ -214,6 +222,7 @@ class PurchaseRequest extends Model
         return [
             'warehouse_address_id',
             'description',
+            'discount',
         ];
     }
 
@@ -227,6 +236,7 @@ class PurchaseRequest extends Model
         return [
             'item_id' => (int) $item->item_id,
             'qty' => (float) $item->qty,
+            'discount' => (float) $item->discount,
             'description' => trim((string) $item->description),
         ];
     }
@@ -236,6 +246,7 @@ class PurchaseRequest extends Model
         return [
             'item_id' => (int) ($item['item_id'] ?? 0),
             'qty' => (float) ($item['qty'] ?? 0),
+            'discount' => (float) ($item['discount'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
         ];
     }

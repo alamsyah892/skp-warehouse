@@ -10,11 +10,26 @@ class CreatePurchaseOrder extends CreateRecord
 {
     protected static string $resource = PurchaseOrderResource::class;
 
+    protected array $selectedPurchaseRequestIds = [];
+
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        PurchaseOrder::syncHeaderFromPurchaseRequestItems($data);
+        $this->selectedPurchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds($this->data['purchaseRequests'] ?? []);
+        $data['purchaseRequests'] = $this->selectedPurchaseRequestIds;
+
+        PurchaseOrder::syncHeaderFromPurchaseRequests($data);
+        PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
+        PurchaseOrder::validateItemsBelongToPurchaseRequests(
+            $data['purchaseOrderItems'] ?? [],
+            $this->selectedPurchaseRequestIds,
+        );
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? []);
 
         return $data;
+    }
+
+    protected function afterCreate(): void
+    {
+        $this->record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
     }
 }

@@ -16,6 +16,7 @@ class EditPurchaseOrder extends EditRecord
     protected static string $resource = PurchaseOrderResource::class;
 
     protected ?PurchaseOrderStatus $pendingStatus = null;
+    protected array $selectedPurchaseRequestIds = [];
 
     protected function getHeaderActions(): array
     {
@@ -31,13 +32,20 @@ class EditPurchaseOrder extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $record = $this->record;
+        $this->selectedPurchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds($this->data['purchaseRequests'] ?? []);
+        $data['purchaseRequests'] = $this->selectedPurchaseRequestIds;
 
         if ($data['status'] !== $record->status->value) {
             $this->pendingStatus = PurchaseOrderStatus::from($data['status']);
             $data['status'] = $record->status->value;
         }
 
-        PurchaseOrder::syncHeaderFromPurchaseRequestItems($data);
+        PurchaseOrder::syncHeaderFromPurchaseRequests($data);
+        PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
+        PurchaseOrder::validateItemsBelongToPurchaseRequests(
+            $data['purchaseOrderItems'] ?? [],
+            $this->selectedPurchaseRequestIds,
+        );
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? [], $record->id);
 
         $record->applyRevision($data);
@@ -48,6 +56,8 @@ class EditPurchaseOrder extends EditRecord
 
     protected function afterSave(): void
     {
+        $this->record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
+
         if ($this->pendingStatus) {
             $this->record->changeStatus($this->pendingStatus);
             $this->pendingStatus = null;
@@ -61,6 +71,10 @@ class EditPurchaseOrder extends EditRecord
             'division_id',
             'project_id',
             'warehouse_address_id',
+            'discount',
+            'tax',
+            'tax_description',
+            'pembulatan',
         ]);
     }
 }

@@ -76,6 +76,7 @@ class PurchaseOrderResource extends Resource
     {
         return parent::getRecordRouteBindingEloquentQuery()
             ->with([
+                'purchaseRequests',
                 'purchaseOrderItems.item',
                 'purchaseOrderItems.purchaseRequestItem.purchaseRequest',
                 'statusLogs' => fn ($query) => $query->orderBy('id'),

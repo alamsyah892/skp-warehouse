@@ -51,41 +51,6 @@ This application is a Laravel application and its main Laravel ecosystems packag
 
 - Be concise in your explanations - focus on what's important rather than explaining obvious details.
 
-## Project-Specific Agent Rules
-
-- This codebase is a backoffice warehouse and purchasing application built around Laravel 13, Filament 5, Livewire 4, and Eloquent models with domain-specific traits.
-- Follow existing project structure exactly. For Filament resources, keep the pattern `app/Filament/Resources/<Domain>/` with sibling files for `Resource`, `Pages`, `Schemas`, and `Tables`.
-- When working on a Filament resource, prefer this split:
-  - `*Resource.php` for resource registration, navigation, eager loading, and page routes.
-  - `Schemas/*Form.php` for form definitions.
-  - `Schemas/*Infolist.php` for read-only detail pages.
-  - `Tables/*Table.php` for table definitions.
-  - `Pages/*` only for orchestration such as header actions, save hooks, and page-specific behavior.
-- Keep business rules in models or reusable concerns, not in Filament page classes. This project already uses traits like `HasDocumentNumber`, `HasDocumentRevision`, `HasStateMachine`, `DefaultEmptyString`, and `LogsAllFillable` for that purpose.
-- Reuse the same domain patterns already present in this app:
-  - Soft deletes on master and transactional models where the neighboring models use them.
-  - Activity logging through `LogsAllFillable`.
-  - State enums for user-facing statuses.
-  - Global scopes for warehouse-based visibility when that pattern already exists in the module.
-- Preserve existing relationship naming style. Use explicit relation names such as `purchaseRequestItems`, `warehouseAddress`, `activityLogs`, and avoid renaming established relation methods.
-- Preserve the project’s UI composition style in Filament:
-  - Use `Grid`, `Section`, `Fieldset`, `Tabs`, `RepeatableEntry`, and focused helper widgets instead of oversized single-file schemas.
-  - Keep labels, descriptions, helper text, and badges aligned with surrounding resources.
-  - Prefer `placeholder('-')`, badge status displays, icon-based semantics, and collapsible right-side information panels where sibling resources use them.
-- Match the project’s copywriting style:
-  - Admin-facing labels are often short and practical.
-  - Descriptions and helper texts may mix English section titles with Indonesian explanatory text.
-  - Do not rewrite existing wording just for consistency unless the user asks.
-- For status-driven modules, keep transition logic centralized in enums plus shared traits, and let Filament forms/pages consume that API rather than duplicating permission or transition rules in the UI layer.
-- For document-style modules, preserve the existing pattern of:
-  - auto-generated document numbers,
-  - optional revision history stored on the record,
-  - status timeline logs in a dedicated relation,
-  - record metadata shown in the right-side info panel.
-- When adding list or relation widgets, first check whether the project already uses a dedicated `Livewire\TableWidget` for the same pattern before introducing a new approach.
-- Prefer keeping visual and behavioral consistency with existing resources such as `Companies`, `Items`, and `PurchaseRequests` over introducing a new abstraction.
-- Avoid broad refactors unless explicitly requested. This codebase intentionally tolerates some duplication when it keeps resource modules straightforward to read and edit.
-
 === boost rules ===
 
 # Laravel Boost
@@ -187,5 +152,155 @@ This application is a Laravel application and its main Laravel ecosystems packag
 - This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
 - Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
 - Do NOT delete tests without approval.
+
+=== filament/filament rules ===
+
+## Filament
+
+- Filament is used by this application. Follow the existing conventions for how and where it is implemented.
+- Filament is a Server-Driven UI (SDUI) framework for Laravel that lets you define user interfaces in PHP using structured configuration objects. Built on Livewire, Alpine.js, and Tailwind CSS.
+- Use the `search-docs` tool for official documentation on Artisan commands, code examples, testing, relationships, and idiomatic practices. If `search-docs` is unavailable, refer to https://filamentphp.com/docs.
+
+### Artisan
+
+- Always use Filament-specific Artisan commands to create files. Find available commands with the `list-artisan-commands` tool, or run `php artisan --help`.
+- Always inspect required options before running a command, and always pass `--no-interaction`.
+
+### Patterns
+
+Always use static `make()` methods to initialize components. Most configuration methods accept a `Closure` for dynamic values.
+
+Use `Get $get` to read other form field values for conditional logic:
+
+<code-snippet name="Conditional form field visibility" lang="php">
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
+
+Select::make('type')
+    ->options(CompanyType::class)
+    ->required()
+    ->live(),
+
+TextInput::make('company_name')
+    ->required()
+    ->visible(fn (Get $get): bool => $get('type') === 'business'),
+
+</code-snippet>
+
+Use `state()` with a `Closure` to compute derived column values:
+
+<code-snippet name="Computed table column value" lang="php">
+use Filament\Tables\Columns\TextColumn;
+
+TextColumn::make('full_name')
+    ->state(fn (User $record): string => "{$record->first_name} {$record->last_name}"),
+
+</code-snippet>
+
+Actions encapsulate a button with an optional modal form and logic:
+
+<code-snippet name="Action with modal form" lang="php">
+use Filament\Actions\Action;
+use Filament\Forms\Components\TextInput;
+
+Action::make('updateEmail')
+    ->schema([
+        TextInput::make('email')
+            ->email()
+            ->required(),
+    ])
+    ->action(fn (array $data, User $record) => $record->update($data))
+
+</code-snippet>
+
+### Testing
+
+Always authenticate before testing panel functionality. Filament uses Livewire, so use `Livewire::test()` or `livewire()` (available when `pestphp/pest-plugin-livewire` is in `composer.json`):
+
+<code-snippet name="Table test" lang="php">
+use function Pest\Livewire\livewire;
+
+livewire(ListUsers::class)
+    ->assertCanSeeTableRecords($users)
+    ->searchTable($users->first()->name)
+    ->assertCanSeeTableRecords($users->take(1))
+    ->assertCanNotSeeTableRecords($users->skip(1));
+
+</code-snippet>
+
+<code-snippet name="Create resource test" lang="php">
+use function Pest\Laravel\assertDatabaseHas;
+use function Pest\Livewire\livewire;
+
+livewire(CreateUser::class)
+    ->fillForm([
+        'name' => 'Test',
+        'email' => 'test@example.com',
+    ])
+    ->call('create')
+    ->assertNotified()
+    ->assertRedirect();
+
+assertDatabaseHas(User::class, [
+    'name' => 'Test',
+    'email' => 'test@example.com',
+]);
+
+</code-snippet>
+
+<code-snippet name="Testing validation" lang="php">
+use function Pest\Livewire\livewire;
+
+livewire(CreateUser::class)
+    ->fillForm([
+        'name' => null,
+        'email' => 'invalid-email',
+    ])
+    ->call('create')
+    ->assertHasFormErrors([
+        'name' => 'required',
+        'email' => 'email',
+    ])
+    ->assertNotNotified();
+
+</code-snippet>
+
+<code-snippet name="Calling actions in pages" lang="php">
+use Filament\Actions\DeleteAction;
+use function Pest\Livewire\livewire;
+
+livewire(EditUser::class, ['record' => $user->id])
+    ->callAction(DeleteAction::class)
+    ->assertNotified()
+    ->assertRedirect();
+
+</code-snippet>
+
+<code-snippet name="Calling actions in tables" lang="php">
+use Filament\Actions\Testing\TestAction;
+use function Pest\Livewire\livewire;
+
+livewire(ListUsers::class)
+    ->callAction(TestAction::make('promote')->table($user), [
+        'role' => 'admin',
+    ])
+    ->assertNotified();
+
+</code-snippet>
+
+### Correct Namespaces
+
+- Form fields (`TextInput`, `Select`, etc.): `Filament\Forms\Components\`
+- Infolist entries (`TextEntry`, `IconEntry`, etc.): `Filament\Infolists\Components\`
+- Layout components (`Grid`, `Section`, `Fieldset`, `Tabs`, `Wizard`, etc.): `Filament\Schemas\Components\`
+- Schema utilities (`Get`, `Set`, etc.): `Filament\Schemas\Components\Utilities\`
+- Actions (`DeleteAction`, `CreateAction`, etc.): `Filament\Actions\`. Never use `Filament\Tables\Actions\`, `Filament\Forms\Actions\`, or any other sub-namespace for actions.
+- Icons: `Filament\Support\Icons\Heroicon` enum (e.g., `Heroicon::PencilSquare`)
+
+### Common Mistakes
+
+- **Never assume public file visibility.** File visibility is `private` by default. Always use `->visibility('public')` when public access is needed.
+- **Never assume full-width layout.** `Grid`, `Section`, and `Fieldset` do not span all columns by default. Explicitly set column spans when needed.
 
 </laravel-boost-guidelines>

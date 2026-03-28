@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Collection;
@@ -40,6 +41,10 @@ class PurchaseOrder extends Model
         'termin',
         'notes',
         'info',
+        'discount',
+        'tax',
+        'tax_description',
+        'pembulatan',
         'status',
     ];
 
@@ -49,10 +54,14 @@ class PurchaseOrder extends Model
         'termin',
         'notes',
         'info',
+        'tax_description',
     ];
 
     protected $casts = [
         'status' => PurchaseOrderStatus::class,
+        'discount' => 'decimal:2',
+        'tax' => 'decimal:2',
+        'pembulatan' => 'decimal:2',
     ];
 
     public const MODEL_ALIAS = 'PO';
@@ -132,21 +141,33 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderItem::class)->with('purchaseRequestItem');
     }
 
+    public function purchaseRequests(): BelongsToMany
+    {
+        return $this->belongsToMany(PurchaseRequest::class)->orderBy('number');
+    }
+
     public function statusLogs(): HasMany
     {
         return $this->hasMany(PurchaseOrderStatusLog::class);
     }
 
-    public function purchaseRequests(): Collection
+    public function getSubtotalAmount(): float
     {
-        return PurchaseRequest::query()
-            ->whereIn(
-                'id',
-                $this->purchaseOrderItems()
-                    ->join('purchase_request_items', 'purchase_request_items.id', '=', 'purchase_order_items.purchase_request_item_id')
-                    ->select('purchase_request_items.purchase_request_id')
-            )
-            ->get();
+        return (float) $this->purchaseOrderItems->sum(
+            fn(PurchaseOrderItem $item): float => $item->getLineTotalAmount()
+        );
+    }
+
+    public function getNetSubtotalAmount(): float
+    {
+        return max($this->getSubtotalAmount() - (float) $this->discount, 0.0);
+    }
+
+    public function getGrandTotalAmount(): float
+    {
+        return $this->getNetSubtotalAmount()
+            + (float) $this->tax
+            + (float) $this->pembulatan;
     }
 
     protected function getStatusField(): string
@@ -190,25 +211,101 @@ class PurchaseOrder extends Model
         return $this->status === $status;
     }
 
-    public static function getCompatiblePurchaseRequestItemsQuery(?array $header = null): Builder
+    public static function getCompatiblePurchaseRequestsQuery(?array $header = null): Builder
+    {
+        return PurchaseRequest::query()
+            ->when($header, function (Builder $query) use ($header): void {
+                $query
+                    ->where('warehouse_id', $header['warehouse_id'])
+                    ->where('company_id', $header['company_id'])
+                    ->where('division_id', $header['division_id'])
+                    ->where('project_id', $header['project_id']);
+
+                if (array_key_exists('warehouse_address_id', $header)) {
+                    if ($header['warehouse_address_id']) {
+                        $query->where('warehouse_address_id', $header['warehouse_address_id']);
+                    } else {
+                        $query->whereNull('warehouse_address_id');
+                    }
+                }
+            });
+    }
+
+    public static function getCompatiblePurchaseRequestItemsQuery(array $purchaseRequestIds = []): Builder
     {
         return PurchaseRequestItem::query()
             ->with([
                 'item:id,code,name,unit',
                 'purchaseRequest:id,number,warehouse_id,company_id,division_id,project_id,status',
             ])
-            ->whereHas('purchaseRequest', function (Builder $query) use ($header) {
-                // $query->where('status', '!=', \App\Enums\PurchaseRequestStatus::CANCELED);
-    
-                if (!$header) {
+            ->whereHas('purchaseRequest', function (Builder $query) use ($purchaseRequestIds) {
+                if (blank($purchaseRequestIds)) {
                     return;
                 }
 
-                $query->where('warehouse_id', $header['warehouse_id'])
-                    ->where('company_id', $header['company_id'])
-                    ->where('division_id', $header['division_id'])
-                    ->where('project_id', $header['project_id']);
+                $query->whereIn('id', $purchaseRequestIds);
             });
+    }
+
+    public static function normalizePurchaseRequestIds(array $purchaseRequestIds): array
+    {
+        return collect($purchaseRequestIds)
+            ->flatten()
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    public static function extractHeaderFromPurchaseRequests(array $purchaseRequestIds): ?array
+    {
+        $ids = self::normalizePurchaseRequestIds($purchaseRequestIds);
+
+        if (blank($ids)) {
+            return null;
+        }
+
+        $rows = PurchaseRequest::query()
+            ->whereIn('id', $ids)
+            ->get([
+                'id',
+                'warehouse_id',
+                'company_id',
+                'division_id',
+                'project_id',
+                'warehouse_address_id',
+            ]);
+
+        if ($rows->count() !== count($ids)) {
+            throw ValidationException::withMessages([
+                'purchaseRequests' => __('purchase-order.validation.source_purchase_request_not_found'),
+            ]);
+        }
+
+        $first = $rows->first();
+
+        $isCompatible = $rows->every(function (PurchaseRequest $purchaseRequest) use ($first): bool {
+            return $purchaseRequest->warehouse_id === $first->warehouse_id
+                && $purchaseRequest->company_id === $first->company_id
+                && $purchaseRequest->division_id === $first->division_id
+                && $purchaseRequest->project_id === $first->project_id
+                && $purchaseRequest->warehouse_address_id === $first->warehouse_address_id;
+        });
+
+        if (!$isCompatible) {
+            throw ValidationException::withMessages([
+                'purchaseRequests' => __('purchase-order.validation.incompatible_purchase_requests'),
+            ]);
+        }
+
+        return [
+            'warehouse_id' => $first->warehouse_id,
+            'company_id' => $first->company_id,
+            'division_id' => $first->division_id,
+            'project_id' => $first->project_id,
+            'warehouse_address_id' => $first->warehouse_address_id,
+        ];
     }
 
     public static function extractHeaderFromPurchaseRequestItems(array $items): ?array
@@ -290,6 +387,56 @@ class PurchaseOrder extends Model
         }
     }
 
+    public static function validateItemsBelongToPurchaseRequests(array $items, array $purchaseRequestIds): void
+    {
+        $purchaseRequestIds = self::normalizePurchaseRequestIds($purchaseRequestIds);
+
+        foreach ($items as $index => $item) {
+            $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+
+            if ($purchaseRequestItemId <= 0) {
+                continue;
+            }
+
+            $purchaseRequestItem = PurchaseRequestItem::query()
+                ->select(['id', 'purchase_request_id'])
+                ->find($purchaseRequestItemId);
+
+            if (!$purchaseRequestItem) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.purchase_request_item_id" => __('purchase-order.validation.source_item_not_found'),
+                ]);
+            }
+
+            if (!in_array($purchaseRequestItem->purchase_request_id, $purchaseRequestIds, true)) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.purchase_request_item_id" => __('purchase-order.validation.source_item_not_selected_pr'),
+                ]);
+            }
+        }
+    }
+
+    public static function syncHeaderFromPurchaseRequests(array &$data): void
+    {
+        $header = self::extractHeaderFromPurchaseRequests($data['purchaseRequests'] ?? []);
+
+        if (!$header) {
+            $data['warehouse_id'] = null;
+            $data['company_id'] = null;
+            $data['division_id'] = null;
+            $data['project_id'] = null;
+            $data['warehouse_address_id'] = null;
+
+            return;
+        }
+
+        $data['warehouse_id'] = $header['warehouse_id'];
+        $data['company_id'] = $header['company_id'];
+        $data['division_id'] = $header['division_id'];
+        $data['project_id'] = $header['project_id'];
+        $data['warehouse_address_id'] = $header['warehouse_address_id'];
+    }
+
     public static function syncHeaderFromPurchaseRequestItems(array &$data): void
     {
         $items = $data['purchaseOrderItems'] ?? [];
@@ -306,6 +453,65 @@ class PurchaseOrder extends Model
         $data['warehouse_address_id'] = $header['warehouse_address_id'];
     }
 
+    public static function syncPurchaseOrderItemsFromPurchaseRequestItems(array &$data): void
+    {
+        $items = collect($data['purchaseOrderItems'] ?? [])
+            ->map(function (array $item): array {
+                $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+
+                if ($purchaseRequestItemId <= 0) {
+                    return $item;
+                }
+
+                $purchaseRequestItem = PurchaseRequestItem::query()
+                    ->select(['id', 'item_id', 'discount'])
+                    ->find($purchaseRequestItemId);
+
+                if (!$purchaseRequestItem) {
+                    return $item;
+                }
+
+                $item['item_id'] = $purchaseRequestItem->item_id;
+                $item['discount'] = $purchaseRequestItem->discount;
+
+                return $item;
+            })
+            ->values()
+            ->all();
+
+        $data['purchaseOrderItems'] = $items;
+    }
+
+    public static function calculateItemTotal(array $item): float
+    {
+        $grossAmount = (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0);
+        $discountAmount = (float) ($item['discount'] ?? 0);
+
+        return max($grossAmount - $discountAmount, 0.0);
+    }
+
+    public static function calculateSubtotal(array $items): float
+    {
+        return (float) collect($items)
+            ->sum(fn(array $item): float => self::calculateItemTotal($item));
+    }
+
+    public static function calculateNetSubtotal(array $items, float|int|string|null $discount): float
+    {
+        return max(self::calculateSubtotal($items) - (float) $discount, 0.0);
+    }
+
+    public static function calculateGrandTotal(
+        array $items,
+        float|int|string|null $discount,
+        float|int|string|null $tax,
+        float|int|string|null $pembulatan,
+    ): float {
+        return self::calculateNetSubtotal($items, $discount)
+            + (float) $tax
+            + (float) $pembulatan;
+    }
+
     protected function getWatchedFields(): array
     {
         return [
@@ -314,6 +520,10 @@ class PurchaseOrder extends Model
             'description',
             'memo',
             'termin',
+            'discount',
+            'tax',
+            'tax_description',
+            'pembulatan',
         ];
     }
 
@@ -329,6 +539,7 @@ class PurchaseOrder extends Model
             'item_id' => (int) $item->item_id,
             'qty' => (float) $item->qty,
             'price' => (float) $item->price,
+            'discount' => (float) $item->discount,
             'description' => trim((string) $item->description),
         ];
     }
@@ -340,6 +551,7 @@ class PurchaseOrder extends Model
             'item_id' => (int) ($item['item_id'] ?? 0),
             'qty' => (float) ($item['qty'] ?? 0),
             'price' => (float) ($item['price'] ?? 0),
+            'discount' => (float) ($item['discount'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
         ];
     }

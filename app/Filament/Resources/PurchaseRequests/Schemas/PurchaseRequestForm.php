@@ -232,6 +232,13 @@ class PurchaseRequestForm
                             ->autosize()
                             ->columnSpanFull()
                         ,
+                        TextInput::make('discount')
+                            ->label(__('purchase-request.discount.label'))
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->prefix('Rp')
+                        ,
 
                         Select::make('status')
                             ->options(fn($record) => $record->getAvailableStatusOptions())
@@ -297,6 +304,13 @@ class PurchaseRequestForm
                             ->minValue(0.01)
                             ->required()
                             ->numeric()
+                        ,
+                        TextInput::make('discount')
+                            ->label(__('purchase-request.purchase_request_item.discount.label'))
+                            ->numeric()
+                            ->default(0)
+                            ->minValue(0)
+                            ->prefix('Rp')
                         ,
                         Placeholder::make('allocated_qty')
                             ->label('Allocated Qty')

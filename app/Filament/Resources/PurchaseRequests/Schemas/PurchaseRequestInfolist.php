@@ -141,6 +141,11 @@ class PurchaseRequestInfolist
                             ->color('gray')
                             ->placeholder('-')
                         ,
+                        TextEntry::make('discount')
+                            ->label(__('purchase-request.discount.label'))
+                            ->numeric()
+                            ->placeholder('-')
+                        ,
 
                     ])
                 ,
@@ -264,6 +269,7 @@ class PurchaseRequestInfolist
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make('Qty'),
+                                TableColumn::make(__('purchase-request.purchase_request_item.discount.label')),
                                 TableColumn::make('Allocated Qty'),
                                 TableColumn::make('Remaining Qty'),
                                 TableColumn::make(__('common.description.label')),
@@ -285,6 +291,11 @@ class PurchaseRequestInfolist
                                     ->label(__('item.related.unit.label'))
                                 ,
                                 TextEntry::make('qty')
+                                    ->numeric()
+                                    ->alignment(Alignment::End)
+                                ,
+                                TextEntry::make('discount')
+                                    ->label(__('purchase-request.purchase_request_item.discount.label'))
                                     ->numeric()
                                     ->alignment(Alignment::End)
                                 ,

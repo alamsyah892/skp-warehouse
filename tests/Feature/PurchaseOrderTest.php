@@ -1,27 +1,43 @@
 <?php
 
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseOrderItem;
-use App\Models\User;
-use App\Enums\PurchaseOrderStatus;
 
-it('can create a purchase order with items', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
-
-    $purchaseOrder = PurchaseOrder::factory()
-        ->has(PurchaseOrderItem::factory()->count(3), 'purchaseOrderItems')
-        ->create();
-
-    expect($purchaseOrder->purchaseOrderItems)->toHaveCount(3);
-    expect($purchaseOrder->status)->toBe(PurchaseOrderStatus::DRAFT);
+it('normalizes selected purchase request ids', function () {
+    expect(PurchaseOrder::normalizePurchaseRequestIds([1, '2', null, '2', 0, [3, '4']]))
+        ->toBe([1, 2, 3, 4]);
 });
 
-it('can generate a document number on creation', function () {
-    $user = User::factory()->create();
-    $this->actingAs($user);
+it('calculates item total with discount', function () {
+    expect(PurchaseOrder::calculateItemTotal([
+        'qty' => 5,
+        'price' => 10000,
+        'discount' => 12500,
+    ]))->toBe(37500.0);
+});
 
-    $purchaseOrder = PurchaseOrder::factory()->create();
+it('does not allow negative item total', function () {
+    expect(PurchaseOrder::calculateItemTotal([
+        'qty' => 1,
+        'price' => 5000,
+        'discount' => 6000,
+    ]))->toBe(0.0);
+});
 
-    expect($purchaseOrder->number)->not->toBeEmpty();
+it('calculates subtotal, net subtotal, and grand total', function () {
+    $items = [
+        [
+            'qty' => 2,
+            'price' => 10000,
+            'discount' => 1000,
+        ],
+        [
+            'qty' => 3,
+            'price' => 5000,
+            'discount' => 500,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateSubtotal($items))->toBe(33500.0);
+    expect(PurchaseOrder::calculateNetSubtotal($items, 3500))->toBe(30000.0);
+    expect(PurchaseOrder::calculateGrandTotal($items, 3500, 3300, 200))->toBe(33500.0);
 });

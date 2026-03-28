@@ -22,12 +22,17 @@ class PurchaseRequestItem extends Model
         'item_id',
 
         'qty',
+        'discount',
         'description',
         'sort',
     ];
 
     protected array $defaultEmptyStringFields = [
         'description',
+    ];
+
+    protected $casts = [
+        'discount' => 'decimal:2',
     ];
 
     /* ================= RELATION ================= */

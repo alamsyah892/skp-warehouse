@@ -2,6 +2,7 @@
 
 namespace App\Models\Concerns;
 
+use RuntimeException;
 use Illuminate\Support\Facades\DB;
 
 trait HasDocumentNumber
@@ -11,6 +12,12 @@ trait HasDocumentNumber
         return DB::transaction(function () use ($record) {
             $year = now()->format('y');
             $month = now()->format('m');
+            $project = $record->project ?? $record->project()->first();
+            $division = $record->division ?? $record->division()->first();
+
+            if (! $project || ! $division) {
+                throw new RuntimeException('Document number cannot be generated without project and division.');
+            }
 
             $prefix = sprintf(
                 '%s/%s/%s/%s/%s', // '%s/%s/%s/%s%s%s%s',
@@ -19,8 +26,8 @@ trait HasDocumentNumber
                 $month,
                 // $record->warehouse->code,
                 // $record->company->code,
-                $record->project->po_code, // $record->project->code,
-                $record->division->code,
+                $project->po_code, // $record->project->code,
+                $division->code,
             );
 
             $last = $record::withTrashed()

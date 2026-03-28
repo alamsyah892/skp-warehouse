@@ -23,12 +23,19 @@ class PurchaseOrderItem extends Model
         'item_id',
         'qty',
         'price',
+        'discount',
         'description',
         'sort',
     ];
 
     protected array $defaultEmptyStringFields = [
         'description',
+    ];
+
+    protected $casts = [
+        'qty' => 'decimal:2',
+        'price' => 'decimal:2',
+        'discount' => 'decimal:2',
     ];
 
     public function purchaseOrder(): BelongsTo
@@ -44,5 +51,14 @@ class PurchaseOrderItem extends Model
     public function item(): BelongsTo
     {
         return $this->belongsTo(Item::class);
+    }
+
+    public function getLineTotalAmount(): float
+    {
+        return PurchaseOrder::calculateItemTotal([
+            'qty' => $this->qty,
+            'price' => $this->price,
+            'discount' => $this->discount,
+        ]);
     }
 }

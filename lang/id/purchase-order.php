@@ -80,6 +80,11 @@ return [
         'count_label' => 'Jumlah Item',
     ],
 
+    'purchase_requests' => [
+        'label' => 'Purchase Request',
+        'helper' => 'Pilih satu atau lebih PR. PR pertama menjadi acuan warehouse, company, division, project, dan alamat kirim.',
+    ],
+
     'purchase_order_item' => [
         'qty' => [
             'label' => 'Qty Alokasi',
@@ -87,11 +92,17 @@ return [
         'price' => [
             'label' => 'Harga',
         ],
+        'discount' => [
+            'label' => 'Diskon Item',
+        ],
+        'total' => [
+            'label' => 'Total Item',
+        ],
         'source_item' => [
             'label' => 'Sumber Item PR',
             'pr_number' => 'Nomor PR',
             'context' => 'Konteks Sumber',
-            'context_value' => 'PR: :number | :code - :name | Request: :request_qty | Allocated: :allocated_qty | Remaining: :remaining_qty',
+            'context_value' => 'PR: :number | :code - :name | Request: :request_qty | Allocated: :allocated_qty | Remaining: :remaining_qty | Discount: :discount',
         ],
         'description' => [
             'placeholder' => 'Deskripsi item PO',
@@ -99,10 +110,24 @@ return [
         ],
     ],
 
+    'total' => [
+        'subtotal' => 'Subtotal Item',
+        'net_subtotal' => 'Subtotal Setelah Diskon PO',
+        'discount' => 'Diskon PO',
+        'tax' => 'Pajak',
+        'tax_description' => 'Keterangan Pajak',
+        'tax_description_placeholder' => 'Contoh: PPN 11%',
+        'rounding' => 'Pembulatan',
+        'grand_total' => 'Grand Total',
+    ],
+
     'validation' => [
         'incompatible_headers' => 'Item sumber tidak kompatibel. Warehouse, company, division, dan project harus sama.',
+        'incompatible_purchase_requests' => 'PR yang dipilih harus memiliki warehouse, company, division, project, dan alamat kirim yang sama.',
         'qty_exceeded' => 'Qty alokasi melebihi sisa kuota. Remaining: :remaining.',
         'source_item_not_found' => 'Item sumber PR tidak ditemukan.',
+        'source_item_not_selected_pr' => 'Item sumber harus berasal dari PR yang sudah dipilih.',
+        'source_purchase_request_not_found' => 'Purchase Request sumber tidak ditemukan.',
     ],
 
     'section' => [

@@ -82,6 +82,16 @@ class PurchaseOrderInfolist
                                     ->filter()
                                     ->join(' - ') ?: '-'
                             ),
+                        RepeatableEntry::make('purchaseRequests')
+                            ->label(__('purchase-order.purchase_requests.label'))
+                            ->schema([
+                                TextEntry::make('number')
+                                    ->hiddenLabel()
+                                    ->fontFamily(FontFamily::Mono)
+                                    ->badge(),
+                            ])
+                            ->columnSpanFull()
+                            ->contained(false),
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
                             ->columnSpanFull()
@@ -177,6 +187,8 @@ class PurchaseOrderInfolist
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make(__('purchase-order.purchase_order_item.qty.label')),
                                 TableColumn::make(__('purchase-order.purchase_order_item.price.label')),
+                                TableColumn::make(__('purchase-order.purchase_order_item.discount.label')),
+                                TableColumn::make(__('purchase-order.purchase_order_item.total.label')),
                                 TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
@@ -195,6 +207,12 @@ class PurchaseOrderInfolist
                                 TextEntry::make('item.unit')->label(__('item.related.unit.label')),
                                 TextEntry::make('qty')->numeric()->alignment(Alignment::End),
                                 TextEntry::make('price')->numeric()->alignment(Alignment::End),
+                                TextEntry::make('discount')->numeric()->alignment(Alignment::End),
+                                TextEntry::make('line_total')
+                                    ->label(__('purchase-order.purchase_order_item.total.label'))
+                                    ->state(fn($record) => $record->getLineTotalAmount())
+                                    ->numeric()
+                                    ->alignment(Alignment::End),
                                 TextEntry::make('description')
                                     ->label(__('common.description.label'))
                                     ->color('gray')
@@ -224,6 +242,25 @@ class PurchaseOrderInfolist
             ->schema([
                 TextEntry::make('memo')->color('gray')->placeholder('-'),
                 TextEntry::make('termin')->color('gray')->placeholder('-'),
+                TextEntry::make('discount')
+                    ->label(__('purchase-order.total.discount'))
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('tax')
+                    ->label(__('purchase-order.total.tax'))
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('tax_description')
+                    ->label(__('purchase-order.total.tax_description'))
+                    ->placeholder('-'),
+                TextEntry::make('pembulatan')
+                    ->label(__('purchase-order.total.rounding'))
+                    ->numeric()
+                    ->placeholder('-'),
+                TextEntry::make('grand_total')
+                    ->label(__('purchase-order.total.grand_total'))
+                    ->state(fn($record) => $record->getGrandTotalAmount())
+                    ->numeric(),
                 TextEntry::make('notes')
                     ->label(__('purchase-order.notes.label'))
                     ->columnSpanFull()
