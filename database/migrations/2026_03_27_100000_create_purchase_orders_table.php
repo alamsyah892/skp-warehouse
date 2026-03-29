@@ -14,45 +14,61 @@ return new class extends Migration {
                 ->constrained('vendors')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete();
+
             $table->foreignId('company_id')
                 ->constrained('companies')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('warehouse_id')
                 ->constrained('warehouses')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('warehouse_address_id')->nullable()
                 ->constrained('warehouse_addresses')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('division_id')
                 ->constrained('divisions')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('project_id')
                 ->constrained('projects')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
 
             $table->unsignedTinyInteger('type')
                 ->default(1)
-                ->index();
+                ->index()
+            ;
 
-            $table->string('number')->unique();
+            $table->string('number')->unique(); //->nullable();
             $table->text('description');
             $table->string('memo');
             $table->string('termin');
+            $table->string('delivery_info');
             $table->text('notes');
+
             $table->text('info');
 
             $table->unsignedTinyInteger('status')
                 ->default(1)
-                ->index();
+                ->index()
+            ;
+
+            $table->decimal('discount', 15, 2)->default(0);
+            $table->decimal('tax', 15, 2)->default(0);
+            $table->string('tax_description');
+            $table->decimal('rounder', 15, 2)->default(0);
 
             $table->timestamps();
             $table->softDeletes();

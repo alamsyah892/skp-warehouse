@@ -39,13 +39,13 @@ return [
             'action_label' => 'Selesaikan',
         ],
         'action' => [
-            'note' => 'Konfirmasi perubahan status pesanan pembelian menjadi :status',
+            'note' => 'Konfirmasi perubahan status purchase order menjadi :status',
             'changed' => 'Status berhasil diubah',
         ],
     ],
 
     'description' => [
-        'placeholder' => 'Tuliskan deskripsi pesanan pembelian',
+        'placeholder' => 'Tuliskan deskripsi purchase order',
         'helper' => 'Contoh: PO material struktur tahap pertama',
     ],
 
@@ -57,6 +57,11 @@ return [
     'termin' => [
         'placeholder' => 'Termin pembayaran',
         'helper' => 'Contoh: Termin 30 hari setelah barang diterima',
+    ],
+
+    'delivery_info' => [
+        'placeholder' => 'Info pengiriman',
+        'helper' => 'Contoh: Dikirim langsung oleh vendor',
     ],
 
     'notes' => [
@@ -76,18 +81,21 @@ return [
     ],
 
     'purchase_order_items' => [
-        'label' => 'Item Pesanan Pembelian',
+        'label' => 'Item Purchase Order',
         'count_label' => 'Jumlah Item',
     ],
 
     'purchase_requests' => [
-        'label' => 'Purchase Request',
-        'helper' => 'Pilih satu atau lebih PR. PR pertama menjadi acuan warehouse, company, division, project, dan alamat kirim.',
+        // 'label' => 'Pengajuan',
+        'number' => [
+            'label' => 'Nomor Pengajuan',
+        ],
+        'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama akan menjadi acuan Gudang, Perusahaan (Gudang Kecil), Divisi, Proyek, dan Alamat Pengiriman (jika ada).',
     ],
 
     'purchase_order_item' => [
         'qty' => [
-            'label' => 'Qty Alokasi',
+            'label' => 'Qty Dipesan',
         ],
         'price' => [
             'label' => 'Harga',
@@ -96,13 +104,11 @@ return [
             'label' => 'Diskon Item',
         ],
         'total' => [
-            'label' => 'Total Item',
+            'label' => 'Total Harga',
         ],
         'source_item' => [
-            'label' => 'Sumber Item PR',
-            'pr_number' => 'Nomor PR',
-            'context' => 'Konteks Sumber',
-            'context_value' => 'PR: :number | :code - :name | Request: :request_qty | Allocated: :allocated_qty | Remaining: :remaining_qty | Discount: :discount',
+            'context' => 'Konteks Sumber Item Pengajuan',
+            'context_value' => 'Kode Item: :code | Nama Item: :name | Pengajuan: :number | Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
         ],
         'description' => [
             'placeholder' => 'Deskripsi item PO',
@@ -122,26 +128,26 @@ return [
     ],
 
     'validation' => [
-        'incompatible_headers' => 'Item sumber tidak kompatibel. Warehouse, company, division, dan project harus sama.',
-        'incompatible_purchase_requests' => 'PR yang dipilih harus memiliki warehouse, company, division, project, dan alamat kirim yang sama.',
-        'qty_exceeded' => 'Qty alokasi melebihi sisa kuota. Remaining: :remaining.',
-        'source_item_not_found' => 'Item sumber PR tidak ditemukan.',
-        'source_item_not_selected_pr' => 'Item sumber harus berasal dari PR yang sudah dipilih.',
-        'source_purchase_request_not_found' => 'Purchase Request sumber tidak ditemukan.',
+        'incompatible_headers' => 'Item sumber tidak kompatibel. Warehouse, Perusahaan (Gudang Kecil), Divisi, dan Proyek harus sama.',
+        'incompatible_purchase_requests' => 'Pengajuan yang dipilih harus memiliki Gudang, Perusahaan (Gudang Kecil), Divisi, dan Proyek yang sama.',
+        'qty_exceeded' => 'Qty alokasi melebihi sisa kuota. Sisa: :remaining.',
+        'source_item_not_found' => 'Item sumber Pengajuan tidak ditemukan.',
+        'source_item_not_selected_pr' => 'Item sumber harus berasal dari Pengajuan yang sudah dipilih.',
+        'source_purchase_request_not_found' => 'Pengajuan sumber tidak ditemukan.',
     ],
 
     'section' => [
         'main_info' => [
-            'label' => 'Informasi Pesanan Pembelian',
-            'description' => 'Informasi utama dari pesanan pembelian.',
+            'label' => 'Informasi Purchase Order',
+            'description' => 'Informasi utama dari purchase order.',
         ],
         'other_info' => [
             'label' => 'Informasi Lainnya',
-            'description' => 'Informasi tambahan dari pesanan pembelian.',
+            'description' => 'Informasi tambahan dari purchase order.',
         ],
         'purchase_order_items' => [
-            'label' => 'Item Pesanan Pembelian',
-            'description' => 'Item yang dialokasikan dari pengajuan pembelian.',
+            'label' => 'Item Purchase Order',
+            'description' => 'Item yang dialokasikan dari pengajuan.',
         ],
     ],
 
@@ -150,7 +156,7 @@ return [
             'label' => 'Vendor, Gudang, dan Proyek',
         ],
         'info' => [
-            'label' => 'Informasi Pesanan Pembelian',
+            'label' => 'Informasi Purchase Order',
         ],
     ],
 ];

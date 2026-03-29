@@ -26,6 +26,7 @@ class PurchaseOrder extends Model
     use SoftDeletes;
     use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasStateMachine, HasDocumentRevision;
 
+
     protected $fillable = [
         'vendor_id',
         'company_id',
@@ -34,42 +35,54 @@ class PurchaseOrder extends Model
         'division_id',
         'project_id',
         'user_id',
+
         'type',
+
         'number',
         'description',
         'memo',
         'termin',
+        'delivery_info',
         'notes',
+
         'info',
+
+        'status',
+
         'discount',
         'tax',
         'tax_description',
-        'pembulatan',
-        'status',
+        'rounder',
     ];
 
     protected array $defaultEmptyStringFields = [
         'description',
         'memo',
         'termin',
+        'delivery_info',
         'notes',
+
         'info',
+
         'tax_description',
     ];
 
     protected $casts = [
         'status' => PurchaseOrderStatus::class,
+
         'discount' => 'decimal:2',
         'tax' => 'decimal:2',
-        'pembulatan' => 'decimal:2',
+        'rounder' => 'decimal:2',
     ];
+
 
     public const MODEL_ALIAS = 'PO';
     public const TYPE_PURCHASE_ORDER = 1;
 
+
     protected static function booted(): void
     {
-        static::addGlobalScope('user_warehouses', function (Builder $builder) {
+        static::addGlobalScope('user_warehouses', function ($builder) {
             if ($user = auth()->user()) {
                 $userWarehouseIds = $user->warehouses()->pluck('warehouses.id');
 
@@ -88,6 +101,7 @@ class PurchaseOrder extends Model
                 'project',
             ]);
             $record->number = self::generateNumber($record);
+
             $record->status = PurchaseOrderStatus::DRAFT;
         });
 
@@ -95,6 +109,7 @@ class PurchaseOrder extends Model
             $record->setStatusLog(PurchaseOrderStatus::DRAFT);
         });
     }
+
 
     public function vendor(): BelongsTo
     {
@@ -151,6 +166,7 @@ class PurchaseOrder extends Model
         return $this->hasMany(PurchaseOrderStatusLog::class);
     }
 
+
     public function getSubtotalAmount(): float
     {
         return (float) $this->purchaseOrderItems->sum(
@@ -167,8 +183,9 @@ class PurchaseOrder extends Model
     {
         return $this->getNetSubtotalAmount()
             + (float) $this->tax
-            + (float) $this->pembulatan;
+            + (float) $this->rounder;
     }
+
 
     protected function getStatusField(): string
     {
@@ -193,6 +210,7 @@ class PurchaseOrder extends Model
         return $user->hasAnyRole($flow[$newStatus->value] ?? []);
     }
 
+
     public function setStatusLog($newStatus, $oldStatus = null, string $note = '')
     {
         $newStatus = $this->normalizeStatus($newStatus);
@@ -206,10 +224,12 @@ class PurchaseOrder extends Model
         ]);
     }
 
+
     public function hasStatus(PurchaseOrderStatus $status): bool
     {
         return $this->status === $status;
     }
+
 
     public static function getCompatiblePurchaseRequestsQuery(?array $header = null): Builder
     {
@@ -505,12 +525,13 @@ class PurchaseOrder extends Model
         array $items,
         float|int|string|null $discount,
         float|int|string|null $tax,
-        float|int|string|null $pembulatan,
+        float|int|string|null $rounder,
     ): float {
         return self::calculateNetSubtotal($items, $discount)
             + (float) $tax
-            + (float) $pembulatan;
+            + (float) $rounder;
     }
+
 
     protected function getWatchedFields(): array
     {
@@ -523,7 +544,7 @@ class PurchaseOrder extends Model
             'discount',
             'tax',
             'tax_description',
-            'pembulatan',
+            'rounder',
         ];
     }
 

@@ -17,6 +17,7 @@ class PurchaseOrderItem extends Model
     use SoftDeletes;
     use LogsAllFillable, DefaultEmptyString;
 
+
     protected $fillable = [
         'purchase_order_id',
         'purchase_request_item_id',
@@ -38,6 +39,7 @@ class PurchaseOrderItem extends Model
         'discount' => 'decimal:2',
     ];
 
+
     public function purchaseOrder(): BelongsTo
     {
         return $this->belongsTo(PurchaseOrder::class);
@@ -52,6 +54,7 @@ class PurchaseOrderItem extends Model
     {
         return $this->belongsTo(Item::class);
     }
+
 
     public function getLineTotalAmount(): float
     {

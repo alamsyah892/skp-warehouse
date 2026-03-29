@@ -4,9 +4,9 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
+use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
-use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -232,18 +232,10 @@ class PurchaseRequestForm
                             ->autosize()
                             ->columnSpanFull()
                         ,
-                        TextInput::make('discount')
-                            ->label(__('purchase-request.discount.label'))
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->prefix('Rp')
-                        ,
 
                         Select::make('status')
                             ->options(fn($record) => $record->getAvailableStatusOptions())
                             ->native(false)
-                            // ->live()
                             ->required()
                             ->disableOptionWhen(function ($value, $record) {
                                 if (!$record) {
@@ -305,18 +297,19 @@ class PurchaseRequestForm
                             ->required()
                             ->numeric()
                         ,
-                        TextInput::make('discount')
-                            ->label(__('purchase-request.purchase_request_item.discount.label'))
-                            ->numeric()
-                            ->default(0)
-                            ->minValue(0)
-                            ->prefix('Rp')
+                        Textarea::make('description')
+                            ->label(__('common.description.label'))
+                            ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
+                            ->helperText(__('purchase-request.purchase_request_item.description.helper'))
+                            ->autosize()
+                            ->columnSpanFull()
                         ,
-                        Placeholder::make('allocated_qty')
-                            ->label('Allocated Qty')
-                            ->content(function ($get, $record) {
+
+                        TextEntry::make('ordered_qty')
+                            ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
+                            ->state(function ($get, $record) {
                                 if ($record) {
-                                    return number_format($record->getAllocatedQty(), 2);
+                                    return number_format($record->getOrderedQty(), 2);
                                 }
 
                                 $itemId = $get('id');
@@ -324,13 +317,16 @@ class PurchaseRequestForm
                                     return '0.00';
                                 }
 
-                                $source = \App\Models\PurchaseRequestItem::query()->find($itemId);
+                                $source = PurchaseRequestItem::query()->find($itemId);
 
-                                return number_format($source?->getAllocatedQty() ?? 0, 2);
-                            }),
-                        Placeholder::make('remaining_qty')
-                            ->label('Remaining Qty')
-                            ->content(function ($get, $record) {
+                                return number_format($source?->getOrderedQty() ?? 0, 2);
+                            })
+                            ->color('gray')
+                            ->visibleOn('edit')
+                        ,
+                        TextEntry::make('remaining_qty')
+                            ->label(__('purchase-request.purchase_request_item.remaining_qty.label'))
+                            ->state(function ($get, $record) {
                                 if ($record) {
                                     return number_format($record->getRemainingQty(), 2);
                                 }
@@ -340,16 +336,12 @@ class PurchaseRequestForm
                                     return '0.00';
                                 }
 
-                                $source = \App\Models\PurchaseRequestItem::query()->find($itemId);
+                                $source = PurchaseRequestItem::query()->find($itemId);
 
                                 return number_format($source?->getRemainingQty() ?? 0, 2);
-                            }),
-                        Textarea::make('description')
-                            ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
-                            ->helperText(__('purchase-request.purchase_request_item.description.helper'))
-                            ->autosize()
-                            ->columnSpanFull()
+                            })
+                            ->color('gray')
+                            ->visibleOn('edit')
                         ,
                     ])
                     ->reorderable()

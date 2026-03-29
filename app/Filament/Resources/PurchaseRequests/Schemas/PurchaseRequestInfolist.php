@@ -141,12 +141,6 @@ class PurchaseRequestInfolist
                             ->color('gray')
                             ->placeholder('-')
                         ,
-                        TextEntry::make('discount')
-                            ->label(__('purchase-request.discount.label'))
-                            ->numeric()
-                            ->placeholder('-')
-                        ,
-
                     ])
                 ,
                 Grid::make()
@@ -269,10 +263,9 @@ class PurchaseRequestInfolist
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make('Qty'),
-                                TableColumn::make(__('purchase-request.purchase_request_item.discount.label')),
-                                TableColumn::make('Allocated Qty'),
-                                TableColumn::make('Remaining Qty'),
                                 TableColumn::make(__('common.description.label')),
+                                TableColumn::make(__('purchase-request.purchase_request_item.ordered_qty.label'))->wrapHeader(),
+                                TableColumn::make(__('purchase-request.purchase_request_item.remaining_qty.label'))->wrapHeader(),
                             ])
                             ->schema([
                                 TextEntry::make('sort')->label('#')->wrap(false),
@@ -294,27 +287,22 @@ class PurchaseRequestInfolist
                                     ->numeric()
                                     ->alignment(Alignment::End)
                                 ,
-                                TextEntry::make('discount')
-                                    ->label(__('purchase-request.purchase_request_item.discount.label'))
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
+                                TextEntry::make('description')
+                                    ->label(__('common.description.label'))
+                                    ->color('gray')
+                                    ->placeholder('-')
                                 ,
                                 TextEntry::make('allocated_qty')
-                                    ->label('Allocated Qty')
+                                    ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
                                     ->state(fn($record) => $record->getAllocatedQty())
                                     ->numeric()
                                     ->alignment(Alignment::End)
                                 ,
                                 TextEntry::make('remaining_qty')
-                                    ->label('Remaining Qty')
+                                    ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
                                     ->state(fn($record) => $record->getRemainingQty())
                                     ->numeric()
                                     ->alignment(Alignment::End)
-                                ,
-                                TextEntry::make('description')
-                                    ->label(__('common.description.label'))
-                                    ->color('gray')
-                                    ->placeholder('-')
                                 ,
                             ])
                         ,

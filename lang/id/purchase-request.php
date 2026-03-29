@@ -75,10 +75,6 @@ return [
         'helper' => 'Contoh: Barang harus dikirim sebelum tanggal 25',
     ],
 
-    'discount' => [
-        'label' => 'Diskon PR',
-    ],
-
     'info' => [
         'label' => 'Informasi Revisi',
         'placeholder' => 'Tuliskan alasan revisi',
@@ -95,12 +91,15 @@ return [
     ],
 
     'purchase_request_item' => [
-        'discount' => [
-            'label' => 'Diskon Item',
-        ],
         'description' => [
             'placeholder' => 'Deskripsi item yang dipesan',
             'helper' => 'Contoh: merk, spesifikasi, dll',
+        ],
+        'ordered_qty' => [
+            'label' => 'Qty Dipesan',
+        ],
+        'remaining_qty' => [
+            'label' => 'Qty Tersisa',
         ],
     ],
 
