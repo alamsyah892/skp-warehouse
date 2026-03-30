@@ -52,7 +52,7 @@ class PurchaseOrder extends Model
         'discount',
         'tax',
         'tax_description',
-        'rounder',
+        'rounding',
     ];
 
     protected array $defaultEmptyStringFields = [
@@ -72,7 +72,7 @@ class PurchaseOrder extends Model
 
         'discount' => 'decimal:2',
         'tax' => 'decimal:2',
-        'rounder' => 'decimal:2',
+        'rounding' => 'decimal:2',
     ];
 
 
@@ -183,7 +183,7 @@ class PurchaseOrder extends Model
     {
         return $this->getNetSubtotalAmount()
             + (float) $this->tax
-            + (float) $this->rounder;
+            + (float) $this->rounding;
     }
 
 
@@ -239,15 +239,16 @@ class PurchaseOrder extends Model
                     ->where('warehouse_id', $header['warehouse_id'])
                     ->where('company_id', $header['company_id'])
                     ->where('division_id', $header['division_id'])
-                    ->where('project_id', $header['project_id']);
+                    ->where('project_id', $header['project_id'])
+                ;
 
-                if (array_key_exists('warehouse_address_id', $header)) {
-                    if ($header['warehouse_address_id']) {
-                        $query->where('warehouse_address_id', $header['warehouse_address_id']);
-                    } else {
-                        $query->whereNull('warehouse_address_id');
-                    }
-                }
+                // if (array_key_exists('warehouse_address_id', $header)) {
+                //     if ($header['warehouse_address_id']) {
+                //         $query->where('warehouse_address_id', $header['warehouse_address_id']);
+                //     } else {
+                //         $query->whereNull('warehouse_address_id');
+                //     }
+                // }
             });
     }
 
@@ -294,7 +295,7 @@ class PurchaseOrder extends Model
                 'company_id',
                 'division_id',
                 'project_id',
-                'warehouse_address_id',
+                // 'warehouse_address_id',
             ]);
 
         if ($rows->count() !== count($ids)) {
@@ -310,7 +311,8 @@ class PurchaseOrder extends Model
                 && $purchaseRequest->company_id === $first->company_id
                 && $purchaseRequest->division_id === $first->division_id
                 && $purchaseRequest->project_id === $first->project_id
-                && $purchaseRequest->warehouse_address_id === $first->warehouse_address_id;
+                // && $purchaseRequest->warehouse_address_id === $first->warehouse_address_id
+            ;
         });
 
         if (!$isCompatible) {
@@ -324,7 +326,7 @@ class PurchaseOrder extends Model
             'company_id' => $first->company_id,
             'division_id' => $first->division_id,
             'project_id' => $first->project_id,
-            'warehouse_address_id' => $first->warehouse_address_id,
+            // 'warehouse_address_id' => $first->warehouse_address_id,
         ];
     }
 
@@ -373,7 +375,7 @@ class PurchaseOrder extends Model
             'company_id' => $first->company_id,
             'division_id' => $first->division_id,
             'project_id' => $first->project_id,
-            'warehouse_address_id' => $first->warehouse_address_id,
+            // 'warehouse_address_id' => $first->warehouse_address_id,
         ];
     }
 
@@ -445,7 +447,7 @@ class PurchaseOrder extends Model
             $data['company_id'] = null;
             $data['division_id'] = null;
             $data['project_id'] = null;
-            $data['warehouse_address_id'] = null;
+            // $data['warehouse_address_id'] = null;
 
             return;
         }
@@ -454,7 +456,7 @@ class PurchaseOrder extends Model
         $data['company_id'] = $header['company_id'];
         $data['division_id'] = $header['division_id'];
         $data['project_id'] = $header['project_id'];
-        $data['warehouse_address_id'] = $header['warehouse_address_id'];
+        // $data['warehouse_address_id'] = $header['warehouse_address_id'];
     }
 
     public static function syncHeaderFromPurchaseRequestItems(array &$data): void
@@ -470,7 +472,7 @@ class PurchaseOrder extends Model
         $data['company_id'] = $header['company_id'];
         $data['division_id'] = $header['division_id'];
         $data['project_id'] = $header['project_id'];
-        $data['warehouse_address_id'] = $header['warehouse_address_id'];
+        // $data['warehouse_address_id'] = $header['warehouse_address_id'];
     }
 
     public static function syncPurchaseOrderItemsFromPurchaseRequestItems(array &$data): void
@@ -525,11 +527,11 @@ class PurchaseOrder extends Model
         array $items,
         float|int|string|null $discount,
         float|int|string|null $tax,
-        float|int|string|null $rounder,
+        float|int|string|null $rounding,
     ): float {
         return self::calculateNetSubtotal($items, $discount)
             + (float) $tax
-            + (float) $rounder;
+            + (float) $rounding;
     }
 
 
@@ -544,7 +546,7 @@ class PurchaseOrder extends Model
             'discount',
             'tax',
             'tax_description',
-            'rounder',
+            'rounding',
         ];
     }
 

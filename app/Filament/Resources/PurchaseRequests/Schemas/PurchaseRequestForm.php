@@ -293,7 +293,13 @@ class PurchaseRequestForm
                                     ->whereKey($get('item_id'))
                                     ->value('unit')
                             )
-                            ->minValue(0.01)
+                            ->minValue(function ($record, $operation) {
+                                if ($operation === 'edit' && $record) {
+                                    return (float) $record->getOrderedQty();
+                                }
+
+                                return 0.01;
+                            })
                             ->required()
                             ->numeric()
                         ,

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseRequestStatus;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
@@ -93,7 +94,9 @@ class PurchaseOrderForm
                                     $header = $selection['header'];
 
                                     if (!$header) {
-                                        return $query->orderBy('number');
+                                        return $query
+                                            ->where(fn($q) => $q->where('status', PurchaseRequestStatus::APPROVED)->orWhere('status', PurchaseRequestStatus::ORDERED))
+                                            ->orderBy('number');
                                     }
 
                                     return $query
@@ -104,17 +107,21 @@ class PurchaseOrderForm
                                                         ->where('purchase_requests.warehouse_id', $header['warehouse_id'])
                                                         ->where('purchase_requests.company_id', $header['company_id'])
                                                         ->where('purchase_requests.division_id', $header['division_id'])
-                                                        ->where('purchase_requests.project_id', $header['project_id']);
+                                                        ->where('purchase_requests.project_id', $header['project_id'])
+                                                    ;
 
-                                                    if ($header['warehouse_address_id']) {
-                                                        $compatibleQuery->where('purchase_requests.warehouse_address_id', $header['warehouse_address_id']);
-                                                    } else {
-                                                        $compatibleQuery->whereNull('purchase_requests.warehouse_address_id');
-                                                    }
+                                                    // if ($header['warehouse_address_id']) {
+                                                    //     $compatibleQuery->where('purchase_requests.warehouse_address_id', $header['warehouse_address_id']);
+                                                    // } else {
+                                                    //     $compatibleQuery->whereNull('purchase_requests.warehouse_address_id');
+                                                    // }
                                                 })
-                                                ->orWhereIn('purchase_requests.id', $selectedIds);
+                                                ->where(fn($q) => $q->where('status', PurchaseRequestStatus::APPROVED)->orWhere('status', PurchaseRequestStatus::ORDERED))
+                                                ->orWhereIn('purchase_requests.id', $selectedIds)
+                                            ;
                                         })
-                                        ->orderBy('number');
+                                        ->orderBy('number')
+                                    ;
                                 },
                             )
                             ->multiple()
@@ -472,7 +479,7 @@ class PurchaseOrderForm
                             ->label(__('purchase-order.total.tax_description'))
                             ->placeholder(__('purchase-order.total.tax_description_placeholder'))
                         ,
-                        TextInput::make('pembulatan')
+                        TextInput::make('rounding')
                             ->label(__('purchase-order.total.rounding'))
                             ->numeric()
                             ->default(0)
@@ -485,7 +492,7 @@ class PurchaseOrderForm
                                     $get('purchaseOrderItems') ?? [],
                                     $get('discount'),
                                     $get('tax'),
-                                    $get('pembulatan'),
+                                    $get('rounding'),
                                 )
                             ))
                         ,
@@ -577,7 +584,7 @@ class PurchaseOrderForm
                 'company_id',
                 'division_id',
                 'project_id',
-                'warehouse_address_id',
+                // 'warehouse_address_id',
             ])
             ->keyBy('id');
 
@@ -605,7 +612,7 @@ class PurchaseOrderForm
                 'company_id' => $firstPurchaseRequest->company_id,
                 'division_id' => $firstPurchaseRequest->division_id,
                 'project_id' => $firstPurchaseRequest->project_id,
-                'warehouse_address_id' => $firstPurchaseRequest->warehouse_address_id,
+                // 'warehouse_address_id' => $firstPurchaseRequest->warehouse_address_id,
             ],
         ];
     }
@@ -620,7 +627,8 @@ class PurchaseOrderForm
             && $current->company_id === $first->company_id
             && $current->division_id === $first->division_id
             && $current->project_id === $first->project_id
-            && $current->warehouse_address_id === $first->warehouse_address_id;
+            // && $current->warehouse_address_id === $first->warehouse_address_id
+        ;
     }
 
     protected static function fillHeaderFields(callable $set, ?array $header): void
@@ -629,7 +637,7 @@ class PurchaseOrderForm
         $set('company_id', $header['company_id'] ?? null);
         $set('division_id', $header['division_id'] ?? null);
         $set('project_id', $header['project_id'] ?? null);
-        $set('warehouse_address_id', $header['warehouse_address_id'] ?? null);
+        // $set('warehouse_address_id', $header['warehouse_address_id'] ?? null);
     }
 
     protected static function prunePurchaseOrderItems(callable $set, callable $get, array $selectedPurchaseRequestIds): void

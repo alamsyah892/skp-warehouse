@@ -292,9 +292,9 @@ class PurchaseRequestInfolist
                                     ->color('gray')
                                     ->placeholder('-')
                                 ,
-                                TextEntry::make('allocated_qty')
+                                TextEntry::make('ordered_qty')
                                     ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
-                                    ->state(fn($record) => $record->getAllocatedQty())
+                                    ->state(fn($record) => $record->getOrderedQty())
                                     ->numeric()
                                     ->alignment(Alignment::End)
                                 ,

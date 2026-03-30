@@ -83,7 +83,7 @@ class PurchaseOrderInfolist
                                     ->join(' - ') ?: '-'
                             ),
                         RepeatableEntry::make('purchaseRequests')
-                            ->label(__('purchase-order.purchase_requests.label'))
+                            ->label(__('purchase-request.model.plural_label'))
                             ->schema([
                                 TextEntry::make('number')
                                     ->hiddenLabel()
@@ -181,20 +181,20 @@ class PurchaseOrderInfolist
                             ->hiddenLabel()
                             ->table([
                                 TableColumn::make('#')->wrapHeader(false),
-                                TableColumn::make(__('purchase-order.purchase_order_item.source_item.pr_number')),
-                                TableColumn::make(__('item.related.code.label')),
+                                TableColumn::make(__('purchase-request.model.plural_label')),
+                                TableColumn::make(__('item.related.code.label'))->wrapHeader(),
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
-                                TableColumn::make(__('purchase-order.purchase_order_item.qty.label')),
-                                TableColumn::make(__('purchase-order.purchase_order_item.price.label')),
-                                TableColumn::make(__('purchase-order.purchase_order_item.discount.label')),
-                                TableColumn::make(__('purchase-order.purchase_order_item.total.label')),
+                                TableColumn::make(__('purchase-order.purchase_order_item.qty.label'))->wrapHeader(),
+                                TableColumn::make(__('purchase-order.purchase_order_item.price.label'))->wrapHeader(),
+                                TableColumn::make(__('purchase-order.purchase_order_item.discount.label'))->wrapHeader(),
+                                TableColumn::make(__('purchase-order.purchase_order_item.total.label'))->wrapHeader(),
                                 TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
                                 TextEntry::make('sort')->label('#')->wrap(false),
                                 TextEntry::make('purchaseRequestItem.purchaseRequest.number')
-                                    ->label(__('purchase-order.purchase_order_item.source_item.pr_number'))
+                                    ->label(__('purchase-request.model.plural_label'))
                                     ->fontFamily(FontFamily::Mono)
                                     ->badge(),
                                 TextEntry::make('item.code')
@@ -203,16 +203,17 @@ class PurchaseOrderInfolist
                                     ->weight(FontWeight::Bold)
                                     ->icon(Heroicon::Hashtag)
                                     ->badge(),
-                                TextEntry::make('item.name')->label(__('item.related.name.label')),
+                                TextEntry::make('item.name')->label(__('item.related.name.label'))->wrap(),
                                 TextEntry::make('item.unit')->label(__('item.related.unit.label')),
-                                TextEntry::make('qty')->numeric()->alignment(Alignment::End),
-                                TextEntry::make('price')->numeric()->alignment(Alignment::End),
-                                TextEntry::make('discount')->numeric()->alignment(Alignment::End),
+                                TextEntry::make('qty')->numeric()->alignment(Alignment::End)->wrap(false),
+                                TextEntry::make('price')->numeric()->alignment(Alignment::End)->wrap(false),
+                                TextEntry::make('discount')->numeric()->alignment(Alignment::End)->wrap(false),
                                 TextEntry::make('line_total')
                                     ->label(__('purchase-order.purchase_order_item.total.label'))
                                     ->state(fn($record) => $record->getLineTotalAmount())
                                     ->numeric()
-                                    ->alignment(Alignment::End),
+                                    ->alignment(Alignment::End)->wrap(false)
+                                ,
                                 TextEntry::make('description')
                                     ->label(__('common.description.label'))
                                     ->color('gray')
@@ -253,7 +254,7 @@ class PurchaseOrderInfolist
                 TextEntry::make('tax_description')
                     ->label(__('purchase-order.total.tax_description'))
                     ->placeholder('-'),
-                TextEntry::make('pembulatan')
+                TextEntry::make('rounding')
                     ->label(__('purchase-order.total.rounding'))
                     ->numeric()
                     ->placeholder('-'),

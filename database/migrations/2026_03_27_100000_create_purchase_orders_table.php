@@ -68,7 +68,7 @@ return new class extends Migration {
             $table->decimal('discount', 15, 2)->default(0);
             $table->decimal('tax', 15, 2)->default(0);
             $table->string('tax_description');
-            $table->decimal('rounder', 15, 2)->default(0);
+            $table->decimal('rounding', 15, 2)->default(0);
 
             $table->timestamps();
             $table->softDeletes();
