@@ -158,7 +158,7 @@ class PurchaseOrder extends Model
 
     public function purchaseRequests(): BelongsToMany
     {
-        return $this->belongsToMany(PurchaseRequest::class)->orderBy('number');
+        return $this->belongsToMany(PurchaseRequest::class);
     }
 
     public function statusLogs(): HasMany
@@ -443,12 +443,8 @@ class PurchaseOrder extends Model
         $header = self::extractHeaderFromPurchaseRequests($data['purchaseRequests'] ?? []);
 
         if (!$header) {
-            $data['warehouse_id'] = null;
-            $data['company_id'] = null;
-            $data['division_id'] = null;
-            $data['project_id'] = null;
-            // $data['warehouse_address_id'] = null;
-
+            // Jangan reset ke null jika header tidak ditemukan (PR kosong)
+            // Ini agar nilai dari Opsi 2 (input manual) tetap terjaga
             return;
         }
 

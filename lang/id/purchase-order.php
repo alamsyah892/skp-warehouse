@@ -9,11 +9,11 @@ return [
     ],
 
     'warehouse_address' => [
-        'label' => 'Alamat Pengiriman (Gudang)',
+        'label' => 'Alamat Pengiriman/Gudang',
     ],
 
     'company' => [
-        'label' => 'Perusahaan (Gudang Kecil)',
+        'label' => 'Perusahaan / Gudang Kecil',
     ],
 
     'number' => [
@@ -90,7 +90,7 @@ return [
         'number' => [
             'label' => 'Nomor Pengajuan',
         ],
-        'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama akan menjadi acuan Gudang, Perusahaan (Gudang Kecil), Divisi, Proyek, dan Alamat Pengiriman (jika ada).',
+        'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama yang dipilih akan menjadi sumber acuan untuk Gudang, Perusahaan / Gudang Kecil, Divisi, Proyek, dan Alamat Pengiriman/Gudang (jika ada).',
     ],
 
     'purchase_order_item' => [
@@ -153,7 +153,7 @@ return [
 
     'fieldset' => [
         'warehouse_project' => [
-            'label' => 'Vendor, Gudang, dan Proyek',
+            'label' => 'Sumber Pengajuan',
         ],
         'info' => [
             'label' => 'Informasi Purchase Order',
