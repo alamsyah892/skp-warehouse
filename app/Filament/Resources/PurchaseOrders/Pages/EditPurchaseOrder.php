@@ -34,9 +34,10 @@ class EditPurchaseOrder extends EditRecord
         $record = $this->record;
         $this->selectedPurchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds($this->data['purchaseRequests'] ?? []);
         $data['purchaseRequests'] = $this->selectedPurchaseRequestIds;
+        $selectedStatus = filled($data['status'] ?? null) ? (int) $data['status'] : null;
 
-        if ($data['status'] !== $record->status->value) {
-            $this->pendingStatus = PurchaseOrderStatus::from($data['status']);
+        if ($selectedStatus !== $record->status->value) {
+            $this->pendingStatus = PurchaseOrderStatus::from($selectedStatus);
             $data['status'] = $record->status->value;
         }
 
@@ -66,6 +67,7 @@ class EditPurchaseOrder extends EditRecord
         $this->refreshFormData([
             'number',
             'info',
+            'status',
             'warehouse_id',
             'company_id',
             'division_id',

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
+use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -234,7 +235,7 @@ class PurchaseRequestForm
                         ,
 
                         Select::make('status')
-                            ->options(fn($record) => $record->getAvailableStatusOptions())
+                            ->options(fn(?PurchaseRequest $record): array => $record?->getAvailableStatusOptions() ?? PurchaseRequestStatus::options())
                             ->native(false)
                             ->required()
                             ->disableOptionWhen(function ($value, $record) {

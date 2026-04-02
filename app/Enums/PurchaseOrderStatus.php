@@ -70,7 +70,7 @@ enum PurchaseOrderStatus: int
                 ],
             ],
             self::CANCELED => [
-                self::ORDERED->value => [
+                self::DRAFT->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                     Role::PURCHASING,
@@ -95,5 +95,17 @@ enum PurchaseOrderStatus: int
             ],
             self::FINISHED => [],
         };
+    }
+
+    public static function options(): array
+    {
+        static $cache = null;
+
+        return $cache ??= collect(self::cases())
+            ->mapWithKeys(fn($status) => [
+                (string) $status->value => $status->label()
+            ])
+            ->toArray()
+        ;
     }
 }

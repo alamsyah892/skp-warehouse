@@ -5,9 +5,9 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 // use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
-use App\Models\PurchaseRequest;
+// use App\Models\PurchaseRequest;
 // use Filament\Actions\EditAction;
-use App\Models\User;
+// use App\Models\User;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -24,7 +24,7 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
-use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
+// use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseRequestInfolist

@@ -201,7 +201,10 @@ class PurchaseOrder extends Model
     {
         if (
             $this->hasStatus(PurchaseOrderStatus::DRAFT) &&
-            in_array($newStatus, [PurchaseOrderStatus::CANCELED, PurchaseOrderStatus::ORDERED], true) &&
+            in_array($newStatus, [
+                PurchaseOrderStatus::CANCELED,
+                PurchaseOrderStatus::ORDERED
+            ], true) &&
             $this->user_id === $user->id
         ) {
             return true;
@@ -500,12 +503,33 @@ class PurchaseOrder extends Model
         $data['purchaseOrderItems'] = $items;
     }
 
+
     public static function calculateItemTotal(array $item): float
     {
         $grossAmount = (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0);
-        $discountAmount = (float) ($item['discount'] ?? 0);
+        $discountAmount = (float) ($item['qty'] ?? 0) * (float) ($item['discount'] ?? 0);
+        $taxAmount = (float) ($item['qty'] ?? 0) * (float) ($item['tax'] ?? 0);
 
-        return max($grossAmount - $discountAmount, 0.0);
+        return max($grossAmount - $discountAmount + $taxAmount, 0.0);
+        // return max($grossAmount, 0.0);
+    }
+
+    public static function calculateSubtotalPrice(array $items): float
+    {
+        return (float) collect($items)
+            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0));
+    }
+
+    public static function calculateSubtotalDiscount(array $items): float
+    {
+        return (float) collect($items)
+            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['discount'] ?? 0));
+    }
+
+    public static function calculateSubtotalTax(array $items): float
+    {
+        return (float) collect($items)
+            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['tax'] ?? 0));
     }
 
     public static function calculateSubtotal(array $items): float

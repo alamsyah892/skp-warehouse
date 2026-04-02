@@ -60,7 +60,8 @@ return [
     ],
 
     'delivery_info' => [
-        'placeholder' => 'Info pengiriman',
+        'label' => 'Info pengiriman',
+        'placeholder' => 'Tuliskan info pengiriman',
         'helper' => 'Contoh: Dikirim langsung oleh vendor',
     ],
 
@@ -90,7 +91,8 @@ return [
         'number' => [
             'label' => 'Nomor Pengajuan',
         ],
-        'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama yang dipilih akan menjadi sumber acuan untuk Gudang, Perusahaan / Gudang Kecil, Divisi, Proyek, dan Alamat Pengiriman/Gudang (jika ada).',
+        // 'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama yang dipilih akan menjadi sumber acuan untuk Gudang, Perusahaan / Gudang Kecil, Divisi, Proyek, dan Alamat Pengiriman/Gudang (jika ada).',
+        'helper' => 'Pilih satu pengajuan atau lebih.',
     ],
 
     'purchase_order_item' => [
@@ -98,10 +100,16 @@ return [
             'label' => 'Qty Dipesan',
         ],
         'price' => [
-            'label' => 'Harga',
+            'label' => 'Harga (satuan)',
         ],
         'discount' => [
-            'label' => 'Diskon Item',
+            'label' => 'Diskon Item (satuan)',
+        ],
+        'tax' => [
+            'label' => 'Pajak Item (satuan)',
+        ],
+        'final_price' => [
+            'label' => 'Harga Final (satuan)',
         ],
         'total' => [
             'label' => 'Total Harga',

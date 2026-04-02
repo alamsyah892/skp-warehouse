@@ -111,7 +111,7 @@ trait HasStateMachine
         return collect(array_merge([$this->getStatus()], $this->getNextStatuses()))
             ->unique(fn($status) => $status->value)
             ->mapWithKeys(fn($status) => [
-                $status->value => $status->label()
+                (string) $status->value => $status->label()
             ])
             ->toArray()
         ;

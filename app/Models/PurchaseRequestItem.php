@@ -58,8 +58,8 @@ class PurchaseRequestItem extends Model
     {
         return (float) $this->purchaseOrderItems()
             ->whereHas('purchaseOrder', function ($query) use ($exceptPurchaseOrderId) {
-                // $query->where('status', '=', PurchaseOrderStatus::ORDERED);
-    
+                $query->where('status', '!=', PurchaseOrderStatus::CANCELED);
+
                 if ($exceptPurchaseOrderId) {
                     $query->where('id', '!=', $exceptPurchaseOrderId);
                 }
