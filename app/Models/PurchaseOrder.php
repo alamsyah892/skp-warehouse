@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderTaxType;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -50,6 +51,8 @@ class PurchaseOrder extends Model
         'status',
 
         'discount',
+        'tax_type',
+        'tax_percentage',
         'tax',
         'tax_description',
         'rounding',
@@ -71,6 +74,8 @@ class PurchaseOrder extends Model
         'status' => PurchaseOrderStatus::class,
 
         'discount' => 'decimal:2',
+        'tax_type' => PurchaseOrderTaxType::class,
+        'tax_percentage' => 'decimal:2',
         'tax' => 'decimal:2',
         'rounding' => 'decimal:2',
     ];
@@ -78,6 +83,7 @@ class PurchaseOrder extends Model
 
     public const MODEL_ALIAS = 'PO';
     public const TYPE_PURCHASE_ORDER = 1;
+    public const DEFAULT_TAX_PERCENTAGE = 11;
 
 
     protected static function booted(): void
@@ -179,11 +185,23 @@ class PurchaseOrder extends Model
         return max($this->getSubtotalAmount() - (float) $this->discount, 0.0);
     }
 
+    public function getTaxAmount(): float
+    {
+        return self::calculateTaxAmount(
+            $this->getNetSubtotalAmount(),
+            $this->tax_type,
+            $this->tax_percentage,
+        );
+    }
+
     public function getGrandTotalAmount(): float
     {
-        return $this->getNetSubtotalAmount()
-            + (float) $this->tax
-            + (float) $this->rounding;
+        return self::calculateGrandTotalFromNetSubtotal(
+            $this->getNetSubtotalAmount(),
+            $this->tax_type,
+            $this->tax_percentage,
+            $this->rounding,
+        );
     }
 
 
@@ -507,29 +525,62 @@ class PurchaseOrder extends Model
     public static function calculateItemTotal(array $item): float
     {
         $grossAmount = (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0);
-        $discountAmount = (float) ($item['qty'] ?? 0) * (float) ($item['discount'] ?? 0);
-        $taxAmount = (float) ($item['qty'] ?? 0) * (float) ($item['tax'] ?? 0);
+        $discountAmount = (float) ($item['discount'] ?? 0);
 
-        return max($grossAmount - $discountAmount + $taxAmount, 0.0);
-        // return max($grossAmount, 0.0);
+        return max($grossAmount - $discountAmount, 0.0);
     }
 
-    public static function calculateSubtotalPrice(array $items): float
+    public static function calculateTotalSubtotal(
+        array $items,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float
     {
+        $normalizedTaxType = self::normalizeTaxType($taxType);
+
         return (float) collect($items)
-            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0));
+            ->sum(function (array $item) use ($normalizedTaxType, $taxPercentage): float {
+                $lineAmount = (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0);
+
+                if ($normalizedTaxType !== PurchaseOrderTaxType::INCLUDE) {
+                    return $lineAmount;
+                }
+
+                return $lineAmount - self::calculateTaxAmount(
+                    $lineAmount,
+                    $normalizedTaxType,
+                    $taxPercentage,
+                );
+            });
     }
 
-    public static function calculateSubtotalDiscount(array $items): float
+    public static function calculateTotalDiscount(array $items): float
     {
         return (float) collect($items)
-            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['discount'] ?? 0));
+            ->sum(fn(array $item): float => (float) ($item['discount'] ?? 0));
     }
 
-    public static function calculateSubtotalTax(array $items): float
+    public static function calculateSubtotalTax(
+        array $items,
+        float|int|string|null $discount = 0,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float
     {
-        return (float) collect($items)
-            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['tax'] ?? 0));
+        return self::calculateTaxAmount(
+            self::calculateNetSubtotal($items, $discount),
+            $taxType,
+            $taxPercentage,
+        );
+    }
+
+    public static function getTaxPercentageOptions(): array
+    {
+        return collect([10, 11, 12])
+            ->mapWithKeys(fn (int $percentage): array => [
+                (string) $percentage => "{$percentage}%",
+            ])
+            ->all();
     }
 
     public static function calculateSubtotal(array $items): float
@@ -543,15 +594,148 @@ class PurchaseOrder extends Model
         return max(self::calculateSubtotal($items) - (float) $discount, 0.0);
     }
 
+    public static function calculateTaxAmount(
+        float|int|string|null $netSubtotal,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
+    ): float {
+        $taxableAmount = max((float) $netSubtotal, 0.0);
+        $rate = max((float) $taxPercentage, 0.0);
+        $normalizedTaxType = self::normalizeTaxType($taxType);
+
+        if ($taxableAmount <= 0 || $rate <= 0 || !$normalizedTaxType) {
+            return 0.0;
+        }
+
+        return match ($normalizedTaxType) {
+            PurchaseOrderTaxType::EXCLUDE => round($taxableAmount * ($rate / 100), 2),
+            PurchaseOrderTaxType::INCLUDE => round($taxableAmount - ($taxableAmount / (1 + ($rate / 100))), 2),
+        };
+    }
+
+    public static function calculateItemAllocatedOrderDiscount(
+        array $item,
+        array $items,
+        float|int|string|null $orderDiscount,
+    ): float {
+        $lineSubtotal = self::calculateItemTotal($item);
+        $subtotal = self::calculateSubtotal($items);
+        $discount = max((float) $orderDiscount, 0.0);
+
+        if ($lineSubtotal <= 0 || $subtotal <= 0 || $discount <= 0) {
+            return 0.0;
+        }
+
+        return round(min($lineSubtotal, ($lineSubtotal / $subtotal) * $discount), 2);
+    }
+
+    public static function calculateItemTaxAmount(
+        array $item,
+        array $items,
+        float|int|string|null $orderDiscount,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
+    ): float {
+        $normalizedTaxType = self::normalizeTaxType($taxType);
+
+        if (!$normalizedTaxType) {
+            return 0.0;
+        }
+
+        $lineNetAmount = max(
+            self::calculateItemTotal($item) - self::calculateItemAllocatedOrderDiscount($item, $items, $orderDiscount),
+            0.0,
+        );
+
+        return self::calculateTaxAmount($lineNetAmount, $normalizedTaxType, $taxPercentage);
+    }
+
+    public static function calculateItemFinalPrice(
+        array $item,
+        array $items,
+        float|int|string|null $orderDiscount,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
+    ): float {
+        $normalizedTaxType = self::normalizeTaxType($taxType);
+        $lineNetAmount = max(
+            self::calculateItemTotal($item) - self::calculateItemAllocatedOrderDiscount($item, $items, $orderDiscount),
+            0.0,
+        );
+
+        if ($normalizedTaxType === PurchaseOrderTaxType::EXCLUDE) {
+            return $lineNetAmount + self::calculateTaxAmount($lineNetAmount, $normalizedTaxType, $taxPercentage);
+        }
+
+        return $lineNetAmount;
+    }
+
+    public static function calculateTotalBeforeRounding(
+        array $items,
+        float|int|string|null $discount,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
+    ): float {
+        $netSubtotal = self::calculateNetSubtotal($items, $discount);
+        $normalizedTaxType = self::normalizeTaxType($taxType);
+        $taxAmount = self::calculateTaxAmount($netSubtotal, $normalizedTaxType, $taxPercentage);
+
+        if ($normalizedTaxType === PurchaseOrderTaxType::EXCLUDE) {
+            return $netSubtotal + $taxAmount;
+        }
+
+        return $netSubtotal;
+    }
+
+    public static function calculateGrandTotalFromNetSubtotal(
+        float|int|string|null $netSubtotal,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
+        float|int|string|null $rounding,
+    ): float {
+        $baseTotal = self::normalizeTaxType($taxType) === PurchaseOrderTaxType::EXCLUDE
+            ? max((float) $netSubtotal, 0.0) + self::calculateTaxAmount($netSubtotal, $taxType, $taxPercentage)
+            : max((float) $netSubtotal, 0.0);
+
+        return max($baseTotal + (float) $rounding, 0.0);
+    }
+
     public static function calculateGrandTotal(
         array $items,
         float|int|string|null $discount,
-        float|int|string|null $tax,
+        PurchaseOrderTaxType|string|null $taxType,
+        float|int|string|null $taxPercentage,
         float|int|string|null $rounding,
     ): float {
-        return self::calculateNetSubtotal($items, $discount)
-            + (float) $tax
-            + (float) $rounding;
+        return self::calculateGrandTotalFromNetSubtotal(
+            self::calculateNetSubtotal($items, $discount),
+            $taxType,
+            $taxPercentage,
+            $rounding,
+        );
+    }
+
+    public static function syncTaxTotals(array &$data): void
+    {
+        $data['tax'] = self::calculateSubtotalTax(
+            $data['purchaseOrderItems'] ?? [],
+            $data['discount'] ?? 0,
+            $data['tax_type'] ?? null,
+            $data['tax_percentage'] ?? null,
+        );
+    }
+
+    public static function normalizeTaxType(PurchaseOrderTaxType|string|null $taxType): ?PurchaseOrderTaxType
+    {
+        if ($taxType instanceof PurchaseOrderTaxType) {
+            return $taxType;
+        }
+
+        if (blank($taxType)) {
+            return null;
+        }
+
+        return PurchaseOrderTaxType::tryFrom((string) $taxType);
     }
 
 
@@ -564,6 +748,8 @@ class PurchaseOrder extends Model
             'memo',
             'termin',
             'discount',
+            'tax_type',
+            'tax_percentage',
             'tax',
             'tax_description',
             'rounding',

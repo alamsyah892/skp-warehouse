@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PurchaseOrderTaxType;
 use App\Models\PurchaseOrder;
 
 it('normalizes selected purchase request ids', function () {
@@ -38,6 +39,22 @@ it('calculates subtotal, net subtotal, and grand total', function () {
     ];
 
     expect(PurchaseOrder::calculateSubtotal($items))->toBe(33500.0);
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(35000.0);
     expect(PurchaseOrder::calculateNetSubtotal($items, 3500))->toBe(30000.0);
-    expect(PurchaseOrder::calculateGrandTotal($items, 3500, 3300, 200))->toBe(33500.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(3300.0);
+    expect(PurchaseOrder::calculateGrandTotal($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11, 200))->toBe(33500.0);
+});
+
+it('extracts tax amount from include tax purchase order', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 111000,
+            'discount' => 0,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(100000.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(11000.0);
+    expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 11, 0))->toBe(111000.0);
 });

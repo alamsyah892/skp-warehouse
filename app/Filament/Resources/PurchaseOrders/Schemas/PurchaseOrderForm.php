@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
@@ -20,6 +21,7 @@ use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\HtmlString;
@@ -340,6 +342,30 @@ class PurchaseOrderForm
                             ->helperText(__('purchase-order.delivery_info.helper'))
                         ,
 
+                        Select::make('tax_type')
+                            ->label(__('purchase-order.tax_type.label'))
+                            ->options(PurchaseOrderTaxType::options())
+                            ->native(false)
+                            ->default(PurchaseOrderTaxType::EXCLUDE->value)
+                            ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
+                            ->live()
+                            ->required()
+                            ->inlineLabel()
+                            ->columnSpanFull()
+                        ,
+                        Select::make('tax_percentage')
+                            ->label(__('purchase-order.tax_percentage.label'))
+                            ->options(PurchaseOrder::getTaxPercentageOptions())
+                            ->native(false)
+                            ->default((string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE)
+                            ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ((float) $state + 0) : (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE))
+                            ->dehydrateStateUsing(fn($state): ?float => filled($state) ? (float) $state : null)
+                            ->live()
+                            ->required()
+                            ->inlineLabel()
+                            ->columnSpanFull()
+                        ,
+
                         // Select::make('status')
                         //     ->options(fn(?PurchaseOrder $record): array => static::getStatusOptions($record))
                         //     ->formatStateUsing(fn($state): ?string => static::normalizeStatusState($state))
@@ -448,7 +474,6 @@ class PurchaseOrderForm
                             ->disabled(fn($get): bool => blank(PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []))))
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->required()
-                            ->columnSpan(6)
                             ->afterStateUpdated(function ($state, $set): void {
                                 if (!$state) {
                                     $set('item_id', null);
@@ -468,6 +493,7 @@ class PurchaseOrderForm
                                 $set('item_id', $source->item_id);
                                 $set('qty', $source->getRemainingQty());
                             })
+                            ->columnSpan(7)
                         ,
 
                         Hidden::make('item_id')->required(),
@@ -507,10 +533,15 @@ class PurchaseOrderForm
                                     }
                                 };
                             })
-                            ->columnSpan(3)
+                            ->columnSpan(2)
                         ,
+
                         TextInput::make('price')
-                            ->label(__('purchase-order.purchase_order_item.price.label'))
+                            ->label(function ($get): string {
+                                return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
+                                    ? __('purchase-order.purchase_order_item.price.include_label')
+                                    : __('purchase-order.purchase_order_item.price.exclude_label');
+                            })
                             ->numeric()
                             ->minValue(0)
                             ->placeholder(0)
@@ -520,6 +551,19 @@ class PurchaseOrderForm
                             ->columnSpan(3)
                         ,
 
+                        TextEntry::make('calculated_price')
+                            ->label(__('purchase-order.purchase_order_item.total.label'))
+                            ->state(function ($get): string {
+                                return static::formatMoney(
+                                    (float) ($get('qty') ?? 0) * (float) ($get('price') ?? 0)
+                                );
+                            })
+                            ->size(TextSize::Large)
+                            ->color('warning')
+                            ->columnSpan(3)
+                        ,
+
+
                         TextInput::make('discount')
                             ->label(__('purchase-order.purchase_order_item.discount.label'))
                             ->numeric()
@@ -527,34 +571,88 @@ class PurchaseOrderForm
                             ->placeholder(0)
                             ->prefix('Rp')
                             ->dehydrated()
+                            ->live()
                             ->columnSpan(3)
                         ,
-                        TextInput::make('tax')
-                            ->label(__('purchase-order.purchase_order_item.tax.label'))
-                            ->numeric()
-                            ->minValue(0)
-                            ->placeholder(0)
-                            ->prefix('Rp')
-                            ->dehydrated()
-                            ->columnSpan(3)
-                        ,
-                        TextEntry::make('final_price')
-                            ->label(__('purchase-order.purchase_order_item.final_price.label'))
-                            ->state(fn($get): string => static::formatMoney($get('price') - $get('discount') + $get('tax')))
+
+                        TextEntry::make('calculated_discount')
+                            ->label(__('purchase-order.purchase_order_item.total.label'))
+                            ->state(function ($get): string {
+                                return static::formatMoney(
+                                    0 - (float) ($get('qty') ?? 0) * (float) ($get('discount') ?? 0)
+                                );
+                            })
                             ->size(TextSize::Large)
-                            ->color('primary')
-                            ->columnSpan(3)
+                            ->color('danger')
+                            ->columnSpan(6)
                         ,
+
+                        TextEntry::make('calculated_tax')
+                            ->label(__('purchase-order.purchase_order_item.tax.label'))
+                            ->state(function ($get): string {
+                                $allItems = $get('../../purchaseOrderItems') ?? [];
+                                $item = [
+                                    'qty' => (float) ($get('qty') ?? 0),
+                                    'price' => (float) ($get('price') ?? 0),
+                                    'discount' => (float) ($get('discount') ?? 0),
+                                ];
+
+                                return static::formatMoney(PurchaseOrder::calculateItemTaxAmount(
+                                    $item,
+                                    $allItems,
+                                    $get('../../discount'),
+                                    $get('../../tax_type'),
+                                    $get('../../tax_percentage'),
+                                ));
+                            })
+                            ->size(TextSize::Large)
+                            ->color('warning')
+                            ->columnSpan(5)
+                        ,
+                        // TextEntry::make('final_price')
+                        //     ->label(__('purchase-order.purchase_order_item.final_price.label'))
+                        //     ->state(function ($get): string {
+                        //         $qty = (float) ($get('qty') ?? 0);
+                        //         $allItems = $get('../../purchaseOrderItems') ?? [];
+                        //         $item = [
+                        //             'qty' => $qty,
+                        //             'price' => (float) ($get('price') ?? 0),
+                        //             'discount' => (float) ($get('discount') ?? 0),
+                        //         ];
+                        //         $lineTotal = PurchaseOrder::calculateItemFinalPrice(
+                        //             $item,
+                        //             $allItems,
+                        //             $get('../../discount'),
+                        //             $get('../../tax_type'),
+                        //             $get('../../tax_percentage'),
+                        //         );
+
+                        //         $unitPrice = $qty > 0 ? $lineTotal / $qty : (float) ($get('price') ?? 0);
+
+                        //         return static::formatMoney($unitPrice);
+                        //     })
+                        //     ->size(TextSize::Large)
+                        //     ->color('primary')
+                        //     ->columnSpan(3)
+                        // ,
                         TextEntry::make('line_total')
                             ->label(__('purchase-order.purchase_order_item.total.label'))
-                            ->state(fn($get): string => static::formatMoney(
-                                PurchaseOrder::calculateItemTotal([
+                            ->state(function ($get): string {
+                                $allItems = $get('../../purchaseOrderItems') ?? [];
+                                $item = [
                                     'qty' => $get('qty'),
                                     'price' => $get('price'),
                                     'discount' => $get('discount'),
-                                    'tax' => $get('tax'),
-                                ])
-                            ))
+                                ];
+
+                                return static::formatMoney(PurchaseOrder::calculateItemFinalPrice(
+                                    $item,
+                                    $allItems,
+                                    $get('../../discount'),
+                                    $get('../../tax_type'),
+                                    $get('../../tax_percentage'),
+                                ));
+                            })
                             ->size(TextSize::Large)
                             ->columnSpan(3)
                         ,
@@ -622,7 +720,7 @@ class PurchaseOrderForm
                     ->columns(2)
                     ->schema([
                         TextInput::make('discount')
-                            ->label(__('purchase-order.total.discount'))
+                            ->label(__('purchase-order.discount.label'))
                             ->numeric()
                             ->minValue(0)
                             ->placeholder(0)
@@ -631,36 +729,28 @@ class PurchaseOrderForm
                             ->inlineLabel()
                             ->columnSpanFull()
                         ,
-                        // TextEntry::make('net_subtotal_display')
-                        //     ->label(__('purchase-order.total.net_subtotal'))
+                        // TextEntry::make('calculated_tax')
+                        //     ->label(__('purchase-order.tax.label'))
                         //     ->state(fn($get): string => static::formatMoney(
-                        //         PurchaseOrder::calculateNetSubtotal(
+                        //         PurchaseOrder::calculateSubtotalTax(
                         //             $get('purchaseOrderItems') ?? [],
-                        //             $get('discount')
+                        //             $get('discount'),
+                        //             $get('tax_type'),
+                        //             $get('tax_percentage'),
                         //         )
                         //     ))
                         //     ->inlineLabel()
                         //     ->alignEnd()
                         //     ->columnSpanFull()
                         // ,
-                        TextInput::make('tax')
-                            ->label(__('purchase-order.total.tax'))
-                            ->numeric()
-                            ->minValue(0)
-                            ->placeholder(0)
-                            ->prefix('Rp')
-                            ->live()
-                            ->inlineLabel()
-                            ->columnSpanFull()
-                        ,
                         TextInput::make('tax_description')
-                            ->label(__('purchase-order.total.tax_description'))
-                            ->placeholder(__('purchase-order.total.tax_description_placeholder'))
+                            ->label(__('purchase-order.tax_description.label'))
+                            ->placeholder(__('purchase-order.tax_description.placeholder'))
                             ->inlineLabel()
                             ->columnSpanFull()
                         ,
                         TextInput::make('rounding')
-                            ->label(__('purchase-order.total.rounding'))
+                            ->label(__('purchase-order.rounding.label'))
                             ->numeric()
                             ->placeholder(0)
                             ->prefix('Rp')
@@ -685,22 +775,26 @@ class PurchaseOrderForm
                     ])
                 ,
 
-                Fieldset::make('Item')
+                Fieldset::make('Rincian Pembayaran')
                     ->columns(2)
                     ->schema([
-                        TextEntry::make('subtotal_item_price')
-                            // ->label(__('purchase-order.total.subtotal'))
+                        TextEntry::make('total_subtotal')
+                            ->label(__('purchase-order.total.subtotal'))
                             ->state(fn($get): string => static::formatMoney(
-                                PurchaseOrder::calculateSubtotalPrice($get('purchaseOrderItems') ?? [])
+                                PurchaseOrder::calculateTotalSubtotal(
+                                    $get('purchaseOrderItems') ?? [],
+                                    $get('tax_type'),
+                                    $get('tax_percentage'),
+                                )
                             ))
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
-                        TextEntry::make('subtotal_item_discount')
-                            // ->label(__('purchase-order.total.subtotal'))
+                        TextEntry::make('total_discount')
+                            ->label(__('purchase-order.total.discount'))
                             ->state(fn($get): string => '-' . static::formatMoney(
-                                (PurchaseOrder::calculateSubtotalDiscount($get('purchaseOrderItems') ?? [])) +
+                                (PurchaseOrder::calculateTotalDiscount($get('purchaseOrderItems') ?? [])) +
                                 $get('discount')
                             ))
                             ->color('danger')
@@ -708,25 +802,58 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
-                        TextEntry::make('subtotal_item_tax')
-                            // ->label(__('purchase-order.total.subtotal'))
+                        TextEntry::make('total_tax')
+                            ->label(__('purchase-order.total.tax'))
                             ->state(fn($get): string => static::formatMoney(
-                                (PurchaseOrder::calculateSubtotalTax($get('purchaseOrderItems') ?? [])) +
-                                $get('tax')
+                                PurchaseOrder::calculateSubtotalTax(
+                                    $get('purchaseOrderItems') ?? [],
+                                    $get('discount'),
+                                    $get('tax_type'),
+                                    $get('tax_percentage'),
+                                )
                             ))
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
-                        TextEntry::make('subtotal_display')
-                            // ->label(__('purchase-order.total.subtotal'))
+                        TextEntry::make('total')
+                            // ->label(__('purchase-order.total.grand_total'))
+                            ->state(fn($get): string => static::formatMoney(
+                                PurchaseOrder::calculateTotalBeforeRounding(
+                                    $get('purchaseOrderItems') ?? [],
+                                    $get('discount'),
+                                    $get('tax_type'),
+                                    $get('tax_percentage'),
+                                )
+                            ))
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            // ->color('primary')
+                            ->inlineLabel()
+                            ->alignEnd()
+                            ->columnSpanFull()
+                        ,
+                        TextEntry::make('total_rounding')
+                            ->label(__('purchase-order.rounding.label'))
+                            ->state(fn($get): string => static::formatMoney(
+                                $get('rounding') ?? 0
+                            ))
+                            ->inlineLabel()
+                            ->alignEnd()
+                            ->columnSpanFull()
+                        ,
+                        TextEntry::make('total_grand_total')
                             ->label(__('purchase-order.total.grand_total'))
                             ->state(fn($get): string => static::formatMoney(
-                                (PurchaseOrder::calculateSubtotal($get('purchaseOrderItems') ?? [])) -
-                                $get('discount') +
-                                $get('tax') +
-                                $get('rounding')
+                                PurchaseOrder::calculateGrandTotal(
+                                    $get('purchaseOrderItems') ?? [],
+                                    $get('discount'),
+                                    $get('tax_type'),
+                                    $get('tax_percentage'),
+                                    $get('rounding'),
+                                )
                             ))
+                            ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->color('primary')
                             ->inlineLabel()

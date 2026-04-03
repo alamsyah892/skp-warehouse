@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderTaxType;
 use App\Models\Company;
 use App\Models\Division;
 use App\Models\Project;
@@ -36,9 +37,11 @@ class PurchaseOrderFactory extends Factory
             'notes' => $this->faker->paragraph(),
             'info' => $this->faker->sentence(),
             'discount' => 0,
+            'tax_type' => PurchaseOrderTaxType::EXCLUDE,
+            'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
             'tax' => 0,
             'tax_description' => '',
-            'pembulatan' => 0,
+            'rounding' => 0,
             'status' => PurchaseOrderStatus::DRAFT,
         ];
     }

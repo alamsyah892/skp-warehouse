@@ -3,7 +3,9 @@
 namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderTaxType;
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Models\PurchaseOrder;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -247,8 +249,26 @@ class PurchaseOrderInfolist
                     ->label(__('purchase-order.total.discount'))
                     ->numeric()
                     ->placeholder('-'),
+                TextEntry::make('tax_type')
+                    ->label(__('purchase-order.tax_type.label'))
+                    ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
+                    ->placeholder('-'),
+                TextEntry::make('tax_percentage')
+                    ->label(__('purchase-order.tax_percentage.label'))
+                    ->formatStateUsing(fn($state) => filled($state) ? number_format((float) $state, 0) . '%' : '-')
+                    ->placeholder('-'),
                 TextEntry::make('tax')
                     ->label(__('purchase-order.total.tax'))
+                    ->state(fn($record) => PurchaseOrder::calculateSubtotalTax(
+                        $record->purchaseOrderItems->map(fn($item): array => [
+                            'qty' => $item->qty,
+                            'price' => $item->price,
+                            'discount' => $item->discount,
+                        ])->all(),
+                        $record->discount,
+                        $record->tax_type,
+                        $record->tax_percentage,
+                    ))
                     ->numeric()
                     ->placeholder('-'),
                 TextEntry::make('tax_description')

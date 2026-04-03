@@ -19,6 +19,7 @@ class CreatePurchaseOrder extends CreateRecord
 
         PurchaseOrder::syncHeaderFromPurchaseRequests($data);
         PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
+        PurchaseOrder::syncTaxTotals($data);
         PurchaseOrder::validateItemsBelongToPurchaseRequests(
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,

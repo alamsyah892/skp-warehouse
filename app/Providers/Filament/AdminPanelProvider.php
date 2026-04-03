@@ -113,6 +113,8 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Settings')
                 ,
             ])
+            // ->sidebarFullyCollapsibleOnDesktop()
+            ->topNavigation()
 
             // ->spa()
             // ->spaUrlExceptions(fn(): array => [

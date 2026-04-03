@@ -100,13 +100,15 @@ return [
             'label' => 'Qty Dipesan',
         ],
         'price' => [
-            'label' => 'Harga (satuan)',
+            'label' => 'Harga Dasar (satuan)',
+            'exclude_label' => 'Harga (DPP)',
+            'include_label' => 'Harga (include tax)',
         ],
         'discount' => [
             'label' => 'Diskon Item (satuan)',
         ],
         'tax' => [
-            'label' => 'Pajak Item (satuan)',
+            'label' => 'Pajak Item',
         ],
         'final_price' => [
             'label' => 'Harga Final (satuan)',
@@ -124,15 +126,39 @@ return [
         ],
     ],
 
+    'discount' => [
+        'label' => 'Diskon PO (keseluruhan)',
+    ],
+
+    'tax' => [
+        'label' => 'Nominal Pajak',
+    ],
+
+    'tax_type' => [
+        'label' => 'Mode Pajak',
+        'include' => 'Include Tax',
+        'exclude' => 'Exclude Tax',
+    ],
+
+    'tax_percentage' => [
+        'label' => 'Persentase Pajak',
+    ],
+
+    'tax_description' => [
+        'label' => 'Keterangan Pajak',
+        'placeholder' => 'Contoh: PPN 11%',
+    ],
+
+    'rounding' => [
+        'label' => 'Pembulatan',
+    ],
+
     'total' => [
-        'subtotal' => 'Subtotal Item',
+        'subtotal' => 'Subtotal Pesanan',
         'net_subtotal' => 'Subtotal Setelah Diskon PO',
-        'discount' => 'Diskon PO',
+        'discount' => 'Diskon',
         'tax' => 'Pajak',
-        'tax_description' => 'Keterangan Pajak',
-        'tax_description_placeholder' => 'Contoh: PPN 11%',
-        'rounding' => 'Pembulatan',
-        'grand_total' => 'Grand Total',
+        'grand_total' => 'Total Pembayaran',
     ],
 
     'validation' => [

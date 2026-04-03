@@ -43,6 +43,7 @@ class EditPurchaseOrder extends EditRecord
 
         PurchaseOrder::syncHeaderFromPurchaseRequests($data);
         PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
+        PurchaseOrder::syncTaxTotals($data);
         PurchaseOrder::validateItemsBelongToPurchaseRequests(
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,
@@ -74,9 +75,11 @@ class EditPurchaseOrder extends EditRecord
             'project_id',
             'warehouse_address_id',
             'discount',
+            'tax_type',
+            'tax_percentage',
             'tax',
             'tax_description',
-            'pembulatan',
+            'rounding',
         ]);
     }
 }
