@@ -58,3 +58,57 @@ it('extracts tax amount from include tax purchase order', function () {
     expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(11000.0);
     expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 11, 0))->toBe(111000.0);
 });
+
+it('keeps include tax breakdown consistent when discounts are applied', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 111000,
+            'discount' => 11100,
+        ],
+    ];
+
+    $orderDiscount = 11100;
+
+    $subtotal = PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11);
+    $discount = PurchaseOrder::calculateSubtotalDiscount($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
+    $tax = PurchaseOrder::calculateSubtotalTax($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
+    $total = PurchaseOrder::calculateTotalBeforeRounding($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
+
+    expect($subtotal)->toBe(100000.0);
+    expect($discount)->toBe(20000.0);
+    expect($tax)->toBe(8800.0);
+    expect($total)->toBe(88800.0);
+    expect(round($subtotal - $discount + $tax, 2))->toBe($total);
+});
+
+it('rounds tax and include dpp calculations', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 100001,
+            'discount' => 0,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(90091.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(9910.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(11000.0);
+});
+
+it('rounds include dpp at document level like erp', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 1,
+            'discount' => 0,
+        ],
+        [
+            'qty' => 1,
+            'price' => 5,
+            'discount' => 0,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(5.0);
+});

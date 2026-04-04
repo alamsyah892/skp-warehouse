@@ -101,8 +101,8 @@ return [
         ],
         'price' => [
             'label' => 'Harga Dasar (satuan)',
-            'exclude_label' => 'Harga (DPP)',
-            'include_label' => 'Harga (include tax)',
+            'exclude_label' => 'Harga',
+            'include_label' => 'Harga (Include Tax)',
         ],
         'discount' => [
             'label' => 'Diskon Item (satuan)',
@@ -118,7 +118,8 @@ return [
         ],
         'source_item' => [
             'context' => 'Konteks Sumber Item Pengajuan',
-            'context_value' => 'Kode Item: :code | Nama Item: :name | Pengajuan: :number | Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
+            // 'context_value' => 'Kode Item: :code | Nama Item: :name | Pengajuan: :number | Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
+            'context_value' => 'Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
         ],
         'description' => [
             'placeholder' => 'Deskripsi item PO',
