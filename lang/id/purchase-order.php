@@ -156,9 +156,12 @@ return [
 
     'total' => [
         'subtotal' => 'Subtotal Pesanan',
+        'after_discount' => 'Subtotal Setelah Diskon',
+        'tax_base' => 'DPP',
         'net_subtotal' => 'Subtotal Setelah Diskon PO',
         'discount' => 'Diskon',
         'tax' => 'Pajak',
+        'before_rounding' => 'Total Sebelum Pembulatan',
         'grand_total' => 'Total Pembayaran',
     ],
 
