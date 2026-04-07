@@ -48,6 +48,7 @@ class EditPurchaseOrder extends EditRecord
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,
         );
+        PurchaseOrder::validateManualItems($data['purchaseOrderItems'] ?? []);
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? [], $record->id);
 
         $record->applyRevision($data);

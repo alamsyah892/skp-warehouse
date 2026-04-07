@@ -462,17 +462,27 @@ class PurchaseOrderForm
                     ->hiddenLabel()
                     ->relationship()
                     ->itemLabel(function (array $state): string {
-                        $source = static::getPurchaseRequestItemRecord((int) ($state['purchase_request_item_id'] ?? 0));
-
-                        if (!$source) {
-                            return 'Item';
-                        }
-
-                        return collect([
-                            $source->item?->code,
-                            $source->item?->name,
-                            $source->purchaseRequest?->number,
-                        ])->filter()->implode(' | ');
+                        // $source = static::getPurchaseRequestItemRecord((int) ($state['purchase_request_item_id'] ?? 0));
+            
+                        // if ($source) {
+                        //     return collect([
+                        //         $source->item?->code,
+                        //         $source->item?->name,
+                        //         $source->purchaseRequest?->number,
+                        //     ])->filter()->implode(' | ');
+                        // }
+            
+                        // $item = static::getItemRecord((int) ($state['item_id'] ?? 0));
+            
+                        // if ($item) {
+                        //     return collect([
+                        //         $item->code,
+                        //         $item->name,
+                        //         'Manual',
+                        //     ])->filter()->implode(' | ');
+                        // }
+            
+                        return 'Item';
                     })
                     ->addActionLabel('Tambah Item Purchase Order')
                     ->columns([
@@ -496,7 +506,7 @@ class PurchaseOrderForm
                                     ->dehydrated(false)
                                 ,
                                 Select::make('purchase_request_item_id')
-                                    ->label('Item')
+                                    ->label('Sumber Item Pengajuan')
                                     ->options(function ($get): array {
                                         $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
                                         return static::getPurchaseRequestItemOptions($purchaseRequestIds);
@@ -518,14 +528,22 @@ class PurchaseOrderForm
                                     ->searchable()
                                     ->disabled(fn($get): bool => blank(PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []))))
                                     ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->required()
                                     ->live()
-                                    ->helperText('Pilih item sumber dari purchase request yang sudah dipilih.')
+                                    ->helperText(function ($get): string {
+                                        $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
+
+                                        if ($source) {
+                                            return __('purchase-order.purchase_order_item.source_item.context_value', [
+                                                'request_qty' => number_format((float) $source->qty, 2),
+                                                'ordered_qty' => number_format($source->getOrderedQty(), 2),
+                                                'remaining_qty' => number_format($source->getRemainingQty(), 2),
+                                            ]);
+                                        }
+
+                                        return '';
+                                    })
                                     ->afterStateUpdated(function ($state, $set): void {
                                         if (!$state) {
-                                            $set('item_id', null);
-                                            $set('qty', null);
-
                                             return;
                                         }
 
@@ -540,31 +558,25 @@ class PurchaseOrderForm
                                     })
                                     ->columnSpanFull()
                                 ,
+                                Select::make('item_id')
+                                    ->label('Item')
+                                    ->options(fn(): array => static::getManualItemOptions())
+                                    ->getSearchResultsUsing(fn(string $search): array => static::getManualItemOptions($search))
+                                    ->getOptionLabelUsing(function ($value): ?string {
+                                        $item = static::getItemRecord((int) $value);
 
-                                Hidden::make('item_id')->required(),
-
-                                TextEntry::make('source_context')
-                                    ->label(__('purchase-order.purchase_order_item.source_item.context'))
-                                    ->state(function ($get): string {
-                                        $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
-
-                                        if (!$source) {
-                                            return '-';
+                                        if (!$item) {
+                                            return null;
                                         }
 
-                                        return __('purchase-order.purchase_order_item.source_item.context_value', [
-                                            // 'number' => $source->purchaseRequest?->number ?? '-',
-                                            // 'code' => $source->item?->code ?? '-',
-                                            // 'name' => $source->item?->name ?? '-',
-                                            'request_qty' => number_format((float) $source->qty, 2),
-                                            'ordered_qty' => number_format($source->getOrderedQty(), 2),
-                                            'remaining_qty' => number_format($source->getRemainingQty(), 2),
-                                            // 'discount' => static::formatMoney((float) $source->discount),
-                                        ]);
+                                        return "{$item->code} | {$item->name}";
                                     })
-                                    ->placeholder('-')
-                                    ->color('gray')
-                                    ->size(TextSize::Small)
+                                    ->preload()
+                                    ->searchable()
+                                    ->required()
+                                    ->live()
+                                    ->disabled(fn($get): bool => filled($get('purchase_request_item_id')))
+                                    ->dehydrated()
                                     ->columnSpanFull()
                                 ,
                             ])
@@ -625,7 +637,7 @@ class PurchaseOrderForm
                                     ->label(function ($get): string {
                                         return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
                                             ? __('purchase-order.purchase_order_item.price.include_label')
-                                            : __('purchase-order.purchase_order_item.price.exclude_label');
+                                            : __('purchase-order.purchase_order_item.price.label');
                                     })
                                     ->numeric()
                                     ->minValue(0)
@@ -640,6 +652,7 @@ class PurchaseOrderForm
                                     ])
                                 ,
                                 TextEntry::make('subtotal')
+                                    ->label('Subtotal')
                                     ->state(function ($get): string {
                                         return static::formatMoney(static::getCurrentLineBreakdown($get)['gross_subtotal'] ?? 0.0);
                                     })
@@ -651,16 +664,6 @@ class PurchaseOrderForm
                                     ])
                                 ,
 
-                                TextEntry::make('discount_percentage')
-                                    ->label('Informasi Diskon')
-                                    ->state('Diskon per item')
-                                    ->color('gray')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
                                 TextInput::make('discount')
                                     ->label('Diskon')
                                     ->numeric()
@@ -669,6 +672,28 @@ class PurchaseOrderForm
                                     ->prefix('Rp')
                                     ->dehydrated()
                                     ->live(debounce: 500)
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'md' => 2,
+                                        'xl' => 4,
+                                    ])
+                                ,
+                                TextEntry::make('discount_percentage')
+                                    ->label('Persentase Diskon')
+                                    ->state(function ($get): string {
+                                        $lineBreakdown = static::getCurrentLineBreakdown($get);
+                                        $grossSubtotal = (float) ($lineBreakdown['gross_subtotal'] ?? 0);
+                                        $itemDiscount = (float) ($lineBreakdown['item_discount'] ?? 0);
+
+                                        if ($grossSubtotal <= 0 || $itemDiscount <= 0) {
+                                            return '';
+                                        }
+
+                                        return number_format(($itemDiscount / $grossSubtotal) * 100, 0) . '%';
+                                    })
+                                    ->badge()
+                                    ->color('danger')
+                                    ->size(TextSize::Large)
                                     ->columnSpan([
                                         'default' => 1,
                                         'md' => 2,
@@ -713,6 +738,7 @@ class PurchaseOrderForm
                                     ])
                                 ,
                                 TextEntry::make('total')
+                                    ->label('Total')
                                     ->state(function ($get): string {
                                         return static::formatMoney(static::getCurrentLineBreakdown($get)['total'] ?? 0.0);
                                     })
@@ -743,8 +769,12 @@ class PurchaseOrderForm
                         ->after(function ($set): void {
                             static::touchPaymentSummary($set);
                         }))
+                    ->afterDelete(function ($set): void {
+                        static::touchPaymentSummary($set);
+                    })
                     ->defaultItems(0)
                     ->minItems(1)
+                    ->partiallyRenderAfterActionsCalled(false)
                     ->live()
                     ->afterStateUpdated(function ($set): void {
                         static::touchPaymentSummary($set);
@@ -778,22 +808,8 @@ class PurchaseOrderForm
                         //     ->inlineLabel()
                         //     ->columnSpanFull()
                         // ,
-                        // TextEntry::make('calculated_tax')
-                        //     ->label(__('purchase-order.tax.label'))
-                        //     ->state(fn($get): string => static::formatMoney(
-                        //         PurchaseOrder::calculateSubtotalTax(
-                        //             $get('purchaseOrderItems') ?? [],
-                        //             $get('discount'),
-                        //             $get('tax_type'),
-                        //             $get('tax_percentage'),
-                        //         )
-                        //     ))
-                        //     ->inlineLabel()
-                        //     ->alignEnd()
-                        //     ->columnSpanFull()
-                        // ,
                         TextInput::make('rounding')
-                            ->label(__('purchase-order.rounding.label'))
+                            ->label('Pembulatan')
                             ->numeric()
                             ->placeholder(0)
                             ->prefix('Rp')
@@ -801,24 +817,20 @@ class PurchaseOrderForm
                             ->inlineLabel()
                             ->columnSpanFull()
                         ,
-                        // TextEntry::make('grand_total_display')
-                        //     ->label(__('purchase-order.total.grand_total'))
-                        //     ->state(fn($get): string => static::formatMoney(
-                        //         PurchaseOrder::calculateGrandTotal(
-                        //             $get('purchaseOrderItems') ?? [],
-                        //             $get('discount'),
-                        //             $get('tax'),
-                        //             $get('rounding'),
-                        //         )
-                        //     ))
-                        //     ->inlineLabel()
-                        //     ->alignEnd()
-                        //     ->columnSpanFull()
-                        // ,
                     ])
                 ,
 
-                Fieldset::make('Rincian Pembayaran')
+                Fieldset::make('Rincian Total')
+                    ->key(function ($get): string {
+                        return 'payment-summary-' . md5(json_encode([
+                            'items' => $get('purchaseOrderItems') ?? [],
+                            'discount' => $get('discount'),
+                            'tax_type' => $get('tax_type'),
+                            'tax_percentage' => $get('tax_percentage'),
+                            'rounding' => $get('rounding'),
+                            'refresh_key' => $get('payment_summary_refresh_key'),
+                        ], JSON_THROW_ON_ERROR));
+                    })
                     ->columns(1)
                     ->inlineLabel()
                     ->schema([
@@ -827,14 +839,14 @@ class PurchaseOrderForm
                             ->dehydrated(false)
                         ,
                         TextEntry::make('total_subtotal')
-                            ->label(__('purchase-order.total.subtotal'))
+                            ->label('Subtotal')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['gross_subtotal'] ?? 0.0))
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total_discount')
-                            ->label(__('purchase-order.total.discount'))
+                            ->label('Diskon')
                             ->state(fn($get): string => '-' . static::formatMoney(static::getSummaryBreakdown($get)['discount_total'] ?? 0.0))
                             ->color('danger')
                             ->inlineLabel()
@@ -842,7 +854,7 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total_after_discount')
-                            ->label(__('purchase-order.total.after_discount'))
+                            ->label('Subtotal Setelah Diskon')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['gross_after_discount'] ?? 0.0))
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -852,14 +864,14 @@ class PurchaseOrderForm
                         ,
                         View::make('components.divider'),
                         TextEntry::make('total_dpp')
-                            ->label(__('purchase-order.total.tax_base'))
+                            ->label('DPP')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['tax_base'] ?? 0.0))
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total_ppn')
-                            ->label(__('purchase-order.total.tax'))
+                            ->label(fn($get) => $get('tax_percentage') ? 'PPN (' . $get('tax_percentage') . '%)' : 'PPN')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['tax_amount'] ?? 0.0))
                             ->color('warning')
                             ->inlineLabel()
@@ -867,7 +879,7 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total')
-                            ->label(__('purchase-order.total.before_rounding'))
+                            ->label('Total')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['before_rounding'] ?? 0.0))
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -876,7 +888,7 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total_rounding')
-                            ->label(__('purchase-order.rounding.label'))
+                            ->label('Pembulatan')
                             ->state(fn($get): string => static::formatMoney(
                                 $get('rounding') ?? 0
                             ))
@@ -885,7 +897,7 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
                         TextEntry::make('total_grand_total')
-                            ->label(__('purchase-order.total.grand_total'))
+                            ->label('Total Pembayaran')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['grand_total'] ?? 0.0))
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -1102,6 +1114,62 @@ class PurchaseOrderForm
         return $cache[$cacheKey];
     }
 
+    protected static function getItemRecord(?int $itemId): ?Item
+    {
+        if (!$itemId) {
+            return null;
+        }
+
+        static $cache = [];
+
+        if (!array_key_exists($itemId, $cache)) {
+            $cache[$itemId] = Item::query()
+                ->with('category')
+                ->find($itemId);
+        }
+
+        return $cache[$itemId];
+    }
+
+    protected static function getManualItemOptions(?string $search = null): array
+    {
+        static $cache = [];
+
+        $cacheKey = md5(json_encode([
+            'search' => filled($search) ? trim($search) : null,
+        ], JSON_THROW_ON_ERROR));
+
+        if (!array_key_exists($cacheKey, $cache)) {
+            $query = Item::query()
+                ->with('category:id,name,allow_po')
+                ->whereHas('category', fn(Builder $query): Builder => $query->where('allow_po', true));
+
+            if (filled($search)) {
+                $query->where(function (Builder $builder) use ($search): void {
+                    $builder
+                        ->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%");
+                });
+            }
+
+            $cache[$cacheKey] = $query
+                ->orderBy('code')
+                ->orderBy('name')
+                ->limit(50)
+                ->get()
+                ->mapWithKeys(fn(Item $item) => [
+                    $item->id => collect([
+                        $item->code,
+                        $item->name,
+                        $item->category?->name,
+                    ])->filter()->implode(' | '),
+                ])
+                ->toArray();
+        }
+
+        return $cache[$cacheKey];
+    }
+
     protected static function getItemUnit(?int $itemId): ?string
     {
         if (!$itemId) {
@@ -1160,28 +1228,36 @@ class PurchaseOrderForm
 
     protected static function getSummaryBreakdown(callable $get): array
     {
-        $get('payment_summary_refresh_key');
+        $items = $get('purchaseOrderItems') ?? [];
+        $discount = $get('discount');
+        $taxType = $get('tax_type');
+        $taxPercentage = $get('tax_percentage');
+        $rounding = $get('rounding');
 
         return static::getOrderBreakdown(
-            $get('purchaseOrderItems') ?? [],
-            $get('discount'),
-            $get('tax_type'),
-            $get('tax_percentage'),
-            $get('rounding'),
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+            $rounding,
         )['summary'];
     }
 
     protected static function getCurrentLineBreakdown(callable $get): array
     {
-        $get('../../payment_summary_refresh_key');
+        $items = $get('../../purchaseOrderItems') ?? [];
+        $discount = $get('../../discount');
+        $taxType = $get('../../tax_type');
+        $taxPercentage = $get('../../tax_percentage');
+        $rounding = $get('../../rounding');
 
         $lineKey = $get('line_key');
         $breakdown = static::getOrderBreakdown(
-            $get('../../purchaseOrderItems') ?? [],
-            $get('../../discount'),
-            $get('../../tax_type'),
-            $get('../../tax_percentage'),
-            $get('../../rounding'),
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+            $rounding,
         );
 
         if ($lineKey !== null && isset($breakdown['lines'][$lineKey])) {
@@ -1275,7 +1351,14 @@ class PurchaseOrderForm
         $items = collect($get('purchaseOrderItems') ?? []);
 
         if (blank($selectedPurchaseRequestIds)) {
-            $set('purchaseOrderItems', []);
+            $filteredItems = $items
+                ->filter(fn(array $item): bool => blank($item['purchase_request_item_id'] ?? null))
+                ->values()
+                ->all();
+
+            if ($filteredItems !== $items->values()->all()) {
+                $set('purchaseOrderItems', $filteredItems);
+            }
 
             return;
         }
@@ -1287,7 +1370,15 @@ class PurchaseOrderForm
             ->all();
 
         $filteredItems = $items
-            ->filter(fn(array $item): bool => in_array((int) ($item['purchase_request_item_id'] ?? 0), $allowedSourceIds, true))
+            ->filter(function (array $item) use ($allowedSourceIds): bool {
+                $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+
+                if ($purchaseRequestItemId <= 0) {
+                    return true;
+                }
+
+                return in_array($purchaseRequestItemId, $allowedSourceIds, true);
+            })
             ->values()
             ->all();
 

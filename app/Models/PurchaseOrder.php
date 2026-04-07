@@ -455,6 +455,35 @@ class PurchaseOrder extends Model
         }
     }
 
+    public static function validateManualItems(array $items): void
+    {
+        foreach ($items as $index => $item) {
+            $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+            $itemId = (int) ($item['item_id'] ?? 0);
+
+            if ($purchaseRequestItemId > 0) {
+                continue;
+            }
+
+            if ($itemId <= 0) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.item_id" => __('validation.required'),
+                ]);
+            }
+
+            $manualItem = Item::query()
+                ->whereKey($itemId)
+                ->whereHas('category', fn(Builder $query): Builder => $query->where('allow_po', true))
+                ->exists();
+
+            if (!$manualItem) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.item_id" => __('validation.exists', ['attribute' => 'item']),
+                ]);
+            }
+        }
+    }
+
     public static function syncHeaderFromPurchaseRequests(array &$data): void
     {
         $header = self::extractHeaderFromPurchaseRequests($data['purchaseRequests'] ?? []);

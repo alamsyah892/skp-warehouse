@@ -100,8 +100,7 @@ return [
             'label' => 'Qty Dipesan',
         ],
         'price' => [
-            'label' => 'Harga Dasar (satuan)',
-            'exclude_label' => 'Harga',
+            'label' => 'Harga',
             'include_label' => 'Harga (Include Tax)',
         ],
         'discount' => [

@@ -1,7 +1,13 @@
 <?php
 
 use App\Enums\PurchaseOrderTaxType;
+use App\Models\Item;
+use App\Models\ItemCategory;
 use App\Models\PurchaseOrder;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Validation\ValidationException;
+
+uses(DatabaseTransactions::class);
 
 it('normalizes selected purchase request ids', function () {
     expect(PurchaseOrder::normalizePurchaseRequestIds([1, '2', null, '2', 0, [3, '4']]))
@@ -111,4 +117,66 @@ it('rounds include dpp at document level like erp', function () {
     ];
 
     expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(5.0);
+});
+
+it('allows manual purchase order items from categories that allow po', function () {
+    $category = ItemCategory::query()->create([
+        'level' => ItemCategory::LEVEL_SUB_CATEGORY,
+        'code' => 'MISC',
+        'name' => 'Miscellaneous',
+        'description' => '',
+        'allow_po' => true,
+    ]);
+
+    $item = Item::query()->create([
+        'category_id' => $category->id,
+        'code' => 'BIAYA-LAIN',
+        'name' => 'Biaya Lain-lain',
+        'description' => '',
+        'unit' => 'lot',
+        'type' => Item::TYPE_CONSUMABLE,
+        'is_active' => true,
+    ]);
+
+    PurchaseOrder::validateManualItems([
+        [
+            'purchase_request_item_id' => null,
+            'item_id' => $item->id,
+            'qty' => 1,
+            'price' => 100000,
+            'discount' => 0,
+        ],
+    ]);
+
+    expect(true)->toBeTrue();
+});
+
+it('rejects manual purchase order items from categories that do not allow po', function () {
+    $category = ItemCategory::query()->create([
+        'level' => ItemCategory::LEVEL_SUB_CATEGORY,
+        'code' => 'NON-PO',
+        'name' => 'Non PO',
+        'description' => '',
+        'allow_po' => false,
+    ]);
+
+    $item = Item::query()->create([
+        'category_id' => $category->id,
+        'code' => 'TIDAK-BOLEH',
+        'name' => 'Tidak Boleh PO',
+        'description' => '',
+        'unit' => 'pcs',
+        'type' => Item::TYPE_CONSUMABLE,
+        'is_active' => true,
+    ]);
+
+    expect(fn() => PurchaseOrder::validateManualItems([
+        [
+            'purchase_request_item_id' => null,
+            'item_id' => $item->id,
+            'qty' => 1,
+            'price' => 100000,
+            'discount' => 0,
+        ],
+    ]))->toThrow(ValidationException::class);
 });

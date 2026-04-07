@@ -24,6 +24,7 @@ class CreatePurchaseOrder extends CreateRecord
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,
         );
+        PurchaseOrder::validateManualItems($data['purchaseOrderItems'] ?? []);
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? []);
 
         return $data;
