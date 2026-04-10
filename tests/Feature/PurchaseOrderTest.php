@@ -1,11 +1,24 @@
 <?php
 
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseRequestStatus;
+use App\Filament\Resources\PurchaseOrders\Pages\EditPurchaseOrder;
+use App\Models\Company;
+use App\Models\Division;
 use App\Models\Item;
 use App\Models\ItemCategory;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderItem;
+use App\Models\PurchaseRequest;
+use App\Models\PurchaseRequestItem;
+use App\Models\Project;
+use App\Models\User;
+use App\Models\Vendor;
+use App\Models\Warehouse;
+use App\Models\WarehouseAddress;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Validation\ValidationException;
+use Livewire\Livewire;
 
 uses(DatabaseTransactions::class);
 
@@ -119,6 +132,74 @@ it('rounds include dpp at document level like erp', function () {
     expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(5.0);
 });
 
+it('allocates order discount into each line breakdown consistently', function () {
+    $items = [
+        [
+            'line_key' => 'line-1',
+            'qty' => 1,
+            'price' => 10000,
+            'discount' => 0,
+        ],
+        [
+            'line_key' => 'line-2',
+            'qty' => 1,
+            'price' => 5000,
+            'discount' => 0,
+        ],
+    ];
+
+    $breakdown = PurchaseOrder::calculateOrderBreakdown(
+        $items,
+        1500,
+        PurchaseOrderTaxType::EXCLUDE,
+        11,
+        0,
+    );
+
+    expect($breakdown['lines']['line-1']['allocated_order_discount'])->toBe(1000.0)
+        ->and($breakdown['lines']['line-1']['gross_after_discount'])->toBe(9000.0)
+        ->and($breakdown['lines']['line-1']['tax_amount'])->toBe(990.0)
+        ->and($breakdown['lines']['line-1']['total'])->toBe(9990.0)
+        ->and($breakdown['lines']['line-2']['allocated_order_discount'])->toBe(500.0)
+        ->and($breakdown['lines']['line-2']['gross_after_discount'])->toBe(4500.0)
+        ->and($breakdown['lines']['line-2']['tax_amount'])->toBe(495.0)
+        ->and($breakdown['lines']['line-2']['total'])->toBe(4995.0)
+        ->and($breakdown['summary']['gross_subtotal'])->toBe(15000.0)
+        ->and($breakdown['summary']['discount_total'])->toBe(1500.0)
+        ->and($breakdown['summary']['gross_after_discount'])->toBe(13500.0)
+        ->and($breakdown['summary']['tax_base'])->toBe(13500.0)
+        ->and($breakdown['summary']['tax_amount'])->toBe(1485.0)
+        ->and($breakdown['summary']['before_rounding'])->toBe(14985.0)
+        ->and($breakdown['summary']['grand_total'])->toBe(14985.0);
+});
+
+it('uses indonesian effective ppn calculation for 12 percent exclude tax purchase orders', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 100000,
+            'discount' => 0,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::EXCLUDE, 12))->toBe(11000.0);
+    expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::EXCLUDE, 12, 0))->toBe(111000.0);
+});
+
+it('uses indonesian effective ppn calculation for 12 percent include tax purchase orders', function () {
+    $items = [
+        [
+            'qty' => 1,
+            'price' => 111000,
+            'discount' => 0,
+        ],
+    ];
+
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 12))->toBe(111000.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 12))->toBe(11000.0);
+    expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 12, 0))->toBe(111000.0);
+});
+
 it('allows manual purchase order items from categories that allow po', function () {
     $category = ItemCategory::query()->create([
         'level' => ItemCategory::LEVEL_SUB_CATEGORY,
@@ -180,3 +261,258 @@ it('rejects manual purchase order items from categories that do not allow po', f
         ],
     ]))->toThrow(ValidationException::class);
 });
+
+it('hydrates a stable line key for existing purchase order items on edit', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+
+    Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state): array {
+            $firstPurchaseOrderItem = collect(data_get($state, 'purchaseOrderItems', []))->first();
+
+            expect($firstPurchaseOrderItem['id'] ?? $firstPurchaseOrderItem['line_key'] ?? null)
+                ->not->toBeEmpty();
+
+            return [];
+        });
+});
+
+it('preserves edited sourced item discounts and recalculates totals on edit save', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $updatedQty = 3;
+    $updatedPrice = 15000;
+    $updatedDiscount = 1200;
+    $updatedRounding = 50;
+    $firstPurchaseOrderItemKey = null;
+
+    Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use (&$firstPurchaseOrderItemKey): array {
+            $firstPurchaseOrderItemKey = array_key_first($state['purchaseOrderItems']);
+
+            return [];
+        })
+        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.qty", $updatedQty)
+        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.price", $updatedPrice)
+        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.discount", $updatedDiscount)
+        ->set('data.tax_type', PurchaseOrderTaxType::EXCLUDE->value)
+        ->set('data.tax_percentage', (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE)
+        ->set('data.rounding', $updatedRounding)
+        ->call('save', false, false)
+        ->assertHasNoFormErrors();
+
+    $purchaseOrder->refresh();
+
+    /** @var PurchaseOrderItem $purchaseOrderItem */
+    $purchaseOrderItem = $purchaseOrder->purchaseOrderItems()->firstOrFail();
+
+    $expectedTax = PurchaseOrder::calculateSubtotalTax(
+        [[
+            'line_key' => 'edited-line',
+            'purchase_request_item_id' => $purchaseOrderItem->purchase_request_item_id,
+            'qty' => $updatedQty,
+            'price' => $updatedPrice,
+            'discount' => $updatedDiscount,
+        ]],
+        0,
+        PurchaseOrderTaxType::EXCLUDE,
+        PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+    );
+
+    $expectedGrandTotal = PurchaseOrder::calculateGrandTotal(
+        [[
+            'line_key' => 'edited-line',
+            'purchase_request_item_id' => $purchaseOrderItem->purchase_request_item_id,
+            'qty' => $updatedQty,
+            'price' => $updatedPrice,
+            'discount' => $updatedDiscount,
+        ]],
+        0,
+        PurchaseOrderTaxType::EXCLUDE,
+        PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+        $updatedRounding,
+    );
+
+    expect((float) $purchaseOrderItem->qty)->toBe((float) $updatedQty)
+        ->and((float) $purchaseOrderItem->price)->toBe((float) $updatedPrice)
+        ->and((float) $purchaseOrderItem->discount)->toBe((float) $updatedDiscount)
+        ->and((float) $purchaseOrder->discount)->toBe(0.0)
+        ->and((float) $purchaseOrder->tax)->toBe($expectedTax)
+        ->and(PurchaseOrder::calculateGrandTotal(
+            $purchaseOrder->purchaseOrderItems()
+                ->get()
+                ->map(fn(PurchaseOrderItem $item): array => [
+                    'purchase_request_item_id' => $item->purchase_request_item_id,
+                    'qty' => (float) $item->qty,
+                    'price' => (float) $item->price,
+                    'discount' => (float) $item->discount,
+                ])
+                ->all(),
+            (float) $purchaseOrder->discount,
+            $purchaseOrder->tax_type,
+            (float) $purchaseOrder->tax_percentage,
+            (float) $purchaseOrder->rounding,
+        ))->toBe($expectedGrandTotal);
+});
+
+it('updates edit purchase order item state when values change', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $firstPurchaseOrderItemKey = null;
+
+    Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use (&$firstPurchaseOrderItemKey): array {
+            $firstPurchaseOrderItemKey = array_key_first($state['purchaseOrderItems']);
+
+            expect($firstPurchaseOrderItemKey)->not->toBeNull();
+
+            return [];
+        })
+        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.qty", 2)
+        ->assertSet("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.qty", 2);
+});
+
+function createEditablePurchaseOrder(): PurchaseOrder
+{
+    $user = User::factory()->create();
+
+    auth()->login($user);
+
+    $company = Company::query()->create([
+        'code' => 'CMP-TEST',
+        'name' => 'Test Company',
+        'description' => '',
+        'alias' => 'TC',
+        'address' => 'Jl. Test Company',
+        'city' => 'Jakarta',
+        'post_code' => '10110',
+        'contact_person' => 'Tester',
+        'contact_person_position' => 'Manager',
+        'phone' => '021000000',
+        'fax' => '',
+        'email' => 'company@example.test',
+        'website' => 'https://company.test',
+        'tax_number' => 'NPWP-COMPANY',
+        'is_active' => true,
+    ]);
+    $warehouse = Warehouse::query()->create([
+        'code' => 'WH-TEST',
+        'name' => 'Test Warehouse',
+        'description' => '',
+        'is_active' => true,
+    ]);
+    $warehouseAddress = WarehouseAddress::query()->create([
+        'warehouse_id' => $warehouse->id,
+        'address' => 'Jl. Gudang Test',
+        'city' => 'Jakarta',
+        'post_code' => '10110',
+        'phone' => '',
+        'fax' => '',
+        'as_default' => true,
+    ]);
+    $division = Division::query()->create([
+        'code' => 'DIV-TEST',
+        'name' => 'Test Division',
+        'description' => '',
+        'is_active' => true,
+    ]);
+    $project = Project::query()->create([
+        'code' => 'PRJ-TEST',
+        'po_code' => 'PO-TEST',
+        'name' => 'Test Project',
+        'description' => '',
+        'allow_po' => true,
+        'is_active' => true,
+    ]);
+    $vendor = Vendor::query()->create([
+        'code' => 'VND-TEST',
+        'name' => 'Test Vendor',
+        'description' => '',
+        'address' => 'Jl. Vendor Test',
+        'city' => 'Jakarta',
+        'post_code' => '10110',
+        'contact_person' => 'Vendor PIC',
+        'contact_person_position' => 'Sales',
+        'phone' => '021111111',
+        'fax' => '',
+        'email' => 'vendor@example.test',
+        'website' => 'https://vendor.test',
+        'tax_number' => 'NPWP-VENDOR',
+        'is_active' => true,
+    ]);
+    $category = ItemCategory::query()->create([
+        'parent_id' => null,
+        'level' => ItemCategory::LEVEL_SUB_CATEGORY,
+        'code' => 'CAT-TEST',
+        'name' => 'Test Category',
+        'description' => '',
+        'allow_po' => true,
+    ]);
+    $item = Item::query()->create([
+        'category_id' => $category->id,
+        'code' => 'ITM-TEST',
+        'name' => 'Test Item',
+        'description' => '',
+        'unit' => 'pcs',
+        'type' => Item::TYPE_CONSUMABLE,
+        'is_active' => true,
+    ]);
+
+    $purchaseRequest = PurchaseRequest::query()->create([
+        'company_id' => $company->id,
+        'warehouse_id' => $warehouse->id,
+        'warehouse_address_id' => $warehouseAddress->id,
+        'division_id' => $division->id,
+        'project_id' => $project->id,
+        'description' => 'Purchase request for edit test',
+        'memo' => '',
+        'boq' => '',
+        'notes' => '',
+        'info' => '',
+    ]);
+    $purchaseRequest->update([
+        'status' => PurchaseRequestStatus::APPROVED,
+    ]);
+
+    $purchaseRequestItem = PurchaseRequestItem::query()->create([
+        'purchase_request_id' => $purchaseRequest->id,
+        'item_id' => $item->id,
+        'qty' => 10,
+        'description' => 'Requested item',
+        'sort' => 1,
+    ]);
+
+    $purchaseOrder = PurchaseOrder::query()->create([
+        'vendor_id' => $vendor->id,
+        'company_id' => $company->id,
+        'warehouse_id' => $warehouse->id,
+        'warehouse_address_id' => $warehouseAddress->id,
+        'division_id' => $division->id,
+        'project_id' => $project->id,
+        'description' => 'Purchase order for edit test',
+        'memo' => '',
+        'termin' => '',
+        'delivery_info' => '',
+        'notes' => '',
+        'info' => '',
+        'discount' => 50000,
+        'tax_type' => PurchaseOrderTaxType::EXCLUDE,
+        'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+        'tax' => 1100,
+        'tax_description' => '',
+        'rounding' => 0,
+    ]);
+
+    $purchaseOrder->purchaseRequests()->sync([$purchaseRequest->id]);
+    $purchaseOrder->purchaseOrderItems()->create([
+        'purchase_request_item_id' => $purchaseRequestItem->id,
+        'item_id' => $item->id,
+        'qty' => 1,
+        'price' => 10000,
+        'discount' => 0,
+        'description' => 'Ordered item',
+        'sort' => 1,
+    ]);
+
+    return $purchaseOrder->fresh([
+        'purchaseRequests',
+        'purchaseOrderItems',
+    ]);
+}

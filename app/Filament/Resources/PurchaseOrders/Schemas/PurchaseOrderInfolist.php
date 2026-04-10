@@ -36,7 +36,7 @@ class PurchaseOrderInfolist
                 ->schema([
                     Grid::make()
                         ->columnSpan(['xl' => 3, '2xl' => 3])
-                        ->schema([static::dataSection(), static::tabSection()]),
+                        ->schema([static::dataSection(), static::tabSection(), static::totalSection()]),
                     Grid::make()
                         ->columnSpan(['xl' => 1, '2xl' => 1])
                         ->schema([static::otherInfoSection(), static::relatedDataSection()]),
@@ -183,52 +183,207 @@ class PurchaseOrderInfolist
                             ->hiddenLabel()
                             ->table([
                                 TableColumn::make('#')->wrapHeader(false),
-                                TableColumn::make(__('purchase-request.model.plural_label')),
-                                TableColumn::make(__('item.related.code.label'))->wrapHeader(),
+                                // TableColumn::make(__('purchase-request.model.plural_label')),
+                                // TableColumn::make(__('item.related.code.label'))->wrapHeader(),
                                 TableColumn::make(__('item.related.name.label')),
                                 TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
                                 TableColumn::make(__('purchase-order.purchase_order_item.qty.label'))->wrapHeader(),
                                 TableColumn::make(__('purchase-order.purchase_order_item.price.label'))->wrapHeader(),
-                                TableColumn::make(__('purchase-order.purchase_order_item.discount.label'))->wrapHeader(),
-                                TableColumn::make(__('purchase-order.purchase_order_item.total.label'))->wrapHeader(),
-                                TableColumn::make(__('common.description.label')),
+                                // TableColumn::make('Subtotal'),
+                                TableColumn::make('Diskon'),
+                                // TableColumn::make('Setelah Diskon')->wrapHeader(),
+                                // TableColumn::make('DPP'),
+                                // TableColumn::make('PPN'),
+                                TableColumn::make('Total')->wrapHeader(),
+                                // TableColumn::make(__('common.description.label')),
                             ])
                             ->schema([
                                 TextEntry::make('sort')->label('#')->wrap(false),
-                                TextEntry::make('purchaseRequestItem.purchaseRequest.number')
-                                    ->label(__('purchase-request.model.plural_label'))
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->badge(),
-                                TextEntry::make('item.code')
-                                    ->label(__('item.related.code.label'))
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->weight(FontWeight::Bold)
-                                    ->icon(Heroicon::Hashtag)
-                                    ->badge(),
-                                TextEntry::make('item.name')->label(__('item.related.name.label'))->wrap(),
+                                // TextEntry::make('purchaseRequestItem.purchaseRequest.number')
+                                //     ->label(__('purchase-request.model.plural_label'))
+                                //     ->fontFamily(FontFamily::Mono)
+                                //     ->badge(),
+                                // TextEntry::make('item.code')
+                                //     ->label(__('item.related.code.label'))
+                                //     ->fontFamily(FontFamily::Mono)
+                                //     ->weight(FontWeight::Bold)
+                                //     ->icon(Heroicon::Hashtag)
+                                //     ->badge(),
+                                TextEntry::make('item.name')->label(__('item.related.name.label'))->wrap()
+                                    ->state(fn($record) =>
+                                        e($record->item->code) . ' | ' . e($record->item->name) . ' <br>' .
+                                        e($record->purchaseRequestItem->purchaseRequest->number) . '<br>' .
+                                        nl2br(e($record->description)))
+                                    ->html()
+                                ,
                                 TextEntry::make('item.unit')->label(__('item.related.unit.label')),
                                 TextEntry::make('qty')->numeric()->alignment(Alignment::End)->wrap(false),
-                                TextEntry::make('price')->numeric()->alignment(Alignment::End)->wrap(false),
-                                TextEntry::make('discount')->numeric()->alignment(Alignment::End)->wrap(false),
-                                TextEntry::make('line_total')
+
+                                TextEntry::make('price')
+                                    ->label(__('purchase-order.purchase_order_item.price.label'))
+                                    ->numeric()
+                                    // ->state(function ($record) {
+                                    //     $price = static::formatMoney($record->price);
+                                    //     $subtotal = static::formatMoney($record->qty * $record->price);
+
+                                    //     return "<div>{$price}</div><div class='text-xs text-gray-400 italic'>Sub: {$subtotal}</div>";
+                                    // })
+                                    // ->html()
+                                    ->alignment(Alignment::End)
+                                ,
+
+                                // TextEntry::make('subtotal')
+                                //     ->state(fn($record) => ($record->qty * $record->price))
+                                //     ->numeric()
+                                //     ->alignment(Alignment::End)
+                                //     ->wrap(false)
+                                // ,
+                                TextEntry::make('discount')
+                                    ->label(__('purchase-order.purchase_order_item.discount.label'))
+                                    ->numeric()
+                                    ->alignment(Alignment::End)
+                                    ->wrap(false)
+                                ,
+                                // TextEntry::make('after_discount')
+                                //     ->state(fn($record) => ($record->qty * $record->price) - $record->discount)
+                                //     ->numeric()
+                                //     ->alignment(Alignment::End)
+                                //     ->wrap(false)
+                                // ,
+                                // TextEntry::make('dpp')
+                                //     ->label(fn($component) => static::isInclude12($component->getContainer()->getParentComponent()->getRecord()) ? 'DPP (11/12)' : 'DPP')
+                                //     ->state(fn($record, $component) => static::getLineBreakdown($record, $component)['tax_base'] ?? 0)
+                                //     ->numeric()
+                                //     ->alignment(Alignment::End)
+                                //     ->wrap(false)
+                                // ,
+                                // TextEntry::make('tax')
+                                //     ->label(function ($component) {
+                                //         $po = $component->getContainer()->getParentComponent()->getRecord();
+                                //         return filled($po->tax_percentage) ? "PPN ({$po->tax_percentage}%)" : 'PPN';
+                                //     })
+                                //     ->state(fn($record, $component) => static::getLineBreakdown($record, $component)['tax_amount'] ?? 0)
+                                //     ->numeric()
+                                //     ->color('warning')
+                                //     ->alignment(Alignment::End)
+                                //     ->wrap(false)
+                                // ,
+                                TextEntry::make('total')
                                     ->label(__('purchase-order.purchase_order_item.total.label'))
                                     ->state(fn($record) => $record->getLineTotalAmount())
                                     ->numeric()
-                                    ->alignment(Alignment::End)->wrap(false)
+                                    ->alignment(Alignment::End)
+                                    ->wrap(false)
                                 ,
-                                TextEntry::make('description')
-                                    ->label(__('common.description.label'))
-                                    ->color('gray')
-                                    ->placeholder('-'),
-                            ]),
+                                // TextEntry::make('description')
+                                //     ->label(__('common.description.label'))
+                                //     ->color('gray')
+                                //     ->placeholder('-')
+                                //     ->wrap(false)
+                                // ,
+                            ])
+                        ,
                     ]),
                 ActivityLogTab::make(__('common.log_activity.label')),
-                // Tab::make(__('common.comment.label'))
-                //     ->schema([
-                //         CommentsEntry::make('comments')
-                //             ->label('')
-                //             ->columnSpanFull(),
-                //     ]),
+            ])
+        ;
+    }
+
+    protected static function totalSection(): Section
+    {
+        return Section::make('Ringkasan Total')
+            ->icon(Heroicon::Calculator)
+            ->iconColor('primary')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
+                Grid::make()
+                    ->columns(1)
+                    ->schema([
+                        // TextEntry::make('rounding')
+                        //     ->label('Pembulatan')
+                        //     ->numeric()
+                        //     ->placeholder('0,00')
+                        //     ->inlineLabel(),
+
+                        TextEntry::make('tax_type')
+                            ->label(__('purchase-order.tax_type.label'))
+                            ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
+                            ->placeholder('-'),
+                        TextEntry::make('tax_percentage')
+                            ->label(__('purchase-order.tax_percentage.label'))
+                            ->formatStateUsing(fn($state) => filled($state) ? ($state + 0) . '%' : '-')
+                            ->placeholder('-'),
+                        TextEntry::make('tax_description')
+                            // ->label(__('purchase-order.total.tax_description'))
+                            ->placeholder('-')
+                            ->columnSpanFull(),
+                    ]),
+                Section::make('Rincian Total')
+                    ->schema([
+                        TextEntry::make('total_subtotal')
+                            ->label('Subtotal')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['gross_subtotal'] ?? 0))
+                            ->numeric()
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_discount')
+                            ->label('Diskon')
+                            ->state(fn($record) => '-' . static::formatMoney(static::getSummary($record)['discount_total'] ?? 0))
+                            ->numeric()
+                            ->color('danger')
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_after_discount')
+                            ->label('Subtotal Setelah Diskon')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['gross_after_discount'] ?? 0))
+                            ->numeric()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_dpp')
+                            ->label(fn($record) => static::isInclude12($record) ? 'DPP (11/12)' : 'DPP')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['tax_base'] ?? 0))
+                            ->numeric()
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_ppn')
+                            ->label(fn($record) => filled($record->tax_percentage) ? "PPN ({$record->tax_percentage}%)" : 'PPN')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['tax_amount'] ?? 0))
+                            ->numeric()
+                            ->color('warning')
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_before_rounding')
+                            ->label('Total')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['before_rounding'] ?? 0))
+                            ->numeric()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('summary_rounding')
+                            ->label('Pembulatan')
+                            ->state(fn($record) => static::formatMoney($record->rounding ?? 0))
+                            ->numeric()
+                            ->inlineLabel()
+                            ->alignEnd(),
+                        TextEntry::make('total_grand_total')
+                            ->label('Total Pembayaran')
+                            ->state(fn($record) => static::formatMoney(static::getSummary($record)['grand_total'] ?? 0))
+                            ->numeric()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->color('primary')
+                            ->inlineLabel()
+                            ->alignEnd(),
+                    ])
+                    ->compact()
+                    ->inlineLabel()
+                    ->columnSpan(1),
             ]);
     }
 
@@ -245,43 +400,6 @@ class PurchaseOrderInfolist
             ->schema([
                 TextEntry::make('memo')->color('gray')->placeholder('-'),
                 TextEntry::make('termin')->color('gray')->placeholder('-'),
-                TextEntry::make('discount')
-                    ->label(__('purchase-order.total.discount'))
-                    ->numeric()
-                    ->placeholder('-'),
-                TextEntry::make('tax_type')
-                    ->label(__('purchase-order.tax_type.label'))
-                    ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
-                    ->placeholder('-'),
-                TextEntry::make('tax_percentage')
-                    ->label(__('purchase-order.tax_percentage.label'))
-                    ->formatStateUsing(fn($state) => filled($state) ? number_format((float) $state, 0) . '%' : '-')
-                    ->placeholder('-'),
-                TextEntry::make('tax')
-                    ->label(__('purchase-order.total.tax'))
-                    ->state(fn($record) => PurchaseOrder::calculateSubtotalTax(
-                        $record->purchaseOrderItems->map(fn($item): array => [
-                            'qty' => $item->qty,
-                            'price' => $item->price,
-                            'discount' => $item->discount,
-                        ])->all(),
-                        $record->discount,
-                        $record->tax_type,
-                        $record->tax_percentage,
-                    ))
-                    ->numeric()
-                    ->placeholder('-'),
-                TextEntry::make('tax_description')
-                    ->label(__('purchase-order.total.tax_description'))
-                    ->placeholder('-'),
-                TextEntry::make('rounding')
-                    ->label(__('purchase-order.total.rounding'))
-                    ->numeric()
-                    ->placeholder('-'),
-                TextEntry::make('grand_total')
-                    ->label(__('purchase-order.total.grand_total'))
-                    ->state(fn($record) => $record->getGrandTotalAmount())
-                    ->numeric(),
                 TextEntry::make('notes')
                     ->label(__('purchase-order.notes.label'))
                     ->columnSpanFull()
@@ -312,5 +430,49 @@ class PurchaseOrderInfolist
     protected static function relatedDataSection(): Section|string
     {
         return '';
+    }
+
+    protected static function getBreakdown($record): array
+    {
+        static $breakdowns = [];
+        if (!isset($breakdowns[$record->id])) {
+            $breakdowns[$record->id] = PurchaseOrder::calculateOrderBreakdown(
+                $record->purchaseOrderItems->map(fn($item) => [
+                    'id' => $item->id,
+                    'qty' => $item->qty,
+                    'price' => $item->price,
+                    'discount' => $item->discount,
+                ])->all(),
+                $record->discount,
+                $record->tax_type,
+                $record->tax_percentage,
+                $record->rounding
+            );
+        }
+        return $breakdowns[$record->id];
+    }
+
+    protected static function getLineBreakdown($item, $component): array
+    {
+        $po = $component->getContainer()->getParentComponent()->getRecord();
+        return static::getBreakdown($po)['lines'][$item->id] ?? [];
+    }
+
+    protected static function getSummary($record): array
+    {
+        return static::getBreakdown($record)['summary'] ?? [];
+    }
+
+    protected static function isInclude12($record): bool
+    {
+        return $record->tax_type === PurchaseOrderTaxType::INCLUDE
+            && $record->tax_percentage === 12.0;
+    }
+
+    protected static function formatMoney(float $amount): string
+    {
+        return
+            // 'Rp ' .
+            number_format($amount, 2, ',', '.');
     }
 }

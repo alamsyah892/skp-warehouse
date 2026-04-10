@@ -75,7 +75,7 @@ class PurchaseOrder extends Model
 
         'discount' => 'decimal:2',
         'tax_type' => PurchaseOrderTaxType::class,
-        'tax_percentage' => 'decimal:2',
+        // 'tax_percentage' => 'decimal:2',
         'tax' => 'decimal:2',
         'rounding' => 'decimal:2',
     ];
@@ -534,7 +534,6 @@ class PurchaseOrder extends Model
                 }
 
                 $item['item_id'] = $purchaseRequestItem->item_id;
-                $item['discount'] = $purchaseRequestItem->discount;
 
                 return $item;
             })
@@ -554,89 +553,6 @@ class PurchaseOrder extends Model
         return max($grossAmount - $discountAmount, 0.0);
     }
 
-    public static function calculateGrossSubtotal(array $items): float
-    {
-        return (float) collect($items)
-            ->sum(fn(array $item): float => (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0))
-        ;
-    }
-
-    public static function calculateGrossDiscount(
-        array $items,
-        float|int|string|null $orderDiscount = 0,
-    ): float {
-        return max(self::calculateTotalDiscount($items) + (float) $orderDiscount, 0.0);
-    }
-
-    public static function calculateGrossAfterDiscount(
-        array $items,
-        float|int|string|null $orderDiscount = 0,
-    ): float {
-        return max(
-            self::calculateGrossSubtotal($items) - self::calculateGrossDiscount($items, $orderDiscount),
-            0.0,
-        );
-    }
-
-    public static function calculateTaxBaseAmount(
-        array $items,
-        float|int|string|null $discount = 0,
-        PurchaseOrderTaxType|string|null $taxType = null,
-        float|int|string|null $taxPercentage = null,
-    ): float {
-        return self::calculateOrderBreakdown(
-            $items,
-            $discount,
-            $taxType,
-            $taxPercentage,
-        )['summary']['tax_base'];
-    }
-
-    public static function calculateTotalSubtotal(
-        array $items,
-        PurchaseOrderTaxType|string|null $taxType = null,
-        float|int|string|null $taxPercentage = null,
-    ): float {
-        return self::calculateGrossSubtotal($items);
-    }
-
-    public static function calculateTotalDiscount(array $items): float
-    {
-        return (float) collect($items)
-            ->sum(fn(array $item): float => (float) ($item['discount'] ?? 0))
-        ;
-    }
-
-    public static function calculateTotalOrderDiscount(
-        array $items,
-        float|int|string|null $orderDiscount = 0,
-    ): float {
-        return max(self::calculateTotalDiscount($items) + (float) $orderDiscount, 0.0);
-    }
-
-    public static function calculateSubtotalDiscount(
-        array $items,
-        float|int|string|null $orderDiscount = 0,
-        PurchaseOrderTaxType|string|null $taxType = null,
-        float|int|string|null $taxPercentage = null,
-    ): float {
-        return self::calculateGrossDiscount($items, $orderDiscount);
-    }
-
-    public static function calculateSubtotalTax(
-        array $items,
-        float|int|string|null $discount = 0,
-        PurchaseOrderTaxType|string|null $taxType = null,
-        float|int|string|null $taxPercentage = null,
-    ): float {
-        return self::calculateOrderBreakdown(
-            $items,
-            $discount,
-            $taxType,
-            $taxPercentage,
-        )['summary']['tax_amount'];
-    }
-
     public static function getTaxPercentageOptions(): array
     {
         return collect([10, 11, 12])
@@ -647,35 +563,45 @@ class PurchaseOrder extends Model
         ;
     }
 
-    public static function calculateSubtotal(array $items): float
-    {
-        return (float) collect($items)
-            ->sum(fn(array $item): float => self::calculateItemTotal($item))
-        ;
-    }
-
-    public static function calculateNetSubtotal(array $items, float|int|string|null $discount): float
-    {
-        return max(self::calculateSubtotal($items) - (float) $discount, 0.0);
-    }
-
     public static function calculateTaxAmount(
         float|int|string|null $netSubtotal,
         PurchaseOrderTaxType|string|null $taxType,
         float|int|string|null $taxPercentage,
     ): float {
         $taxableAmount = max((float) $netSubtotal, 0.0);
-        $rate = max((float) $taxPercentage, 0.0);
+        $rate = (float) $taxPercentage;
         $normalizedTaxType = self::normalizeTaxType($taxType);
 
         if ($taxableAmount <= 0 || $rate <= 0 || !$normalizedTaxType) {
             return 0.0;
         }
 
+        // Aturan Khusus Indonesia: Include PPN 12% menggunakan DPP Nilai Lain (11/12)
+        if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
+            $dpp = round(($taxableAmount * 11) / 12, 0);
+            return round($dpp * 0.12, 0);
+        }
+
         return match ($normalizedTaxType) {
             PurchaseOrderTaxType::EXCLUDE => round($taxableAmount * ($rate / 100), 0),
             PurchaseOrderTaxType::INCLUDE => round($taxableAmount - ($taxableAmount / (1 + ($rate / 100))), 0),
         };
+    }
+
+    public static function calculateSubtotalTax(
+        array $items,
+        float|int|string|null $discount = 0,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float {
+        $breakdown = self::calculateOrderBreakdown(
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+        );
+
+        return (float) ($breakdown['summary']['tax_amount'] ?? 0.0);
     }
 
     /**
@@ -721,7 +647,7 @@ class PurchaseOrder extends Model
                 $itemDiscount = round(min(max((float) ($item['discount'] ?? 0), 0.0), $grossSubtotal), 2);
 
                 return [
-                    'key' => $item['line_key'] ?? $item['purchase_request_item_id'] ?? $index,
+                    'key' => $item['line_key'] ?? $item['id'] ?? $item['purchase_request_item_id'] ?? $index,
                     'gross_subtotal' => $grossSubtotal,
                     'item_discount' => $itemDiscount,
                     'line_subtotal' => max(round($grossSubtotal - $itemDiscount, 2), 0.0),
@@ -758,13 +684,19 @@ class PurchaseOrder extends Model
         $discountTotal = round((float) $lines->sum('discount_total'), 2);
         $grossAfterDiscount = round((float) $lines->sum('gross_after_discount'), 2);
 
-        $rate = max((float) $taxPercentage, 0.0);
+        $rate = self::resolveIndonesianVatRate($taxPercentage);
         $totalTaxAmount = self::calculateTaxAmount($grossAfterDiscount, $normalizedTaxType, $rate);
 
         $exactLineTaxes = $lines
             ->map(function (array $line) use ($normalizedTaxType, $rate): float {
                 if ($normalizedTaxType === null || $rate <= 0 || $line['gross_after_discount'] <= 0) {
                     return 0.0;
+                }
+
+                // Gunakan formula 11/12 untuk pajak baris jika Include 12%
+                if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
+                    $dpp = ($line['gross_after_discount'] * 11) / 12;
+                    return $dpp * 0.12;
                 }
 
                 return match ($normalizedTaxType) {
@@ -778,14 +710,22 @@ class PurchaseOrder extends Model
         $allocatedTaxes = self::allocateRoundedAmountAcrossLines($totalTaxAmount, $exactLineTaxes, 0);
 
         $lines = $lines
-            ->map(function (array $line, int $index) use ($allocatedTaxes, $normalizedTaxType): array {
+            ->map(function (array $line, int $index) use ($allocatedTaxes, $normalizedTaxType, $rate): array {
                 $taxAmount = $allocatedTaxes[$index] ?? 0.0;
-                $taxBase = $normalizedTaxType === PurchaseOrderTaxType::INCLUDE
-                    ? max(round($line['gross_after_discount'] - $taxAmount, 2), 0.0)
-                    : $line['gross_after_discount'];
-                $total = $normalizedTaxType === PurchaseOrderTaxType::EXCLUDE
-                    ? round($line['gross_after_discount'] + $taxAmount, 2)
-                    : $line['gross_after_discount'];
+
+                if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
+                    // Skema Include 12%: DPP dihitung dari 11/12 Nilai Setelah Diskon
+                    $taxBase = round(($line['gross_after_discount'] * 11) / 12, 2);
+                    $total = $line['gross_after_discount'];
+                } else {
+                    // Skema Normal
+                    $taxBase = $normalizedTaxType === PurchaseOrderTaxType::INCLUDE
+                        ? max(round($line['gross_after_discount'] - $taxAmount, 2), 0.0)
+                        : $line['gross_after_discount'];
+                    $total = $normalizedTaxType === PurchaseOrderTaxType::EXCLUDE
+                        ? round($line['gross_after_discount'] + $taxAmount, 2)
+                        : $line['gross_after_discount'];
+                }
 
                 $line['tax_base'] = $taxBase;
                 $line['tax_amount'] = $taxAmount;
@@ -814,6 +754,12 @@ class PurchaseOrder extends Model
             ],
             'lines' => $lines,
         ];
+    }
+
+    public static function resolveIndonesianVatRate(float|int|string|null $taxPercentage): float
+    {
+        // Mengembalikan nilai persentase apa adanya setelah dibulatkan
+        return round(max((float) $taxPercentage, 0.0), 2);
     }
 
     /**
@@ -1000,20 +946,6 @@ class PurchaseOrder extends Model
         return (float) ($line['total'] ?? 0.0);
     }
 
-    public static function calculateTotalBeforeRounding(
-        array $items,
-        float|int|string|null $discount,
-        PurchaseOrderTaxType|string|null $taxType,
-        float|int|string|null $taxPercentage,
-    ): float {
-        return self::calculateOrderBreakdown(
-            $items,
-            $discount,
-            $taxType,
-            $taxPercentage,
-        )['summary']['before_rounding'];
-    }
-
     public static function calculateGrandTotalFromNetSubtotal(
         float|int|string|null $netSubtotal,
         PurchaseOrderTaxType|string|null $taxType,
@@ -1054,6 +986,32 @@ class PurchaseOrder extends Model
         )['summary']['tax_amount'];
     }
 
+    public function syncCalculatedTotals(): void
+    {
+        $items = $this->purchaseOrderItems()
+            ->get()
+            ->map(fn(PurchaseOrderItem $item): array => [
+                'id' => $item->id,
+                'purchase_request_item_id' => $item->purchase_request_item_id,
+                'qty' => (float) $item->qty,
+                'price' => (float) $item->price,
+                'discount' => (float) $item->discount,
+            ])
+            ->all();
+
+        $taxAmount = self::calculateOrderBreakdown(
+            $items,
+            $this->discount,
+            $this->tax_type,
+            $this->tax_percentage,
+            $this->rounding,
+        )['summary']['tax_amount'];
+
+        $this->forceFill([
+            'tax' => $taxAmount,
+        ])->saveQuietly();
+    }
+
     /**
      * @param  array<int|string, array<string, mixed>>  $lines
      * @return array<string, mixed>
@@ -1064,6 +1022,12 @@ class PurchaseOrder extends Model
 
         if ($lineKey !== null && array_key_exists($lineKey, $lines)) {
             return $lines[$lineKey];
+        }
+
+        $itemId = $item['id'] ?? null;
+
+        if ($itemId !== null && array_key_exists($itemId, $lines)) {
+            return $lines[$itemId];
         }
 
         $purchaseRequestItemId = $item['purchase_request_item_id'] ?? null;

@@ -2,7 +2,8 @@
     "agents": [
         "codex"
     ],
-    "mcp": true,
-    "nightwatch_mcp": false,
-    "sail": false
+    "guidelines": true,
+    "packages": [
+        "filament/filament"
+    ]
 }

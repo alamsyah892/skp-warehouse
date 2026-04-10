@@ -33,5 +33,7 @@ class CreatePurchaseOrder extends CreateRecord
     protected function afterCreate(): void
     {
         $this->record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
+        $this->record->syncCalculatedTotals();
+        $this->record->refresh();
     }
 }

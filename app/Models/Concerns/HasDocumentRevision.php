@@ -2,6 +2,8 @@
 
 namespace App\Models\Concerns;
 
+use BackedEnum;
+
 trait HasDocumentRevision
 {
     public function applyRevision(array &$data): void
@@ -35,7 +37,7 @@ trait HasDocumentRevision
             $old = $this->getOriginal($field);
             $new = $data[$field] ?? null;
 
-            if ((string) $old !== (string) $new) {
+            if ($this->normalizeWatchedFieldValue($old) !== $this->normalizeWatchedFieldValue($new)) {
                 return true;
             }
         }
@@ -93,5 +95,14 @@ trait HasDocumentRevision
     protected function mapRevisionItemFromArray(array $item): array
     {
         return $item;
+    }
+
+    protected function normalizeWatchedFieldValue(mixed $value): mixed
+    {
+        if ($value instanceof BackedEnum) {
+            return $value->value;
+        }
+
+        return $value;
     }
 }

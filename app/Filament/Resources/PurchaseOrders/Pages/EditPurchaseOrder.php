@@ -60,27 +60,14 @@ class EditPurchaseOrder extends EditRecord
     protected function afterSave(): void
     {
         $this->record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
+        $this->record->syncCalculatedTotals();
+        $this->record->refresh();
 
         if ($this->pendingStatus) {
             $this->record->changeStatus($this->pendingStatus);
             $this->pendingStatus = null;
         }
 
-        $this->refreshFormData([
-            'number',
-            'info',
-            'status',
-            'warehouse_id',
-            'company_id',
-            'division_id',
-            'project_id',
-            'warehouse_address_id',
-            'discount',
-            'tax_type',
-            'tax_percentage',
-            'tax',
-            'tax_description',
-            'rounding',
-        ]);
+        $this->fillForm();
     }
 }

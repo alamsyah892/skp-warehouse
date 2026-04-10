@@ -25,6 +25,7 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Zvizvi\UserFields\Components\UserEntry;
 
@@ -289,7 +290,6 @@ class PurchaseOrderForm
                                             static::fillHeaderFields($set, $selection['header']);
                                         }
                                         static::prunePurchaseOrderItems($set, $get, $selection['ids']);
-                                        static::touchPaymentSummary($set);
                                     })
                                     ->afterStateHydrated(function ($state, $set, $get): void {
                                         $selection = static::resolvePurchaseRequestSelection((array) $state);
@@ -303,7 +303,6 @@ class PurchaseOrderForm
                                             static::fillHeaderFields($set, $selection['header']);
                                         }
                                         static::prunePurchaseOrderItems($set, $get, $selection['ids']);
-                                        static::touchPaymentSummary($set);
                                     })
                                 ,
                             ])
@@ -406,8 +405,8 @@ class PurchaseOrderForm
                                     ->options(PurchaseOrder::getTaxPercentageOptions())
                                     ->native(false)
                                     ->default((string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE)
-                                    ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ((float) $state + 0) : (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE))
-                                    ->dehydrateStateUsing(fn($state): ?float => filled($state) ? (float) $state : null)
+                                    ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ($state + 0) : (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE))
+                                    ->dehydrateStateUsing(fn($state) => filled($state) ? $state : null)
                                     ->live()
                                     ->required()
                                 ,
@@ -428,21 +427,6 @@ class PurchaseOrderForm
                         //     ->disableOptionWhen(fn(string $value, ?PurchaseOrder $record): bool => static::shouldDisableStatusOption($value, $record))
                         //     ->visibleOn('edit')
                         // ,
-
-                        Select::make('status')
-                            ->options(fn($record) => $record->getAvailableStatusOptions())
-                            ->native(false)
-                            ->required()
-                            ->disableOptionWhen(function ($value, $record) {
-                                if (!$record) {
-                                    return false;
-                                }
-
-                                return $record && !$record->canChangeStatusTo($value);
-                            })
-                            ->columnSpan(1)
-                            ->visibleOn('edit')
-                        ,
                     ])
                 ,
             ]);
@@ -461,297 +445,278 @@ class PurchaseOrderForm
                 Repeater::make('purchaseOrderItems')
                     ->hiddenLabel()
                     ->relationship()
-                    ->itemLabel(function (array $state): string {
-                        // $source = static::getPurchaseRequestItemRecord((int) ($state['purchase_request_item_id'] ?? 0));
-            
-                        // if ($source) {
-                        //     return collect([
-                        //         $source->item?->code,
-                        //         $source->item?->name,
-                        //         $source->purchaseRequest?->number,
-                        //     ])->filter()->implode(' | ');
-                        // }
-            
-                        // $item = static::getItemRecord((int) ($state['item_id'] ?? 0));
-            
-                        // if ($item) {
-                        //     return collect([
-                        //         $item->code,
-                        //         $item->name,
-                        //         'Manual',
-                        //     ])->filter()->implode(' | ');
-                        // }
-            
-                        return 'Item';
+                    ->mutateRelationshipDataBeforeFillUsing(function (array $data): array {
+                        $data['line_key'] = filled($data['line_key'] ?? null)
+                            ? (string) $data['line_key']
+                            : (string) str()->uuid();
+
+                        return $data;
                     })
-                    ->addActionLabel('Tambah Item Purchase Order')
+                    ->mutateRelationshipDataBeforeCreateUsing(
+                        fn(array $data): array => Arr::except($data, ['line_key'])
+                    )
+                    ->mutateRelationshipDataBeforeSaveUsing(
+                        fn(array $data): array => Arr::except($data, ['line_key'])
+                    )
                     ->columns([
                         'default' => 1,
                         'xl' => 12,
                     ])
                     ->schema([
-                        Grid::make()
+                        Hidden::make('line_key')
+                            ->default(fn(): string => (string) str()->uuid())
+                            ->afterStateHydrated(function ($state, $set): void {
+                                if (blank($state)) {
+                                    $set('line_key', (string) str()->uuid());
+                                }
+                            })
+                            ->dehydrated()
+                        ,
+
+                        Select::make('purchase_request_item_id')
+                            ->label('Sumber Item Pengajuan')
+                            ->options(function ($get): array {
+                                $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
+                                return static::getPurchaseRequestItemOptions($purchaseRequestIds);
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                $record = PurchaseRequestItem::with(['item', 'purchaseRequest'])->find($value);
+
+                                if (!$record) {
+                                    return null;
+                                }
+
+                                return "{$record->item?->code} | {$record->item?->name}";
+                            })
+                            ->preload()
+                            ->searchable()
+                            ->getSearchResultsUsing(function (string $search, $get): array {
+                                $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
+                                return static::getPurchaseRequestItemOptions($purchaseRequestIds, $search);
+                            })
+                            ->disabled(fn($get): bool => blank(PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []))))
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                            ->live()
+                            ->helperText(function ($get): string {
+                                $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
+
+                                if ($source) {
+                                    return __('purchase-order.purchase_order_item.source_item.context_value', [
+                                        'request_qty' => number_format((float) $source->qty, 2),
+                                        'ordered_qty' => number_format($source->getOrderedQty(), 2),
+                                        'remaining_qty' => number_format($source->getRemainingQty(), 2),
+                                    ]);
+                                }
+
+                                return '';
+                            })
+                            ->afterStateUpdated(function ($state, $set): void {
+                                if (!$state) {
+                                    return;
+                                }
+
+                                $source = static::getPurchaseRequestItemRecord((int) $state);
+
+                                if (!$source) {
+                                    return;
+                                }
+
+                                $set('item_id', $source->item_id);
+                                $set('qty', $source->getRemainingQty());
+                            })
+                            ->columnSpanFull()
+                        ,
+
+                        Select::make('item_id')
+                            ->label('Item')
+                            ->options(fn(): array => static::getManualItemOptions())
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                $item = static::getItemRecord((int) $value);
+
+                                if (!$item) {
+                                    return null;
+                                }
+
+                                return "{$item->code} | {$item->name}";
+                            })
+                            ->preload()
+                            ->searchable()
+                            ->getSearchResultsUsing(fn(string $search): array => static::getManualItemOptions($search))
+                            ->required()
+                            ->live()
+                            ->disabled(fn($get): bool => filled($get('purchase_request_item_id')))
+                            ->dehydrated()
                             ->columnSpan([
                                 'default' => 1,
-                                'xl' => 5,
-                            ])
-                            ->schema([
-                                Hidden::make('line_key')
-                                    ->default(fn(): string => (string) str()->uuid())
-                                    ->afterStateHydrated(function ($state, $set): void {
-                                        if (blank($state)) {
-                                            $set('line_key', (string) str()->uuid());
-                                        }
-                                    })
-                                    ->dehydrated(false)
-                                ,
-                                Select::make('purchase_request_item_id')
-                                    ->label('Sumber Item Pengajuan')
-                                    ->options(function ($get): array {
-                                        $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
-                                        return static::getPurchaseRequestItemOptions($purchaseRequestIds);
-                                    })
-                                    ->getSearchResultsUsing(function (string $search, $get): array {
-                                        $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
-                                        return static::getPurchaseRequestItemOptions($purchaseRequestIds, $search);
-                                    })
-                                    // ->getOptionLabelUsing(function ($value): ?string {
-                                    //     $record = PurchaseRequestItem::with(['item', 'purchaseRequest'])->find($value);
-
-                                    //     if (!$record) {
-                                    //         return null;
-                                    //     }
-
-                                    //     return "{$record->item?->code} | {$record->item?->name}";
-                                    // })
-                                    ->preload()
-                                    ->searchable()
-                                    ->disabled(fn($get): bool => blank(PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []))))
-                                    ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->live()
-                                    ->helperText(function ($get): string {
-                                        $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
-
-                                        if ($source) {
-                                            return __('purchase-order.purchase_order_item.source_item.context_value', [
-                                                'request_qty' => number_format((float) $source->qty, 2),
-                                                'ordered_qty' => number_format($source->getOrderedQty(), 2),
-                                                'remaining_qty' => number_format($source->getRemainingQty(), 2),
-                                            ]);
-                                        }
-
-                                        return '';
-                                    })
-                                    ->afterStateUpdated(function ($state, $set): void {
-                                        if (!$state) {
-                                            return;
-                                        }
-
-                                        $source = static::getPurchaseRequestItemRecord((int) $state);
-
-                                        if (!$source) {
-                                            return;
-                                        }
-
-                                        $set('item_id', $source->item_id);
-                                        $set('qty', $source->getRemainingQty());
-                                    })
-                                    ->columnSpanFull()
-                                ,
-                                Select::make('item_id')
-                                    ->label('Item')
-                                    ->options(fn(): array => static::getManualItemOptions())
-                                    ->getSearchResultsUsing(fn(string $search): array => static::getManualItemOptions($search))
-                                    ->getOptionLabelUsing(function ($value): ?string {
-                                        $item = static::getItemRecord((int) $value);
-
-                                        if (!$item) {
-                                            return null;
-                                        }
-
-                                        return "{$item->code} | {$item->name}";
-                                    })
-                                    ->preload()
-                                    ->searchable()
-                                    ->required()
-                                    ->live()
-                                    ->disabled(fn($get): bool => filled($get('purchase_request_item_id')))
-                                    ->dehydrated()
-                                    ->columnSpanFull()
-                                ,
+                                'md' => 2,
+                                'xl' => 6,
                             ])
                         ,
 
-                        Grid::make()
+                        TextInput::make('qty')
+                            ->numeric()
+                            ->minValue(0.01)
+                            ->placeholder(0.01)
+                            ->required()
+                            ->live(debounce: 500)
+                            ->suffix(
+                                fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0))
+                            )
+                            ->rule(function ($get, $record) {
+                                return function (string $attribute, $value, $fail) use ($get, $record): void {
+                                    $sourceId = (int) $get('purchase_request_item_id');
+
+                                    if ($sourceId <= 0) {
+                                        return;
+                                    }
+
+                                    $source = PurchaseRequestItem::query()->find($sourceId);
+
+                                    if (!$source) {
+                                        return;
+                                    }
+
+                                    $purchaseOrderId = $record?->purchase_order_id;
+                                    $remaining = $source->getRemainingQty($purchaseOrderId);
+
+                                    if ((float) $value > $remaining) {
+                                        $fail(__('purchase-order.validation.qty_exceeded', [
+                                            'remaining' => number_format($remaining, 2),
+                                        ]));
+                                    }
+                                };
+                            })
                             ->columnSpan([
                                 'default' => 1,
-                                'xl' => 7,
-                            ])
-                            ->columns([
-                                'default' => 1,
-                                'md' => 6,
-                                'xl' => 12,
-                            ])
-                            ->schema([
-                                TextInput::make('qty')
-                                    ->numeric()
-                                    ->minValue(0.01)
-                                    ->placeholder(0.01)
-                                    ->required()
-                                    ->live(debounce: 500)
-                                    ->suffix(
-                                        fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0))
-                                    )
-                                    ->rule(function ($get, $record) {
-                                        return function (string $attribute, $value, $fail) use ($get, $record): void {
-                                            $sourceId = (int) $get('purchase_request_item_id');
-
-                                            if ($sourceId <= 0) {
-                                                return;
-                                            }
-
-                                            $source = PurchaseRequestItem::query()->find($sourceId);
-
-                                            if (!$source) {
-                                                return;
-                                            }
-
-                                            $purchaseOrderId = $record?->purchase_order_id;
-                                            $remaining = $source->getRemainingQty($purchaseOrderId);
-
-                                            if ((float) $value > $remaining) {
-                                                $fail(__('purchase-order.validation.qty_exceeded', [
-                                                    'remaining' => number_format($remaining, 2),
-                                                ]));
-                                            }
-                                        };
-                                    })
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-
-                                TextInput::make('price')
-                                    ->label(function ($get): string {
-                                        return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
-                                            ? __('purchase-order.purchase_order_item.price.include_label')
-                                            : __('purchase-order.purchase_order_item.price.label');
-                                    })
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->placeholder(0)
-                                    ->prefix('Rp')
-                                    ->required()
-                                    ->live(debounce: 500)
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-                                TextEntry::make('subtotal')
-                                    ->label('Subtotal')
-                                    ->state(function ($get): string {
-                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['gross_subtotal'] ?? 0.0);
-                                    })
-                                    ->color('gray')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-
-                                TextInput::make('discount')
-                                    ->label('Diskon')
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->placeholder(0)
-                                    ->prefix('Rp')
-                                    ->dehydrated()
-                                    ->live(debounce: 500)
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-                                TextEntry::make('discount_percentage')
-                                    ->label('Persentase Diskon')
-                                    ->state(function ($get): string {
-                                        $lineBreakdown = static::getCurrentLineBreakdown($get);
-                                        $grossSubtotal = (float) ($lineBreakdown['gross_subtotal'] ?? 0);
-                                        $itemDiscount = (float) ($lineBreakdown['item_discount'] ?? 0);
-
-                                        if ($grossSubtotal <= 0 || $itemDiscount <= 0) {
-                                            return '';
-                                        }
-
-                                        return number_format(($itemDiscount / $grossSubtotal) * 100, 0) . '%';
-                                    })
-                                    ->badge()
-                                    ->color('danger')
-                                    ->size(TextSize::Large)
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-                                TextEntry::make('after_discount')
-                                    ->label('Subtotal Setelah Diskon')
-                                    ->state(function ($get): string {
-                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['gross_after_discount'] ?? 0.0);
-                                    })
-                                    ->color('gray')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-
-
-                                TextEntry::make('dpp')
-                                    ->label('DPP')
-                                    ->state(function ($get): string {
-                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['tax_base'] ?? 0.0);
-                                    })
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-                                TextEntry::make('tax')
-                                    ->label(fn($get) => $get('../../tax_percentage') ? 'PPN (' . $get('../../tax_percentage') . '%)' : 'PPN')
-                                    ->state(function ($get): string {
-                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['tax_amount'] ?? 0.0);
-                                    })
-                                    ->color('warning')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
-                                TextEntry::make('total')
-                                    ->label('Total')
-                                    ->state(function ($get): string {
-                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['total'] ?? 0.0);
-                                    })
-                                    // ->size(TextSize::Large)
-                                    ->color('primary')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'md' => 2,
-                                        'xl' => 4,
-                                    ])
-                                ,
+                                'md' => 2,
+                                'xl' => 2,
                             ])
                         ,
+
+                        TextInput::make('price')
+                            ->label(function ($get): string {
+                                return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
+                                    ? __('purchase-order.purchase_order_item.price.include_label')
+                                    : __('purchase-order.purchase_order_item.price.label')
+                                ;
+                            })
+                            ->numeric()
+                            ->minValue(0)
+                            ->placeholder(0)
+                            ->required()
+                            ->live(debounce: 500)
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 2,
+                                'xl' => 2,
+                            ])
+                        ,
+
+                        TextEntry::make('subtotal')
+                            ->label('Subtotal')
+                            ->state(function ($get): string {
+                                return static::formatMoney(static::getCurrentLineBreakdown($get)['gross_subtotal'] ?? 0.0);
+                            })
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 2,
+                                'xl' => 2,
+                            ])
+                        ,
+
+                        // TextInput::make('discount')
+                        //     ->label('Diskon')
+                        //     ->numeric()
+                        //     ->minValue(0)
+                        //     ->placeholder(0)
+                        //     ->prefix('Rp')
+                        //     ->dehydrated()
+                        //     ->live(debounce: 500)
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
+
+                        // TextEntry::make('discount_percentage')
+                        //     ->label('Persentase Diskon')
+                        //     ->state(function ($get): string {
+                        //         $lineBreakdown = static::getCurrentLineBreakdown($get);
+                        //         $grossSubtotal = (float) ($lineBreakdown['gross_subtotal'] ?? 0);
+                        //         $itemDiscount = (float) ($lineBreakdown['item_discount'] ?? 0);
+
+                        //         if ($grossSubtotal <= 0 || $itemDiscount <= 0) {
+                        //             return '';
+                        //         }
+
+                        //         return number_format(($itemDiscount / $grossSubtotal) * 100, 0) . '%';
+                        //     })
+                        //     ->badge()
+                        //     ->color('danger')
+                        //     ->size(TextSize::Large)
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
+
+                        // TextEntry::make('after_discount')
+                        //     ->label('Subtotal Setelah Diskon')
+                        //     ->state(function ($get): string {
+                        //         return static::formatMoney(static::getCurrentLineBreakdown($get)['gross_after_discount'] ?? 0.0);
+                        //     })
+                        //     ->color('gray')
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
+
+                        // TextEntry::make('dpp')
+                        //     ->label(function ($get) {
+                        //         $isInclude12 = $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value && $get('../../tax_percentage') === 12;
+                        //         return $isInclude12 ? 'DPP (11/12)' : 'DPP';
+                        //     })
+                        //     ->state(function ($get): string {
+                        //         return static::formatMoney(static::getCurrentLineBreakdown($get)['tax_base'] ?? 0.0);
+                        //     })
+                        //     ->color('gray')
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
+
+                        // TextEntry::make('tax')
+                        //     ->label(fn($get) => filled($get('../../tax_percentage')) ? "PPN ({$get('../../tax_percentage')}%)" : 'PPN')
+                        //     ->state(function ($get): string {
+                        //         return static::formatMoney(static::getCurrentLineBreakdown($get)['tax_amount'] ?? 0.0);
+                        //     })
+                        //     ->color('warning')
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
+
+                        // TextEntry::make('total')
+                        //     ->label('Total')
+                        //     ->state(function ($get): string {
+                        //         return static::formatMoney(static::getCurrentLineBreakdown($get)['total'] ?? 0.0);
+                        //     })
+                        //     // ->size(TextSize::Large)
+                        //     ->color('primary')
+                        //     ->columnSpan([
+                        //         'default' => 1,
+                        //         'md' => 2,
+                        //         'xl' => 4,
+                        //     ])
+                        // ,
 
                         Textarea::make('description')
                             ->label(__('common.description.label'))
@@ -761,24 +726,15 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
                     ])
+                    ->addActionLabel('Tambah Item Purchase Order')
                     ->reorderable()
                     ->orderColumn('sort')
                     ->itemNumbers()
-                    ->deleteAction(fn(Action $action) => $action
-                        ->requiresConfirmation()
-                        ->after(function ($set): void {
-                            static::touchPaymentSummary($set);
-                        }))
-                    ->afterDelete(function ($set): void {
-                        static::touchPaymentSummary($set);
-                    })
+                    ->deleteAction(fn(Action $action) => $action->requiresConfirmation())
                     ->defaultItems(0)
                     ->minItems(1)
                     ->partiallyRenderAfterActionsCalled(false)
                     ->live()
-                    ->afterStateUpdated(function ($set): void {
-                        static::touchPaymentSummary($set);
-                    })
                 ,
             ])
         ;
@@ -794,25 +750,26 @@ class PurchaseOrderForm
             ->columns(2)
             ->compact()
             ->schema([
-
                 Grid::make()
                     ->columns(2)
                     ->schema([
-                        // TextInput::make('discount')
-                        //     ->label(__('purchase-order.discount.label'))
-                        //     ->numeric()
-                        //     ->minValue(0)
-                        //     ->placeholder(0)
-                        //     ->prefix('Rp')
-                        //     ->live()
-                        //     ->inlineLabel()
-                        //     ->columnSpanFull()
-                        // ,
+                        TextInput::make('discount')
+                            ->label('Diskon')
+                            ->numeric()
+                            ->placeholder(0)
+                            // ->prefix('Rp')
+                            ->live(debounce: 500)
+                            ->inlineLabel()
+                            ->columnSpanFull()
+                        // ->afterStateHydrated(fn($component) => $component->state(0))
+                        // ->dehydrateStateUsing(fn($state): float => (float) ($state ?? 0))
+                        ,
+
                         TextInput::make('rounding')
                             ->label('Pembulatan')
                             ->numeric()
                             ->placeholder(0)
-                            ->prefix('Rp')
+                            // ->prefix('Rp')
                             ->live(debounce: 500)
                             ->inlineLabel()
                             ->columnSpanFull()
@@ -821,23 +778,9 @@ class PurchaseOrderForm
                 ,
 
                 Fieldset::make('Rincian Total')
-                    ->key(function ($get): string {
-                        return 'payment-summary-' . md5(json_encode([
-                            'items' => $get('purchaseOrderItems') ?? [],
-                            'discount' => $get('discount'),
-                            'tax_type' => $get('tax_type'),
-                            'tax_percentage' => $get('tax_percentage'),
-                            'rounding' => $get('rounding'),
-                            'refresh_key' => $get('payment_summary_refresh_key'),
-                        ], JSON_THROW_ON_ERROR));
-                    })
                     ->columns(1)
                     ->inlineLabel()
                     ->schema([
-                        Hidden::make('payment_summary_refresh_key')
-                            ->default(fn(): string => (string) str()->uuid())
-                            ->dehydrated(false)
-                        ,
                         TextEntry::make('total_subtotal')
                             ->label('Subtotal')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['gross_subtotal'] ?? 0.0))
@@ -845,6 +788,7 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total_discount')
                             ->label('Diskon')
                             ->state(fn($get): string => '-' . static::formatMoney(static::getSummaryBreakdown($get)['discount_total'] ?? 0.0))
@@ -853,6 +797,7 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total_after_discount')
                             ->label('Subtotal Setelah Diskon')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['gross_after_discount'] ?? 0.0))
@@ -862,22 +807,30 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         View::make('components.divider'),
+
                         TextEntry::make('total_dpp')
+                            // ->label(function ($get) {
+                            //     $isInclude12 = $get('tax_type') === PurchaseOrderTaxType::INCLUDE ->value && $get('tax_percentage') === 12;
+                            //     return $isInclude12 ? 'DPP (11/12)' : 'DPP';
+                            // })
                             ->label('DPP')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['tax_base'] ?? 0.0))
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total_ppn')
-                            ->label(fn($get) => $get('tax_percentage') ? 'PPN (' . $get('tax_percentage') . '%)' : 'PPN')
+                            ->label(fn($get) => filled($get('tax_percentage')) ? "PPN ({$get('tax_percentage')}%)" : 'PPN')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['tax_amount'] ?? 0.0))
                             ->color('warning')
                             ->inlineLabel()
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total')
                             ->label('Total')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['before_rounding'] ?? 0.0))
@@ -887,6 +840,7 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total_rounding')
                             ->label('Pembulatan')
                             ->state(fn($get): string => static::formatMoney(
@@ -896,6 +850,7 @@ class PurchaseOrderForm
                             ->alignEnd()
                             ->columnSpanFull()
                         ,
+
                         TextEntry::make('total_grand_total')
                             ->label('Total Pembayaran')
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['grand_total'] ?? 0.0))
@@ -908,7 +863,8 @@ class PurchaseOrderForm
                         ,
                     ])
                 ,
-            ]);
+            ])
+        ;
     }
 
     protected static function otherInfoSection(): Section
@@ -922,6 +878,20 @@ class PurchaseOrderForm
             ->columns(1)
             ->compact()
             ->schema([
+                Select::make('status')
+                    ->options(fn($record) => $record->getAvailableStatusOptions())
+                    ->native(false)
+                    ->required()
+                    ->disableOptionWhen(function ($value, $record) {
+                        if (!$record) {
+                            return false;
+                        }
+
+                        return $record && !$record->canChangeStatusTo($value);
+                    })
+                    ->columnSpan(1)
+                    ->visibleOn('edit')
+                ,
                 TextInput::make('memo')
                     ->placeholder(__('purchase-order.memo.placeholder'))
                     ->helperText(__('purchase-order.memo.helper')),
@@ -1187,86 +1157,79 @@ class PurchaseOrderForm
         return $cache[$itemId];
     }
 
+    protected static function normalizeBreakdownItems(array $items): array
+    {
+        return collect($items)
+            ->filter(fn(mixed $item): bool => is_array($item))
+            ->map(function (array $item, int|string $index): array {
+                if (blank($item['line_key'] ?? null)) {
+                    $item['line_key'] = (string) ($item['id'] ?? "line-{$index}");
+                }
+
+                return $item;
+            })
+            ->values()
+            ->all();
+    }
+
     protected static function getOrderBreakdown(
-        array $items,
-        mixed $discount,
-        mixed $taxType,
-        mixed $taxPercentage,
-        mixed $rounding = 0,
+        callable $get,
+        string $itemsPath = 'purchaseOrderItems',
+        string $basePath = '',
     ): array {
-        static $cache = [];
+        $resolvePath = static fn(string $field) => $basePath !== ''
+            ? "{$basePath}{$field}"
+            : $field;
+        $items = static::normalizeBreakdownItems((array) ($get($itemsPath) ?? []));
+        $discount = (float) ($get($resolvePath('discount')) ?? 0);
+        $taxType = $get($resolvePath('tax_type'));
+        $taxPercentage = ($get($resolvePath('tax_percentage')) ?? 0);
+        $rounding = (float) ($get($resolvePath('rounding')) ?? 0);
 
-        $key = md5(json_encode([
-            'items' => collect($items)
-                ->map(fn(array $item): array => [
-                    'line_key' => $item['line_key'] ?? null,
-                    'purchase_request_item_id' => $item['purchase_request_item_id'] ?? null,
-                    'qty' => (float) ($item['qty'] ?? 0),
-                    'price' => (float) ($item['price'] ?? 0),
-                    'discount' => (float) ($item['discount'] ?? 0),
-                ])
-                ->values()
-                ->all(),
-            'discount' => (float) ($discount ?? 0),
-            'tax_type' => PurchaseOrder::normalizeTaxType($taxType)?->value,
-            'tax_percentage' => (float) ($taxPercentage ?? 0),
-            'rounding' => (float) ($rounding ?? 0),
-        ], JSON_THROW_ON_ERROR));
-
-        if (!array_key_exists($key, $cache)) {
-            $cache[$key] = PurchaseOrder::calculateOrderBreakdown(
-                $items,
-                $discount,
-                $taxType,
-                $taxPercentage,
-                $rounding,
-            );
-        }
-
-        return $cache[$key];
-    }
-
-    protected static function getSummaryBreakdown(callable $get): array
-    {
-        $items = $get('purchaseOrderItems') ?? [];
-        $discount = $get('discount');
-        $taxType = $get('tax_type');
-        $taxPercentage = $get('tax_percentage');
-        $rounding = $get('rounding');
-
-        return static::getOrderBreakdown(
-            $items,
-            $discount,
-            $taxType,
-            $taxPercentage,
-            $rounding,
-        )['summary'];
-    }
-
-    protected static function getCurrentLineBreakdown(callable $get): array
-    {
-        $items = $get('../../purchaseOrderItems') ?? [];
-        $discount = $get('../../discount');
-        $taxType = $get('../../tax_type');
-        $taxPercentage = $get('../../tax_percentage');
-        $rounding = $get('../../rounding');
-
-        $lineKey = $get('line_key');
-        $breakdown = static::getOrderBreakdown(
+        return PurchaseOrder::calculateOrderBreakdown(
             $items,
             $discount,
             $taxType,
             $taxPercentage,
             $rounding,
         );
+    }
 
-        if ($lineKey !== null && isset($breakdown['lines'][$lineKey])) {
-            return $breakdown['lines'][$lineKey];
+    protected static function getSummaryBreakdown(callable $get): array
+    {
+        return static::getOrderBreakdown($get)['summary'] ?? [];
+    }
+
+    protected static function getCurrentLineBreakdown(callable $get): array
+    {
+        $lineKey = $get('line_key');
+        $lineId = $get('id');
+        $purchaseRequestItemId = $get('purchase_request_item_id');
+        $breakdown = static::getOrderBreakdown($get, '../../purchaseOrderItems', '../../');
+        $lines = $breakdown['lines'] ?? [];
+
+        $keyCandidates = array_filter([
+            filled($lineKey) ? (string) $lineKey : null,
+            filled($lineId) ? $lineId : null,
+            filled($purchaseRequestItemId) ? $purchaseRequestItemId : null,
+        ], fn(mixed $key): bool => $key !== null && $key !== '');
+
+        foreach ($keyCandidates as $keyCandidate) {
+            if (array_key_exists($keyCandidate, $lines)) {
+                return $lines[$keyCandidate];
+            }
         }
 
-        $sourceId = $get('purchase_request_item_id');
-
-        return $breakdown['lines'][$sourceId] ?? [];
+        return [
+            'gross_subtotal' => 0.0,
+            'item_discount' => 0.0,
+            'allocated_order_discount' => 0.0,
+            'discount_total' => 0.0,
+            'gross_after_discount' => 0.0,
+            'tax_base' => 0.0,
+            'tax_amount' => 0.0,
+            'total' => 0.0,
+        ];
     }
 
     protected static function resolvePurchaseRequestSelection(array $selectedIds): array
@@ -1387,14 +1350,11 @@ class PurchaseOrderForm
         }
     }
 
-    protected static function touchPaymentSummary(callable $set): void
-    {
-        $set('payment_summary_refresh_key', (string) str()->uuid());
-    }
-
     protected static function formatMoney(float $amount): string
     {
-        return 'Rp ' . number_format($amount, 2, ',', '.');
+        return
+            // 'Rp ' . 
+            number_format($amount, 2, '.', ',');
     }
 
     protected static function getStatusOptions(?PurchaseOrder $record): array
