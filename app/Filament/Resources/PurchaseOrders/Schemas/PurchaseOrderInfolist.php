@@ -16,6 +16,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
@@ -212,6 +213,7 @@ class PurchaseOrderInfolist
                                 TextEntry::make('item.name')->label(__('item.related.name.label'))->wrap()
                                     ->state(fn($record) =>
                                         e($record->item->code) . ' | ' . e($record->item->name) . ' <br>' .
+                                        'Deskripsi: <br>' .
                                         e($record->purchaseRequestItem->purchaseRequest->number) . '<br>' .
                                         nl2br(e($record->description)))
                                     ->html()
@@ -344,6 +346,9 @@ class PurchaseOrderInfolist
                             ->size(TextSize::Large)
                             ->inlineLabel()
                             ->alignEnd(),
+
+                        View::make('components.divider'),
+
                         TextEntry::make('total_dpp')
                             ->label(fn($record) => static::isInclude12($record) ? 'DPP (11/12)' : 'DPP')
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['tax_base'] ?? 0))

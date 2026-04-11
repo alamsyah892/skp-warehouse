@@ -98,28 +98,41 @@ class PurchaseOrderForm
                         'xl' => 7,
                     ])
                     ->schema([
-                        Fieldset::make(__('purchase-order.fieldset.warehouse_project.label'))
-                            ->columns([
-                                'default' => 1,
-                                'md' => 2,
+                        Fieldset::make(__('purchase-order.model.label'))
+                            ->columns(1)
+                            ->visibleOn('edit')
+                            ->schema([
+                                TextInput::make('number')
+                                    ->label(__('purchase-order.number.label'))
+                                    ->inlineLabel()
+                                    ->hintIcon('heroicon-m-information-circle')
+                                    ->hintIconTooltip('Auto-generated')
+                                    ->readOnly()
+                                    ->visibleOn('edit')
+                                    ->dehydrated(false)
+                                    ->columnSpanFull()
+                                ,
                             ])
+                        ,
+
+                        Fieldset::make(__('purchase-order.fieldset.warehouse_project.label'))
+                            ->columns(1)
                             ->schema([
                                 Select::make('warehouse_id')
                                     ->label(__('warehouse.model.label'))
+                                    ->inlineLabel()
+                                    ->disabled(fn($get, $operation) => $operation === 'edit' || filled($get('purchaseRequests')))
                                     ->relationship(
-                                        'warehouse',
-                                        'name',
-                                        fn($query) => $query
-                                            ->when(
-                                                auth()->user()->warehouses()->exists(),
-                                                fn($q) => $q->whereIn(
-                                                    'warehouses.id',
-                                                    auth()->user()->warehouses->pluck('id')
-                                                )
-                                            )->orderBy('name')->orderBy('code'),
+                                        name: 'warehouse',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn($query) => $query->when(
+                                            auth()->user()->warehouses()->exists(),
+                                            fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+                                        )->orderBy('name')->orderBy('code')
                                     )
-                                    ->searchable()
+                                    ->searchable(['name', 'code'])
                                     ->preload()
+                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function ($set) {
                                         $set('company_id', null);
@@ -127,84 +140,92 @@ class PurchaseOrderForm
                                         $set('project_id', null);
                                         $set('warehouse_address_id', null);
                                     })
-                                    ->required()
-                                    ->disabled(
-                                        fn($get, string $operation) =>
-                                        $operation === 'edit' || filled($get('purchaseRequests'))
-                                    )
-                                    ->columnSpan(1)
                                     ->dehydrated()
                                 ,
+
                                 Select::make('company_id')
                                     ->label(__('purchase-request.company.label'))
-                                    ->relationship(
-                                        'company',
-                                        'alias',
-                                        fn($query) => $query->orderBy('alias')->orderBy('code'),
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->afterStateUpdated(fn($set) => $set('project_id', null))
-                                    ->required()
+                                    ->inlineLabel()
                                     ->disabled(
-                                        fn($get, string $operation) =>
+                                        fn($get, $operation) =>
                                         $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
                                     )
-                                    ->columnSpan(1)
+                                    ->relationship(
+                                        name: 'company',
+                                        titleAttribute: 'alias',
+                                        modifyQueryUsing: fn($query) => $query->orderBy('alias')->orderBy('code'),
+                                    )
+                                    ->searchable(['name', 'alias', 'code'])
+                                    ->preload()
+                                    ->required()
+                                    ->live()
+                                    ->afterStateUpdated(fn($set) => $set('project_id', null))
                                     ->dehydrated()
                                 ,
+
                                 Select::make('division_id')
                                     ->label(__('division.model.label'))
+                                    ->inlineLabel()
+                                    ->disabled(
+                                        fn($get, $operation) =>
+                                        $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
+                                    )
                                     ->relationship(
-                                        'division',
-                                        'name',
-                                        function ($query, $get) {
+                                        name: 'division',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: function ($query, $get) {
                                             $companyId = $get('company_id');
 
-                                            $query->when($companyId, function ($q) use ($companyId) {
-                                                $q->whereHas(
-                                                    'companies',
-                                                    fn($qq) => $qq->where('companies.id', $companyId)
-                                                )->orWhereDoesntHave('companies');
-                                            })->orderBy('name')->orderBy('code');
+                                            $query
+                                                ->when($companyId, function ($q) use ($companyId) {
+                                                    $q
+                                                        ->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId))
+                                                        ->orWhereDoesntHave('companies')
+                                                    ;
+                                                })
+                                                ->orderBy('name')->orderBy('code')
+                                            ;
                                         }
                                     )
                                     ->searchable()
                                     ->preload()
-                                    ->live()
                                     ->required()
-                                    ->disabled(
-                                        fn($get, string $operation) =>
-                                        $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
-                                    )
-                                    ->columnSpan(1)
+                                    ->live()
                                     ->dehydrated()
                                 ,
+
                                 Select::make('project_id')
                                     ->label(__('project.model.label'))
+                                    ->inlineLabel()
+                                    ->disabled(
+                                        fn($get, $operation) =>
+                                        $operation === 'edit' ||
+                                        blank($get('warehouse_id')) ||
+                                        blank($get('company_id')) ||
+                                        filled($get('purchaseRequests'))
+                                    )
                                     ->relationship(
-                                        'project',
-                                        'name',
-                                        function ($query, $get) {
+                                        name: 'project',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: function ($query, $get) {
                                             $warehouseId = $get('warehouse_id');
                                             $companyId = $get('company_id');
 
                                             $query
                                                 ->when($companyId, function ($q) use ($companyId) {
                                                     $q->where(function ($qq) use ($companyId) {
-                                                        $qq->whereHas(
-                                                            'companies',
-                                                            fn($q) => $q->where('companies.id', $companyId)
-                                                        )->orWhereDoesntHave('companies');
+                                                        $qq
+                                                            ->whereHas('companies', fn($q) => $q->where('companies.id', $companyId))
+                                                            ->orWhereDoesntHave('companies')
+                                                        ;
                                                     });
                                                 })
                                                 ->when($warehouseId, function ($q) use ($warehouseId) {
                                                     $q->where(function ($qq) use ($warehouseId) {
-                                                        $qq->whereHas(
-                                                            'warehouses',
-                                                            fn($q) => $q->where('warehouses.id', $warehouseId)
-                                                        )->orWhereDoesntHave('warehouses');
+                                                        $qq
+                                                            ->whereHas('warehouses', fn($q) => $q->where('warehouses.id', $warehouseId))
+                                                            ->orWhereDoesntHave('warehouses')
+                                                        ;
                                                     });
                                                 })
                                                 ->where('allow_po', true)
@@ -213,71 +234,56 @@ class PurchaseOrderForm
                                         }
                                     )
                                     ->searchable(['name', 'code', 'po_code'])
-                                    ->getOptionLabelFromRecordUsing(
-                                        fn($record) =>
-                                        "{$record->code} / {$record->po_code} | {$record->name}"
-                                    )
                                     ->preload()
-                                    ->live()
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                                     ->required()
-                                    ->disabled(
-                                        fn($get, string $operation) =>
-                                        $operation === 'edit' ||
-                                        blank($get('warehouse_id')) ||
-                                        blank($get('company_id')) ||
-                                        filled($get('purchaseRequests'))
-                                    )
-                                    ->columnSpan(1)
+                                    ->live()
                                     ->dehydrated()
                                 ,
 
                                 Select::make('purchaseRequests')
                                     ->label(__('purchase-request.model.plural_label'))
+                                    ->helperText(__('purchase-order.purchase_requests.helper'))
+                                    ->multiple()
                                     ->relationship(
-                                        name: 'purchaseRequests',
                                         titleAttribute: 'number',
-                                        modifyQueryUsing: function (Builder $query, Select $component, $get): Builder {
-                                            $selectedIds = PurchaseOrder::normalizePurchaseRequestIds((array) $component->getState());
-                                            $selection = static::resolvePurchaseRequestSelection($selectedIds);
-                                            $header = $selection['header'];
+                                        modifyQueryUsing: function (Builder $query, $get, ?PurchaseOrder $record): Builder {
+                                            $header = array_filter([
+                                                'warehouse_id' => $get('warehouse_id'),
+                                                'company_id' => $get('company_id'),
+                                                'division_id' => $get('division_id'),
+                                                'project_id' => $get('project_id'),
+                                            ]);
 
-                                            // Jika belum ada PR yang dipilih, gunakan filter dari input warehouse/company/division/project (Opsi 2)
-                                            if (!$header) {
-                                                $header = array_filter([
-                                                    'warehouse_id' => $get('warehouse_id'),
-                                                    'company_id' => $get('company_id'),
-                                                    'division_id' => $get('division_id'),
-                                                    'project_id' => $get('project_id'),
-                                                ]);
+                                            foreach ($header as $field => $value) {
+                                                $query->where("purchase_requests.{$field}", $value);
                                             }
 
-                                            $query->where(fn($q) => $q->where('status', PurchaseRequestStatus::APPROVED)->orWhere('status', PurchaseRequestStatus::ORDERED));
+                                            $selectableStatuses = [
+                                                PurchaseRequestStatus::APPROVED,
+                                                PurchaseRequestStatus::ORDERED,
+                                            ];
 
-                                            if ($header) {
-                                                $query->where(function (Builder $scopedQuery) use ($header, $selectedIds): void {
-                                                    $scopedQuery->where(function (Builder $compatibleQuery) use ($header): void {
-                                                        foreach ($header as $field => $value) {
-                                                            $compatibleQuery->where("purchase_requests.{$field}", $value);
-                                                        }
-                                                    });
-
-                                                    if (!empty($selectedIds)) {
-                                                        $scopedQuery->orWhereIn('purchase_requests.id', $selectedIds);
-                                                    }
-                                                });
+                                            $selectedIds = [];
+                                            if ($record) {
+                                                $selectedIds = $record->purchaseRequests()->pluck('purchase_requests.id')->all();
                                             }
+
+                                            $query->where(function (Builder $scopedQuery) use ($selectableStatuses, $selectedIds): void {
+                                                $scopedQuery->whereIn('status', $selectableStatuses);
+
+                                                if ($selectedIds !== []) {
+                                                    $scopedQuery->orWhereIn('purchase_requests.id', $selectedIds);
+                                                }
+                                            });
 
                                             return $query->orderByDesc('purchase_requests.id');
                                         },
                                     )
-                                    ->multiple()
                                     ->searchable(['number', 'description'])
-                                    ->getOptionLabelFromRecordUsing(fn(PurchaseRequest $record): string => "{$record->number}")
                                     ->preload()
-                                    ->live()
                                     ->required()
-                                    ->columnSpanFull()
-                                    ->helperText(__('purchase-order.purchase_requests.helper'))
+                                    ->live()
                                     ->afterStateUpdated(function ($state, $set, $get): void {
                                         $selection = static::resolvePurchaseRequestSelection((array) $state);
 
@@ -285,7 +291,6 @@ class PurchaseOrderForm
                                             $set('purchaseRequests', $selection['ids']);
                                         }
 
-                                        // Hanya isi field header jika ada PR yang dipilih
                                         if ($selection['header']) {
                                             static::fillHeaderFields($set, $selection['header']);
                                         }
@@ -298,124 +303,119 @@ class PurchaseOrderForm
                                             $set('purchaseRequests', $selection['ids']);
                                         }
 
-                                        // Hanya isi field header jika ada PR yang dipilih
                                         if ($selection['header']) {
                                             static::fillHeaderFields($set, $selection['header']);
                                         }
                                         static::prunePurchaseOrderItems($set, $get, $selection['ids']);
                                     })
+                                    ->columnSpanFull()
                                 ,
                             ])
                         ,
 
                         Fieldset::make('Informasi Pengiriman')
-                            ->columns([
-                                'default' => 1,
-                                'md' => 2,
-                            ])
+                            ->columns(1)
                             ->schema([
                                 Select::make('warehouse_address_id')
                                     ->label(__('purchase-request.warehouse_address.label'))
-                                    ->relationship(
-                                        'warehouseAddress',
-                                        'address',
-                                        fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
-                                    )
-                                    ->getOptionLabelFromRecordUsing(
-                                        fn($record) => "{$record->address} - {$record->city}"
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->default(null)
+                                    ->inlineLabel()
                                     ->disabled(fn($get) => blank($get('warehouse_id')))
+                                    ->relationship(
+                                        name: 'warehouseAddress',
+                                        titleAttribute: 'address',
+                                        modifyQueryUsing: fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
+                                    )
+                                    ->searchable(['address', 'city'])
+                                    ->preload()
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
+                                    ->default(null)
                                     ->live()
-                                    ->columnSpan(1)
                                 ,
+
                                 TextInput::make('delivery_info')
                                     ->label(__('purchase-order.delivery_info.label'))
+                                    ->inlineLabel()
                                     ->placeholder(__('purchase-order.delivery_info.placeholder'))
                                     ->helperText(__('purchase-order.delivery_info.helper'))
-                                    ->columnSpan(1)
                                 ,
                             ])
                         ,
                     ])
                 ,
 
-                Fieldset::make(__('purchase-order.fieldset.info.label'))
+                Grid::make([
+                    'default' => 1,
+                    'xl' => 1,
+                ])
                     ->columnSpan([
                         'default' => 1,
                         'xl' => 5,
                     ])
-                    ->columns([
-                        'default' => 1,
-                        'md' => 2,
-                    ])
+                    ->columns(1)
                     ->schema([
-                        TextInput::make('number')
-                            ->label(__('purchase-order.number.label'))
-                            ->hint('Auto-generated')
-                            ->hintIcon('heroicon-m-information-circle')
-                            ->readOnly()
-                            ->visibleOn('edit')
-                            ->columnSpan(1)
-                            ->dehydrated(false),
+                        Fieldset::make(__('purchase-order.fieldset.info.label'))
+                            ->columns(1)
+                            ->schema([
+                                Select::make('vendor_id')
+                                    ->label(__('vendor.model.label'))
+                                    ->inlineLabel()
+                                    ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
+                                    ->searchable(['name', 'code'])
+                                    ->preload()
+                                    ->required()
+                                ,
 
-                        Select::make('vendor_id')
-                            ->label(__('vendor.model.label'))
-                            ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
-                            ->searchable(['name', 'code'])
-                            ->required()
-                            ->preload()
-                            ->columnSpan(fn(string $operation): int => $operation === 'edit' ? 1 : 2)
+                                TextInput::make('termin')
+                                    ->label('Termin Pembayaran')
+                                    ->inlineLabel()
+                                    ->placeholder(__('purchase-order.termin.placeholder'))
+                                    ->helperText(__('purchase-order.termin.helper'))
+                                ,
+
+                                Textarea::make('description')
+                                    ->label(__('common.description.label'))
+                                    ->placeholder(__('purchase-order.description.placeholder'))
+                                    ->helperText(__('purchase-order.description.helper'))
+                                    ->live()
+                                    ->autosize()
+                                ,
+                            ])
                         ,
 
-                        Textarea::make('description')
-                            ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-order.description.placeholder'))
-                            ->helperText(__('purchase-order.description.helper'))
-                            ->live()
-                            ->autosize()
-                            ->columnSpanFull()
-                        ,
-                        TextInput::make('termin')
-                            ->label('Termin Pembayaran')
-                            ->placeholder(__('purchase-order.termin.placeholder'))
-                            ->helperText(__('purchase-order.termin.helper'))
-                            ->columnSpanFull()
-                        ,
-
-                        Grid::make([
-                            'default' => 1,
-                            'md' => 2,
-                        ])
-                            ->columnSpanFull()
+                        Fieldset::make('Informasi Pajak')
+                            ->columns([
+                                'default' => 1,
+                                'md' => 2,
+                            ])
                             ->schema([
                                 Select::make('tax_type')
                                     ->label(__('purchase-order.tax_type.label'))
                                     ->options(PurchaseOrderTaxType::options())
                                     ->native(false)
                                     ->default(PurchaseOrderTaxType::EXCLUDE->value)
-                                    ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
                                     ->live()
+                                    ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
                                     ->required()
                                 ,
+
                                 Select::make('tax_percentage')
                                     ->label(__('purchase-order.tax_percentage.label'))
                                     ->options(PurchaseOrder::getTaxPercentageOptions())
                                     ->native(false)
                                     ->default((string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE)
+                                    ->live()
                                     ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ($state + 0) : (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE))
                                     ->dehydrateStateUsing(fn($state) => filled($state) ? $state : null)
-                                    ->live()
                                     ->required()
                                 ,
+
+                                TextInput::make('tax_description')
+                                    ->label(__('purchase-order.tax_description.label'))
+                                    ->placeholder(__('purchase-order.tax_description.placeholder'))
+                                    ->helperText('Contoh: PPN 11%')
+                                    ->columnSpanFull()
+                                ,
                             ])
-                        ,
-                        TextInput::make('tax_description')
-                            ->label(__('purchase-order.tax_description.label'))
-                            ->placeholder(__('purchase-order.tax_description.placeholder'))
-                            ->columnSpanFull()
                         ,
 
                         // Select::make('status')
@@ -429,7 +429,8 @@ class PurchaseOrderForm
                         // ,
                     ])
                 ,
-            ]);
+            ])
+        ;
     }
 
     protected static function itemSection(): Section
@@ -497,19 +498,19 @@ class PurchaseOrderForm
                             ->disabled(fn($get): bool => blank(PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []))))
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->live()
-                            ->helperText(function ($get): string {
-                                $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
+                            // ->helperText(function ($get): string {
+                            //     $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
 
-                                if ($source) {
-                                    return __('purchase-order.purchase_order_item.source_item.context_value', [
-                                        'request_qty' => number_format((float) $source->qty, 2),
-                                        'ordered_qty' => number_format($source->getOrderedQty(), 2),
-                                        'remaining_qty' => number_format($source->getRemainingQty(), 2),
-                                    ]);
-                                }
+                            //     if ($source) {
+                            //         return __('purchase-order.purchase_order_item.source_item.context_value', [
+                            //             'request_qty' => number_format((float) $source->qty, 2),
+                            //             'ordered_qty' => number_format($source->getOrderedQty(), 2),
+                            //             'remaining_qty' => number_format($source->getRemainingQty(), 2),
+                            //         ]);
+                            //     }
 
-                                return '';
-                            })
+                            //     return '';
+                            // })
                             ->afterStateUpdated(function ($state, $set): void {
                                 if (!$state) {
                                     return;
@@ -524,7 +525,26 @@ class PurchaseOrderForm
                                 $set('item_id', $source->item_id);
                                 $set('qty', $source->getRemainingQty());
                             })
-                            ->columnSpanFull()
+                            ->columnSpan(8)
+                        ,
+
+                        TextEntry::make('source_info')
+                            // ->hiddenLabel()
+                            ->state(function ($get): string {
+                                $source = static::getPurchaseRequestItemRecord((int) ($get('purchase_request_item_id') ?? 0));
+
+                                if ($source) {
+                                    return __('purchase-order.purchase_order_item.source_item.context_value', [
+                                        'request_qty' => number_format((float) $source->qty, 2),
+                                        'ordered_qty' => number_format($source->getOrderedQty(), 2),
+                                        'remaining_qty' => number_format($source->getRemainingQty(), 2),
+                                    ]);
+                                }
+
+                                return '';
+                            })
+                            ->color('gray')
+                            ->columnSpan(4)
                         ,
 
                         Select::make('item_id')

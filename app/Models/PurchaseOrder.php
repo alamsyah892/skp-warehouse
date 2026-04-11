@@ -1059,7 +1059,7 @@ class PurchaseOrder extends Model
     {
         return [
             'vendor_id',
-            'warehouse_address_id',
+            // 'warehouse_address_id',
             'description',
             'memo',
             'termin',

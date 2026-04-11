@@ -369,7 +369,19 @@ it('updates edit purchase order item state when values change', function () {
         ->assertSet("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.qty", 2);
 });
 
-function createEditablePurchaseOrder(): PurchaseOrder
+it('keeps finished purchase requests available on the edit page', function () {
+    $purchaseOrder = createEditablePurchaseOrder(PurchaseRequestStatus::FINISHED);
+
+    Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use ($purchaseOrder): array {
+            expect(PurchaseOrder::normalizePurchaseRequestIds((array) ($state['purchaseRequests'] ?? [])))
+                ->toContain($purchaseOrder->purchaseRequests->first()->id);
+
+            return [];
+        });
+});
+
+function createEditablePurchaseOrder(PurchaseRequestStatus $purchaseRequestStatus = PurchaseRequestStatus::APPROVED): PurchaseOrder
 {
     $user = User::factory()->create();
 
@@ -468,7 +480,7 @@ function createEditablePurchaseOrder(): PurchaseOrder
         'info' => '',
     ]);
     $purchaseRequest->update([
-        'status' => PurchaseRequestStatus::APPROVED,
+        'status' => $purchaseRequestStatus,
     ]);
 
     $purchaseRequestItem = PurchaseRequestItem::query()->create([
