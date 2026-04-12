@@ -4,6 +4,9 @@ namespace App\Filament\Resources\PurchaseOrders\Pages;
 
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Models\PurchaseOrder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Filament\Resources\Pages\CreateRecord;
 
 class CreatePurchaseOrder extends CreateRecord
@@ -16,10 +19,18 @@ class CreatePurchaseOrder extends CreateRecord
     {
         $this->selectedPurchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds($this->data['purchaseRequests'] ?? []);
         $data['purchaseRequests'] = $this->selectedPurchaseRequestIds;
+        $purchaseRequestStatusSnapshot = (array) ($this->data['purchaseRequestStatusSnapshot'] ?? []);
+        $purchaseOrderItemsState = array_values((array) ($this->data['purchaseOrderItems'] ?? []));
 
         PurchaseOrder::syncHeaderFromPurchaseRequests($data);
         PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
         PurchaseOrder::syncTaxTotals($data);
+        PurchaseOrder::validatePurchaseRequestSynchronization(
+            $this->selectedPurchaseRequestIds,
+            $purchaseRequestStatusSnapshot,
+            $purchaseOrderItemsState,
+            null,
+        );
         PurchaseOrder::validateItemsBelongToPurchaseRequests(
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,
@@ -27,13 +38,17 @@ class CreatePurchaseOrder extends CreateRecord
         PurchaseOrder::validateManualItems($data['purchaseOrderItems'] ?? []);
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? []);
 
-        return $data;
+        return Arr::except($data, ['purchaseRequestStatusSnapshot']);
     }
 
-    protected function afterCreate(): void
+    protected function handleRecordCreation(array $data): Model
     {
-        $this->record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
-        $this->record->syncCalculatedTotals();
-        $this->record->refresh();
+        return DB::transaction(function () use ($data): Model {
+            $record = PurchaseOrder::query()->create($data);
+            $record->purchaseRequests()->sync($this->selectedPurchaseRequestIds);
+            $record->syncCalculatedTotals();
+
+            return $record->fresh();
+        });
     }
 }

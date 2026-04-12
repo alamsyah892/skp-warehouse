@@ -8,6 +8,7 @@ use App\Filament\Components\Infolists\ActivityLogTab;
 // use App\Models\PurchaseRequest;
 // use Filament\Actions\EditAction;
 // use App\Models\User;
+use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\RepeatableEntry\TableColumn;
@@ -24,6 +25,7 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Contracts\View\View as ViewContract;
 // use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
 use Zvizvi\UserFields\Components\UserEntry;
 
@@ -140,6 +142,8 @@ class PurchaseRequestInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
                         ,
                     ])
                 ,
@@ -204,39 +208,56 @@ class PurchaseRequestInfolist
 
     protected static function dataSectionFooter($record): array
     {
-        return collect($record->getNextStatuses())->map(function ($status) use ($record) {
-            return Action::make('changeStatus' . $status->value)
-                ->label(__($status->actionLabel()))
-                ->color($status->color())
-                ->icon($status->icon())
-                ->requiresConfirmation()
-                ->modalHeading(
-                    __($status->actionLabel()) .
-                    ' ' .
-                    __('purchase-request.model.label')
-                )
-                ->modalDescription(
-                    __(
-                        'purchase-request.status.action.note',
-                        ['status' => __($status->label())]
+        return collect($record->getNextStatuses())
+            ->reject(fn(PurchaseRequestStatus $status): bool => static::shouldHideStatusAction($record, $status))
+            ->map(function ($status) use ($record) {
+                return Action::make('changeStatus' . $status->value)
+                    ->label(__($status->actionLabel()))
+                    ->color($status->color())
+                    ->icon($status->icon())
+                    ->requiresConfirmation()
+                    ->modalHeading(
+                        __($status->actionLabel()) .
+                        ' ' .
+                        __('purchase-request.model.label')
                     )
-                )
-                ->action(function () use ($status, $record) {
-                    $record->changeStatus($status);
+                    ->modalDescription(
+                        __(
+                            'purchase-request.status.action.note',
+                            ['status' => __($status->label())]
+                        )
+                    )
+                    ->action(function () use ($status, $record) {
+                        $record->changeStatus($status);
 
-                    Notification::make()
-                        ->success()
-                        ->title(__('purchase-request.status.action.changed'))
-                        ->send()
-                    ;
+                        Notification::make()
+                            ->success()
+                            ->title(__('purchase-request.status.action.changed'))
+                            ->send()
+                        ;
 
-                    return redirect(request()->header('Referer'));
-                })
-            ;
-        })
+                        return redirect(request()->header('Referer'));
+                    })
+                ;
+            })
             ->values()
             ->all()
         ; // return array action
+    }
+
+    public static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
+    {
+        if ($status === PurchaseRequestStatus::ORDERED) {
+            return true;
+        }
+
+        if ($status !== PurchaseRequestStatus::CANCELED) {
+            return false;
+        }
+
+        return $record->purchaseRequestItems->contains(
+            fn($item): bool => $item->getOrderedQty() > 0
+        );
     }
 
     protected static function tabSection(): Tabs
@@ -261,9 +282,8 @@ class PurchaseRequestInfolist
                                 TableColumn::make('#')->wrapHeader(false),
                                 TableColumn::make(__('item.related.code.label')),
                                 TableColumn::make(__('item.related.name.label')),
-                                TableColumn::make(__('item.related.unit.label'))->wrapHeader(),
+                                TableColumn::make('Unit')->wrapHeader(),
                                 TableColumn::make('Qty'),
-                                TableColumn::make(__('common.description.label')),
                                 TableColumn::make(__('purchase-request.purchase_request_item.ordered_qty.label'))->wrapHeader(),
                                 TableColumn::make(__('purchase-request.purchase_request_item.remaining_qty.label'))->wrapHeader(),
                             ])
@@ -275,10 +295,24 @@ class PurchaseRequestInfolist
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
                                     ->icon(Heroicon::Hashtag)
-                                    ->badge()
+                                // ->badge()
                                 ,
+                                // TextEntry::make('item.name')
+                                //     ->label(__('item.related.name.label'))
+                                //     ->state(fn($record) => collect([
+                                //         $record->item?->name,
+                                //         filled($record->description) ? nl2br(e($record->description)) : null,
+                                //         // $record->purchaseRequestItem?->purchaseRequest ? $record->purchaseRequestItem->purchaseRequest->number : null,
+                                //     ])->filter()->implode('<br>'))
+                                //     ->html()
+                                // ,
+
                                 TextEntry::make('item.name')
                                     ->label(__('item.related.name.label'))
+                                    ->formatStateUsing(
+                                        fn(PurchaseRequestItem $record): ViewContract =>
+                                        static::purchaseRequestItemSummaryView($record)
+                                    )
                                 ,
                                 TextEntry::make('item.unit')
                                     ->label(__('item.related.unit.label'))
@@ -286,11 +320,6 @@ class PurchaseRequestInfolist
                                 TextEntry::make('qty')
                                     ->numeric()
                                     ->alignment(Alignment::End)
-                                ,
-                                TextEntry::make('description')
-                                    ->label(__('common.description.label'))
-                                    ->color('gray')
-                                    ->placeholder('-')
                                 ,
                                 TextEntry::make('ordered_qty')
                                     ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
@@ -339,6 +368,8 @@ class PurchaseRequestInfolist
                     ->columnSpanFull()
                     ->placeholder('-')
                     ->color('gray')
+                    ->formatStateUsing(fn($state) => nl2br(e($state)))
+                    ->html()
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
@@ -377,5 +408,14 @@ class PurchaseRequestInfolist
     protected static function relatedDataSection(): Section|string
     {
         return '';
+    }
+
+    public static function purchaseRequestItemSummaryView(PurchaseRequestItem $record): ViewContract
+    {
+        return view('filament.infolists.purchase-order-item-summary', [
+            'itemName' => $record->item?->name,
+            'description' => filled($record->description) ? $record->description : null,
+            'purchaseRequestNumber' => $record->purchaseRequestItem?->purchaseRequest?->number,
+        ]);
     }
 }

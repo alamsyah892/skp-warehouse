@@ -70,12 +70,12 @@ enum PurchaseOrderStatus: int
                 ],
             ],
             self::CANCELED => [
-                self::DRAFT->value => [
-                    Role::PROJECT_OWNER,
-                    Role::ADMINISTRATOR,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
-                ],
+                // self::DRAFT->value => [
+                //     Role::PROJECT_OWNER,
+                //     Role::ADMINISTRATOR,
+                //     Role::PURCHASING,
+                //     Role::PURCHASING_MANAGER,
+                // ],
             ],
             self::ORDERED => [
                 self::CANCELED->value => [

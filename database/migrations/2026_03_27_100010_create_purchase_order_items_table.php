@@ -13,24 +13,26 @@ return new class extends Migration {
             $table->foreignId('purchase_order_id')
                 ->constrained('purchase_orders')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-            $table->foreignId('purchase_request_item_id')
-                ->constrained('purchase_request_items')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('item_id')
                 ->constrained('items')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
+            $table->foreignId('purchase_request_item_id')
+                ->nullable()
+                ->constrained('purchase_request_items')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete()
+            ;
 
             $table->decimal('qty', 15, 2)->default(0);
             $table->decimal('price', 15, 2)->default(0);
-            $table->decimal('discount', 15, 2)->default(0);
             $table->text('description');
             $table->integer('sort')->default(0);
 
             $table->timestamps();
-            $table->softDeletes();
         });
     }
 

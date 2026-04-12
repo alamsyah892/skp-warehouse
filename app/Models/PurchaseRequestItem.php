@@ -32,6 +32,7 @@ class PurchaseRequestItem extends Model
     ];
 
     protected $casts = [
+        'qty' => 'decimal:2',
     ];
 
 

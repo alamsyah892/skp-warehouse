@@ -167,6 +167,8 @@ return [
     'validation' => [
         'incompatible_headers' => 'Item sumber tidak kompatibel. Warehouse, Perusahaan (Gudang Kecil), Divisi, dan Proyek harus sama.',
         'incompatible_purchase_requests' => 'Pengajuan yang dipilih harus memiliki Gudang, Perusahaan (Gudang Kecil), Divisi, dan Proyek yang sama.',
+        'purchase_request_item_changed' => 'Data item pengajuan sudah berubah. Muat ulang form lalu periksa kembali qty pengajuan dan qty teralokasi.',
+        'purchase_request_status_changed' => 'Status pengajuan sudah berubah. Muat ulang form lalu periksa kembali pengajuan yang dipilih.',
         'qty_exceeded' => 'Qty alokasi melebihi sisa kuota. Sisa: :remaining.',
         'source_item_not_found' => 'Item sumber Pengajuan tidak ditemukan.',
         'source_item_not_selected_pr' => 'Item sumber harus berasal dari Pengajuan yang sudah dipilih.',

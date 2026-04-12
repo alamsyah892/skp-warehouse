@@ -183,7 +183,7 @@ class PurchaseRequestForm
                                 fn($record) =>
                                 "{$record->code} / {$record->po_code} | {$record->name}"
                             )
-                            // ->preload()
+                            ->preload()
                             ->required()
                             ->disabled(
                                 fn($get, string $operation) =>

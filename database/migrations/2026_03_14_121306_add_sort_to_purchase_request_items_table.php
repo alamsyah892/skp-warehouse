@@ -1,8 +1,6 @@
 <?php
 
 use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     /**
@@ -10,16 +8,16 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        if (Schema::hasColumn('purchase_request_items', 'sort')) {
-            Schema::table('purchase_request_items', function (Blueprint $table) {
-                $table->dropColumn('sort');
-            });
-        }
+        // if (Schema::hasColumn('purchase_request_items', 'sort')) {
+        //     Schema::table('purchase_request_items', function (Blueprint $table) {
+        //         $table->dropColumn('sort');
+        //     });
+        // }
 
-        Schema::table('purchase_request_items', function (Blueprint $table) {
-            $table->integer('sort')->default(0)->after('id');
-            $table->index(['purchase_request_id', 'sort']);
-        });
+        // Schema::table('purchase_request_items', function (Blueprint $table) {
+        //     $table->integer('sort')->default(0)->after('id');
+        //     $table->index(['purchase_request_id', 'sort']);
+        // });
 
         $driver = DB::getDriverName();
 
@@ -64,9 +62,9 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::table('purchase_request_items', function (Blueprint $table) {
-            $table->dropIndex(['purchase_request_id', 'sort']);
-            $table->dropColumn('sort');
-        });
+        // Schema::table('purchase_request_items', function (Blueprint $table) {
+        //     $table->dropIndex(['purchase_request_id', 'sort']);
+        //     $table->dropColumn('sort');
+        // });
     }
 };

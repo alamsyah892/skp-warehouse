@@ -33,6 +33,7 @@ class PermissionRoleSeeder extends Seeder
             'Bank',
 
             'Purchase Request',
+            'Purchase Order',
         ];
 
         // Generate permissions
@@ -75,6 +76,7 @@ class PermissionRoleSeeder extends Seeder
             'Bank' => ['Read'],
 
             'Purchase Request' => ['Read'],
+            'Purchase Order' => ['Read'],
         ];
 
         $syncPermissions = [];

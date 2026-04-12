@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseOrderType;
 use App\Models\Company;
 use App\Models\Division;
 use App\Models\Project;
@@ -29,7 +30,7 @@ class PurchaseOrderFactory extends Factory
             'division_id' => Division::factory(),
             'project_id' => Project::factory(),
             'user_id' => User::factory(),
-            'type' => PurchaseOrder::TYPE_PURCHASE_ORDER,
+            'type' => PurchaseOrderType::RED,
             'number' => $this->faker->unique()->bothify('PO/####/??'),
             'description' => $this->faker->sentence(),
             'memo' => $this->faker->word(),

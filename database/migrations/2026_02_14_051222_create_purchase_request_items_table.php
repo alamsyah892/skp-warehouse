@@ -26,6 +26,7 @@ return new class extends Migration {
 
             $table->decimal('qty', 15, 2)->default(0);
             $table->text('description');
+            $table->integer('sort')->default(0);
 
             $table->timestamps();
             $table->softDeletes();

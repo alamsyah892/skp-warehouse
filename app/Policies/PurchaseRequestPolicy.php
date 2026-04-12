@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\PurchaseRequestStatus;
 use App\Models\PurchaseRequest;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
@@ -37,7 +38,7 @@ class PurchaseRequestPolicy
      */
     public function update(User $user, PurchaseRequest $purchaseRequest): bool
     {
-        return $user->can('Update Purchase Request');
+        return $user->can('Update Purchase Request') && $purchaseRequest->status !== PurchaseRequestStatus::CANCELED;
     }
 
     /**
@@ -45,7 +46,7 @@ class PurchaseRequestPolicy
      */
     public function delete(User $user, PurchaseRequest $purchaseRequest): bool
     {
-        return $user->can('Delete Purchase Request');
+        return $user->can('Delete Purchase Request') && $purchaseRequest->status !== PurchaseRequestStatus::CANCELED;
     }
 
     /**

@@ -84,7 +84,6 @@ class PurchaseRequest extends Model
             }
         });
 
-
         static::creating(function ($record) {
             $record->user_id = auth()->id();
             $record->type = self::TYPE_PURCHASE_REQUEST;

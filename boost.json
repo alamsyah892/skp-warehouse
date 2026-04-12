@@ -1,6 +1,6 @@
 {
     "agents": [
-        "codex"
+        "gemini"
     ],
     "mcp": true,
     "nightwatch_mcp": false,

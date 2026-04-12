@@ -9,6 +9,7 @@ return new class extends Migration {
     {
         Schema::create('purchase_order_purchase_request', function (Blueprint $table) {
             $table->id();
+
             $table->foreignId('purchase_order_id')
                 ->constrained('purchase_orders')
                 ->cascadeOnUpdate()

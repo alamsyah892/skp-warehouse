@@ -85,14 +85,14 @@ enum PurchaseRequestStatus: int
             ],
 
             self::CANCELED => [
-                self::REQUESTED->value => [
-                    Role::PROJECT_OWNER,
-                    Role::ADMINISTRATOR,
-                    Role::LOGISTIC,
-                    Role::LOGISTIC_MANAGER,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
-                ],
+                // self::REQUESTED->value => [
+                //     Role::PROJECT_OWNER,
+                //     Role::ADMINISTRATOR,
+                //     Role::LOGISTIC,
+                //     Role::LOGISTIC_MANAGER,
+                //     Role::PURCHASING,
+                //     Role::PURCHASING_MANAGER,
+                // ],
             ],
 
             self::REQUESTED => [

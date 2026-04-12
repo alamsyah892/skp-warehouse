@@ -1,7 +1,9 @@
 <?php
 
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderInfolist;
 use App\Filament\Resources\PurchaseOrders\Pages\EditPurchaseOrder;
 use App\Models\Company;
 use App\Models\Division;
@@ -12,6 +14,7 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\Project;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\Vendor;
 use App\Models\Warehouse;
@@ -27,124 +30,150 @@ it('normalizes selected purchase request ids', function () {
         ->toBe([1, 2, 3, 4]);
 });
 
-it('calculates item total with discount', function () {
+it('calculates item total from quantity and price', function () {
     expect(PurchaseOrder::calculateItemTotal([
         'qty' => 5,
         'price' => 10000,
-        'discount' => 12500,
-    ]))->toBe(37500.0);
+    ]))->toBe(50000.0);
 });
 
 it('does not allow negative item total', function () {
     expect(PurchaseOrder::calculateItemTotal([
-        'qty' => 1,
+        'qty' => -1,
         'price' => 5000,
-        'discount' => 6000,
     ]))->toBe(0.0);
 });
 
-it('calculates subtotal, net subtotal, and grand total', function () {
+it('calculates purchase order summary for exclude tax', function () {
     $items = [
         [
             'qty' => 2,
             'price' => 10000,
-            'discount' => 1000,
         ],
         [
             'qty' => 3,
             'price' => 5000,
-            'discount' => 500,
         ],
     ];
 
-    expect(PurchaseOrder::calculateSubtotal($items))->toBe(33500.0);
-    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(35000.0);
-    expect(PurchaseOrder::calculateNetSubtotal($items, 3500))->toBe(30000.0);
-    expect(PurchaseOrder::calculateSubtotalTax($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(3300.0);
-    expect(PurchaseOrder::calculateGrandTotal($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11, 200))->toBe(33500.0);
+    $summary = PurchaseOrder::calculateOrderSummary($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11, 200);
+
+    expect(PurchaseOrder::calculateSubtotal($items))->toBe(35000.0)
+        ->and(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(35000.0)
+        ->and(PurchaseOrder::calculateNetSubtotal($items, 3500))->toBe(31500.0)
+        ->and(PurchaseOrder::calculateSubtotalDiscount($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(3500.0)
+        ->and(PurchaseOrder::calculateSubtotalTax($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(3465.0)
+        ->and(PurchaseOrder::calculateTotalBeforeRounding($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(34965.0)
+        ->and(PurchaseOrder::calculateGrandTotal($items, 3500, PurchaseOrderTaxType::EXCLUDE, 11, 200))->toBe(35165.0)
+        ->and($summary)->toMatchArray([
+            'subtotal' => 35000.0,
+            'discount' => 3500.0,
+            'subtotal_after_discount' => 31500.0,
+            'dpp' => 31500.0,
+            'tax_amount' => 3465.0,
+            'total_before_rounding' => 34965.0,
+            'rounding' => 200.0,
+            'grand_total' => 35165.0,
+        ]);
 });
 
-it('extracts tax amount from include tax purchase order', function () {
+it('calculates purchase order summary for include tax', function () {
     $items = [
         [
             'qty' => 1,
             'price' => 111000,
-            'discount' => 0,
         ],
     ];
 
-    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(100000.0);
-    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(11000.0);
-    expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 11, 0))->toBe(111000.0);
+    $summary = PurchaseOrder::calculateOrderSummary($items, 0, PurchaseOrderTaxType::INCLUDE, 11, 0);
+
+    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(111000.0)
+        ->and(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(11000.0)
+        ->and(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 11, 0))->toBe(111000.0)
+        ->and($summary)->toMatchArray([
+            'subtotal' => 111000.0,
+            'discount' => 0.0,
+            'subtotal_after_discount' => 111000.0,
+            'dpp' => 100000.0,
+            'tax_amount' => 11000.0,
+            'total_before_rounding' => 111000.0,
+            'rounding' => 0.0,
+            'grand_total' => 111000.0,
+        ]);
 });
 
-it('keeps include tax breakdown consistent when discounts are applied', function () {
+it('applies discount before include tax breakdown', function () {
     $items = [
         [
             'qty' => 1,
             'price' => 111000,
-            'discount' => 11100,
         ],
     ];
 
     $orderDiscount = 11100;
 
-    $subtotal = PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11);
-    $discount = PurchaseOrder::calculateSubtotalDiscount($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
-    $tax = PurchaseOrder::calculateSubtotalTax($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
-    $total = PurchaseOrder::calculateTotalBeforeRounding($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11);
+    $summary = PurchaseOrder::calculateOrderSummary($items, $orderDiscount, PurchaseOrderTaxType::INCLUDE, 11, 0);
 
-    expect($subtotal)->toBe(100000.0);
-    expect($discount)->toBe(20000.0);
-    expect($tax)->toBe(8800.0);
-    expect($total)->toBe(88800.0);
-    expect(round($subtotal - $discount + $tax, 2))->toBe($total);
+    expect($summary)->toMatchArray([
+        'subtotal' => 111000.0,
+        'discount' => 11100.0,
+        'subtotal_after_discount' => 99900.0,
+        'dpp' => 90000.0,
+        'tax_amount' => 9900.0,
+        'total_before_rounding' => 99900.0,
+        'rounding' => 0.0,
+        'grand_total' => 99900.0,
+    ]);
 });
 
-it('rounds tax and include dpp calculations', function () {
+it('rounds tax using subtotal after discount', function () {
     $items = [
         [
             'qty' => 1,
             'price' => 100001,
-            'discount' => 0,
         ],
     ];
 
-    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(90091.0);
-    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(9910.0);
-    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(11000.0);
+    expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 11))->toBe(9910.0)
+        ->and(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::EXCLUDE, 11))->toBe(11000.0);
 });
 
-it('rounds include dpp at document level like erp', function () {
+it('limits discount to subtotal in order summary', function () {
     $items = [
         [
             'qty' => 1,
             'price' => 1,
-            'discount' => 0,
         ],
         [
             'qty' => 1,
             'price' => 5,
-            'discount' => 0,
         ],
     ];
 
-    expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 11))->toBe(5.0);
+    expect(PurchaseOrder::calculateOrderSummary($items, 10, PurchaseOrderTaxType::EXCLUDE, 11, 0))
+        ->toMatchArray([
+            'subtotal' => 6.0,
+            'discount' => 6.0,
+            'subtotal_after_discount' => 0.0,
+            'dpp' => 0.0,
+            'tax_amount' => 0.0,
+            'total_before_rounding' => 0.0,
+            'rounding' => 0.0,
+            'grand_total' => 0.0,
+        ]);
 });
 
-it('allocates order discount into each line breakdown consistently', function () {
+it('keeps line breakdown simple and summary driven', function () {
     $items = [
         [
             'line_key' => 'line-1',
             'qty' => 1,
             'price' => 10000,
-            'discount' => 0,
         ],
         [
             'line_key' => 'line-2',
             'qty' => 1,
             'price' => 5000,
-            'discount' => 0,
         ],
     ];
 
@@ -156,20 +185,26 @@ it('allocates order discount into each line breakdown consistently', function ()
         0,
     );
 
-    expect($breakdown['lines']['line-1']['allocated_order_discount'])->toBe(1000.0)
-        ->and($breakdown['lines']['line-1']['gross_after_discount'])->toBe(9000.0)
-        ->and($breakdown['lines']['line-1']['tax_amount'])->toBe(990.0)
-        ->and($breakdown['lines']['line-1']['total'])->toBe(9990.0)
-        ->and($breakdown['lines']['line-2']['allocated_order_discount'])->toBe(500.0)
-        ->and($breakdown['lines']['line-2']['gross_after_discount'])->toBe(4500.0)
-        ->and($breakdown['lines']['line-2']['tax_amount'])->toBe(495.0)
-        ->and($breakdown['lines']['line-2']['total'])->toBe(4995.0)
-        ->and($breakdown['summary']['gross_subtotal'])->toBe(15000.0)
-        ->and($breakdown['summary']['discount_total'])->toBe(1500.0)
-        ->and($breakdown['summary']['gross_after_discount'])->toBe(13500.0)
-        ->and($breakdown['summary']['tax_base'])->toBe(13500.0)
+    expect($breakdown['lines']['line-1']['discount'])->toBe(0.0)
+        ->and($breakdown['lines']['line-1']['subtotal'])->toBe(10000.0)
+        ->and($breakdown['lines']['line-1']['subtotal_after_discount'])->toBe(10000.0)
+        ->and($breakdown['lines']['line-1']['dpp'])->toBe(10000.0)
+        ->and($breakdown['lines']['line-1']['tax_amount'])->toBe(0.0)
+        ->and($breakdown['lines']['line-1']['total_before_rounding'])->toBe(10000.0)
+        ->and($breakdown['lines']['line-1']['grand_total'])->toBe(10000.0)
+        ->and($breakdown['lines']['line-2']['discount'])->toBe(0.0)
+        ->and($breakdown['lines']['line-2']['subtotal'])->toBe(5000.0)
+        ->and($breakdown['lines']['line-2']['subtotal_after_discount'])->toBe(5000.0)
+        ->and($breakdown['lines']['line-2']['dpp'])->toBe(5000.0)
+        ->and($breakdown['lines']['line-2']['tax_amount'])->toBe(0.0)
+        ->and($breakdown['lines']['line-2']['total_before_rounding'])->toBe(5000.0)
+        ->and($breakdown['lines']['line-2']['grand_total'])->toBe(5000.0)
+        ->and($breakdown['summary']['subtotal'])->toBe(15000.0)
+        ->and($breakdown['summary']['discount'])->toBe(1500.0)
+        ->and($breakdown['summary']['subtotal_after_discount'])->toBe(13500.0)
+        ->and($breakdown['summary']['dpp'])->toBe(13500.0)
         ->and($breakdown['summary']['tax_amount'])->toBe(1485.0)
-        ->and($breakdown['summary']['before_rounding'])->toBe(14985.0)
+        ->and($breakdown['summary']['total_before_rounding'])->toBe(14985.0)
         ->and($breakdown['summary']['grand_total'])->toBe(14985.0);
 });
 
@@ -178,7 +213,6 @@ it('uses indonesian effective ppn calculation for 12 percent exclude tax purchas
         [
             'qty' => 1,
             'price' => 100000,
-            'discount' => 0,
         ],
     ];
 
@@ -191,13 +225,48 @@ it('uses indonesian effective ppn calculation for 12 percent include tax purchas
         [
             'qty' => 1,
             'price' => 111000,
-            'discount' => 0,
         ],
     ];
 
     expect(PurchaseOrder::calculateTotalSubtotal($items, PurchaseOrderTaxType::INCLUDE, 12))->toBe(111000.0);
     expect(PurchaseOrder::calculateSubtotalTax($items, 0, PurchaseOrderTaxType::INCLUDE, 12))->toBe(11000.0);
     expect(PurchaseOrder::calculateGrandTotal($items, 0, PurchaseOrderTaxType::INCLUDE, 12, 0))->toBe(111000.0);
+});
+
+it('keeps model total accessors aligned with order breakdown summary', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+
+    $purchaseOrder->update([
+        'discount' => 11100,
+        'tax_type' => PurchaseOrderTaxType::INCLUDE,
+        'tax_percentage' => 11,
+        'rounding' => 100,
+    ]);
+
+    $purchaseOrder->purchaseOrderItems()->firstOrFail()->update([
+        'qty' => 1,
+        'price' => 111000,
+    ]);
+
+    $purchaseOrder->refresh()->load('purchaseOrderItems');
+
+    $summary = PurchaseOrder::calculateOrderSummary(
+        $purchaseOrder->purchaseOrderItems->map(fn(PurchaseOrderItem $item): array => [
+            'id' => $item->id,
+            'purchase_request_item_id' => $item->purchase_request_item_id,
+            'qty' => (float) $item->qty,
+            'price' => (float) $item->price,
+        ])->all(),
+        (float) $purchaseOrder->discount,
+        $purchaseOrder->tax_type,
+        (float) $purchaseOrder->tax_percentage,
+        (float) $purchaseOrder->rounding,
+    );
+
+    expect($purchaseOrder->getSubtotalAmount())->toBe($summary['subtotal'])
+        ->and($purchaseOrder->getNetSubtotalAmount())->toBe($summary['subtotal_after_discount'])
+        ->and($purchaseOrder->getTaxAmount())->toBe($summary['tax_amount'])
+        ->and($purchaseOrder->getGrandTotalAmount())->toBe($summary['grand_total']);
 });
 
 it('allows manual purchase order items from categories that allow po', function () {
@@ -225,7 +294,6 @@ it('allows manual purchase order items from categories that allow po', function 
             'item_id' => $item->id,
             'qty' => 1,
             'price' => 100000,
-            'discount' => 0,
         ],
     ]);
 
@@ -257,7 +325,6 @@ it('rejects manual purchase order items from categories that do not allow po', f
             'item_id' => $item->id,
             'qty' => 1,
             'price' => 100000,
-            'discount' => 0,
         ],
     ]))->toThrow(ValidationException::class);
 });
@@ -276,11 +343,10 @@ it('hydrates a stable line key for existing purchase order items on edit', funct
         });
 });
 
-it('preserves edited sourced item discounts and recalculates totals on edit save', function () {
+it('recalculates totals when sourced item values are edited on save', function () {
     $purchaseOrder = createEditablePurchaseOrder();
     $updatedQty = 3;
     $updatedPrice = 15000;
-    $updatedDiscount = 1200;
     $updatedRounding = 50;
     $firstPurchaseOrderItemKey = null;
 
@@ -292,7 +358,6 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
         })
         ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.qty", $updatedQty)
         ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.price", $updatedPrice)
-        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.discount", $updatedDiscount)
         ->set('data.tax_type', PurchaseOrderTaxType::EXCLUDE->value)
         ->set('data.tax_percentage', (string) PurchaseOrder::DEFAULT_TAX_PERCENTAGE)
         ->set('data.rounding', $updatedRounding)
@@ -310,7 +375,6 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
             'purchase_request_item_id' => $purchaseOrderItem->purchase_request_item_id,
             'qty' => $updatedQty,
             'price' => $updatedPrice,
-            'discount' => $updatedDiscount,
         ]],
         0,
         PurchaseOrderTaxType::EXCLUDE,
@@ -323,7 +387,6 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
             'purchase_request_item_id' => $purchaseOrderItem->purchase_request_item_id,
             'qty' => $updatedQty,
             'price' => $updatedPrice,
-            'discount' => $updatedDiscount,
         ]],
         0,
         PurchaseOrderTaxType::EXCLUDE,
@@ -333,7 +396,6 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
 
     expect((float) $purchaseOrderItem->qty)->toBe((float) $updatedQty)
         ->and((float) $purchaseOrderItem->price)->toBe((float) $updatedPrice)
-        ->and((float) $purchaseOrderItem->discount)->toBe((float) $updatedDiscount)
         ->and((float) $purchaseOrder->discount)->toBe(0.0)
         ->and((float) $purchaseOrder->tax)->toBe($expectedTax)
         ->and(PurchaseOrder::calculateGrandTotal(
@@ -343,7 +405,6 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
                     'purchase_request_item_id' => $item->purchase_request_item_id,
                     'qty' => (float) $item->qty,
                     'price' => (float) $item->price,
-                    'discount' => (float) $item->discount,
                 ])
                 ->all(),
             (float) $purchaseOrder->discount,
@@ -351,6 +412,111 @@ it('preserves edited sourced item discounts and recalculates totals on edit save
             (float) $purchaseOrder->tax_percentage,
             (float) $purchaseOrder->rounding,
         ))->toBe($expectedGrandTotal);
+});
+
+it('allows saving purchase order without tax percentage', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $firstPurchaseOrderItemKey = null;
+
+    Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use (&$firstPurchaseOrderItemKey): array {
+            $firstPurchaseOrderItemKey = array_key_first($state['purchaseOrderItems']);
+
+            return [];
+        })
+        ->set('data.tax_percentage', null)
+        ->set("data.purchaseOrderItems.{$firstPurchaseOrderItemKey}.price", 10000)
+        ->call('save', false, false)
+        ->assertHasNoFormErrors();
+
+    $purchaseOrder->refresh();
+
+    expect($purchaseOrder->tax_percentage)->toBeNull()
+        ->and((float) $purchaseOrder->tax)->toBe(0.0);
+});
+
+it('prevents saving purchase order when purchase request status changes after form is loaded', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $purchaseRequest = $purchaseOrder->purchaseRequests->firstOrFail();
+
+    $component = Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()]);
+
+    $purchaseRequest->update([
+        'status' => PurchaseRequestStatus::FINISHED,
+    ]);
+
+    $component
+        ->call('save', false, false)
+        ->assertHasFormErrors();
+});
+
+it('prevents saving purchase order when purchase request item request quantity changes after form is loaded', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $purchaseRequestItem = $purchaseOrder->purchaseOrderItems->firstOrFail()->purchaseRequestItem;
+    $firstPurchaseOrderItemKey = null;
+
+    $component = Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use (&$firstPurchaseOrderItemKey): array {
+            $firstPurchaseOrderItemKey = array_key_first($state['purchaseOrderItems']);
+
+            return [];
+        });
+
+    $purchaseRequestItem->update([
+        'qty' => 12,
+    ]);
+
+    $component
+        ->call('save', false, false)
+        ->assertHasFormErrors();
+});
+
+it('prevents saving purchase order when purchase request item ordered quantity changes after form is loaded', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $purchaseOrderItem = $purchaseOrder->purchaseOrderItems->firstOrFail();
+    $firstPurchaseOrderItemKey = null;
+
+    $component = Livewire::test(EditPurchaseOrder::class, ['record' => $purchaseOrder->getRouteKey()])
+        ->assertFormSet(function (array $state) use (&$firstPurchaseOrderItemKey): array {
+            $firstPurchaseOrderItemKey = array_key_first($state['purchaseOrderItems']);
+
+            return [];
+        });
+
+    $anotherPurchaseOrder = PurchaseOrder::query()->create([
+        'vendor_id' => $purchaseOrder->vendor_id,
+        'company_id' => $purchaseOrder->company_id,
+        'warehouse_id' => $purchaseOrder->warehouse_id,
+        'warehouse_address_id' => $purchaseOrder->warehouse_address_id,
+        'division_id' => $purchaseOrder->division_id,
+        'project_id' => $purchaseOrder->project_id,
+        'description' => 'Concurrent PO',
+        'memo' => '',
+        'termin' => '',
+        'delivery_info' => '',
+        'notes' => '',
+        'info' => '',
+        'discount' => 0,
+        'tax_type' => PurchaseOrderTaxType::EXCLUDE,
+        'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+        'tax' => 0,
+        'tax_description' => '',
+        'rounding' => 0,
+    ]);
+
+    $anotherPurchaseOrder->purchaseRequests()->sync($purchaseOrder->purchaseRequests->pluck('id')->all());
+    $anotherPurchaseOrder->purchaseOrderItems()->create([
+        'purchase_request_item_id' => $purchaseOrderItem->purchase_request_item_id,
+        'item_id' => $purchaseOrderItem->item_id,
+        'qty' => 1,
+        'price' => 10000,
+        'description' => 'Concurrent ordered item',
+        'sort' => 1,
+    ]);
+
+    $component
+        ->call('save', false, false)
+        ->assertHasFormErrors();
 });
 
 it('updates edit purchase order item state when values change', function () {
@@ -379,6 +545,39 @@ it('keeps finished purchase requests available on the edit page', function () {
 
             return [];
         });
+});
+
+it('marks purchase order and selected purchase requests as ordered with status logs', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $user = auth()->user();
+
+    Role::findOrCreate(Role::PURCHASING, 'web');
+    $user->assignRole(Role::PURCHASING);
+
+    $purchaseOrder->markAsOrdered();
+    $purchaseOrder->refresh();
+    $purchaseRequest = $purchaseOrder->purchaseRequests()->firstOrFail()->fresh();
+
+    expect($purchaseOrder->status)->toBe(PurchaseOrderStatus::ORDERED)
+        ->and($purchaseRequest->status)->toBe(PurchaseRequestStatus::ORDERED)
+        ->and($purchaseOrder->statusLogs()->latest('id')->first()?->to_status?->value)->toBe(PurchaseOrderStatus::ORDERED->value)
+        ->and($purchaseRequest->statusLogs()->latest('id')->first()?->to_status?->value)->toBe(PurchaseRequestStatus::ORDERED->value);
+});
+
+it('renders purchase order item summary with spacing and muted metadata', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $purchaseOrderItem = $purchaseOrder->purchaseOrderItems()->with('purchaseRequestItem.purchaseRequest')->firstOrFail();
+
+    $renderedSummary = PurchaseOrderInfolist::purchaseOrderItemSummaryView($purchaseOrderItem)->render();
+
+    expect($renderedSummary)
+        ->toContain('space-y-1.5')
+        ->toContain('font-medium text-gray-950')
+        ->toContain('text-sm leading-5 text-gray-500')
+        ->toContain('font-mono text-xs text-gray-500')
+        ->toContain('Test Item')
+        ->toContain('Ordered item')
+        ->toContain('PR: ' . $purchaseOrder->purchaseRequests()->firstOrFail()->number);
 });
 
 function createEditablePurchaseOrder(PurchaseRequestStatus $purchaseRequestStatus = PurchaseRequestStatus::APPROVED): PurchaseOrder
@@ -504,7 +703,7 @@ function createEditablePurchaseOrder(PurchaseRequestStatus $purchaseRequestStatu
         'delivery_info' => '',
         'notes' => '',
         'info' => '',
-        'discount' => 50000,
+        'discount' => 0,
         'tax_type' => PurchaseOrderTaxType::EXCLUDE,
         'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
         'tax' => 1100,
@@ -518,7 +717,6 @@ function createEditablePurchaseOrder(PurchaseRequestStatus $purchaseRequestStatu
         'item_id' => $item->id,
         'qty' => 1,
         'price' => 10000,
-        'discount' => 0,
         'description' => 'Ordered item',
         'sort' => 1,
     ]);

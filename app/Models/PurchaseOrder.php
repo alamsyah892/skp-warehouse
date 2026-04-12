@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseRequestStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class PurchaseOrder extends Model
@@ -28,64 +30,82 @@ class PurchaseOrder extends Model
     use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasStateMachine, HasDocumentRevision;
 
 
+    /** 
+     * Properties & Casts 
+     */
     protected $fillable = [
+        'number',
+        'type',
+        'description',
+        'status',
+
         'vendor_id',
         'company_id',
         'warehouse_id',
-        'warehouse_address_id',
         'division_id',
         'project_id',
+        'warehouse_address_id',
         'user_id',
 
-        'type',
+        'delivery_date',
+        'delivery_notes',
+        'shipping_cost',
+        'shipping_method',
 
-        'number',
-        'description',
-        'memo',
-        'termin',
-        'delivery_info',
         'notes',
-
+        'terms',
         'info',
-
-        'status',
 
         'discount',
         'tax_type',
         'tax_percentage',
-        'tax',
         'tax_description',
         'rounding',
     ];
 
     protected array $defaultEmptyStringFields = [
+        'number',
         'description',
-        'memo',
-        'termin',
-        'delivery_info',
-        'notes',
 
+        'delivery_notes',
+        'shipping_method',
+
+        'notes',
+        'terms',
         'info',
 
+        'tax_type',
         'tax_description',
     ];
 
     protected $casts = [
+        'type' => PurchaseOrderType::class,
         'status' => PurchaseOrderStatus::class,
+
+        'delivery_date' => 'datetime:Y-m-d',
+        'shipping_cost' => 'decimal:2',
 
         'discount' => 'decimal:2',
         'tax_type' => PurchaseOrderTaxType::class,
-        // 'tax_percentage' => 'decimal:2',
-        'tax' => 'decimal:2',
+        'tax_percentage' => 'decimal:2',
         'rounding' => 'decimal:2',
     ];
 
 
+    /**
+     * Constants
+     */
     public const MODEL_ALIAS = 'PO';
-    public const TYPE_PURCHASE_ORDER = 1;
     public const DEFAULT_TAX_PERCENTAGE = 11;
+    public const SELECTABLE_PURCHASE_REQUEST_STATUSES = [
+        PurchaseRequestStatus::APPROVED,
+        PurchaseRequestStatus::ORDERED,
+    ];
 
 
+    /**
+     * Booted / Events
+     */
     protected static function booted(): void
     {
         static::addGlobalScope('user_warehouses', function ($builder) {
@@ -100,7 +120,7 @@ class PurchaseOrder extends Model
 
         static::creating(function (self $record) {
             $record->user_id = auth()->id();
-            $record->type = self::TYPE_PURCHASE_ORDER;
+            $record->type = PurchaseOrderType::RED;
 
             $record->loadMissing([
                 'division',
@@ -117,6 +137,9 @@ class PurchaseOrder extends Model
     }
 
 
+    /**
+     * Relationships
+     */
     public function vendor(): BelongsTo
     {
         return $this->belongsTo(Vendor::class);
@@ -132,11 +155,6 @@ class PurchaseOrder extends Model
         return $this->belongsTo(Warehouse::class);
     }
 
-    public function warehouseAddress(): BelongsTo
-    {
-        return $this->belongsTo(WarehouseAddress::class);
-    }
-
     public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class);
@@ -145,6 +163,11 @@ class PurchaseOrder extends Model
     public function project(): BelongsTo
     {
         return $this->belongsTo(Project::class);
+    }
+
+    public function warehouseAddress(): BelongsTo
+    {
+        return $this->belongsTo(WarehouseAddress::class);
     }
 
     public function user(): BelongsTo
@@ -175,20 +198,29 @@ class PurchaseOrder extends Model
 
     public function getSubtotalAmount(): float
     {
-        return (float) $this->purchaseOrderItems->sum(
-            fn(PurchaseOrderItem $item): float => $item->getLineTotalAmount()
-        );
+        return (float) ($this->getCalculatedSummary()['subtotal'] ?? 0.0);
     }
 
     public function getNetSubtotalAmount(): float
     {
-        return max($this->getSubtotalAmount() - (float) $this->discount, 0.0);
+        return (float) ($this->getCalculatedSummary()['subtotal_after_discount'] ?? 0.0);
     }
 
     public function getTaxAmount(): float
     {
-        return self::calculateTaxAmount(
-            $this->getNetSubtotalAmount(),
+        return self::calculateSubtotalTax(
+            $this->getCalculationItems(),
+            $this->discount,
+            $this->tax_type,
+            $this->tax_percentage,
+        );
+    }
+
+    public function getTotalAmount(): float
+    {
+        return self::calculateTotal(
+            $this->getCalculationItems(),
+            $this->discount,
             $this->tax_type,
             $this->tax_percentage,
         );
@@ -196,8 +228,9 @@ class PurchaseOrder extends Model
 
     public function getGrandTotalAmount(): float
     {
-        return self::calculateGrandTotalFromNetSubtotal(
-            $this->getNetSubtotalAmount(),
+        return self::calculateGrandTotal(
+            $this->getCalculationItems(),
+            $this->discount,
             $this->tax_type,
             $this->tax_percentage,
             $this->rounding,
@@ -205,6 +238,9 @@ class PurchaseOrder extends Model
     }
 
 
+    /**
+     * Core Logic (State Machine)
+     */
     protected function getStatusField(): string
     {
         return 'status';
@@ -232,6 +268,9 @@ class PurchaseOrder extends Model
     }
 
 
+    /** 
+     * Side Effects
+     */
     public function setStatusLog($newStatus, $oldStatus = null, string $note = '')
     {
         $newStatus = $this->normalizeStatus($newStatus);
@@ -246,9 +285,61 @@ class PurchaseOrder extends Model
     }
 
 
+    /**
+     * Public Helpers
+     */
     public function hasStatus(PurchaseOrderStatus $status): bool
     {
         return $this->status === $status;
+    }
+
+    public function markAsOrdered(?string $note = ''): void
+    {
+        DB::transaction(function () use ($note): void {
+            $this->loadMissing('purchaseRequests');
+            $oldPurchaseOrderStatus = $this->status;
+
+            if ($oldPurchaseOrderStatus !== PurchaseOrderStatus::ORDERED) {
+                if ($oldPurchaseOrderStatus !== PurchaseOrderStatus::DRAFT) {
+                    throw new \RuntimeException("Invalid purchase order status transition");
+                }
+
+                $updatedPurchaseOrder = static::query()
+                    ->whereKey($this->id)
+                    ->where('status', $oldPurchaseOrderStatus->value)
+                    ->update(['status' => PurchaseOrderStatus::ORDERED->value]);
+
+                if ($updatedPurchaseOrder === 0) {
+                    throw new \RuntimeException("Status has been changed by another user.");
+                }
+
+                $this->status = PurchaseOrderStatus::ORDERED;
+                $this->setStatusLog(PurchaseOrderStatus::ORDERED, $oldPurchaseOrderStatus, $note);
+            }
+
+            $this->purchaseRequests
+                ->each(function (PurchaseRequest $purchaseRequest) use ($note): void {
+                    if ($purchaseRequest->status === PurchaseRequestStatus::ORDERED) {
+                        return;
+                    }
+
+                    if ($purchaseRequest->status !== PurchaseRequestStatus::APPROVED) {
+                        throw new \RuntimeException("Invalid purchase request status transition");
+                    }
+
+                    $updatedPurchaseRequest = PurchaseRequest::query()
+                        ->whereKey($purchaseRequest->id)
+                        ->where('status', PurchaseRequestStatus::APPROVED->value)
+                        ->update(['status' => PurchaseRequestStatus::ORDERED->value]);
+
+                    if ($updatedPurchaseRequest === 0) {
+                        throw new \RuntimeException("Purchase request status has been changed by another user.");
+                    }
+
+                    $purchaseRequest->status = PurchaseRequestStatus::ORDERED;
+                    $purchaseRequest->setStatusLog(PurchaseRequestStatus::ORDERED, PurchaseRequestStatus::APPROVED, $note);
+                });
+        });
     }
 
 
@@ -455,6 +546,105 @@ class PurchaseOrder extends Model
         }
     }
 
+    public static function buildPurchaseRequestStatusSnapshot(array $purchaseRequestIds): array
+    {
+        return PurchaseRequest::query()
+            ->whereIn('id', self::normalizePurchaseRequestIds($purchaseRequestIds))
+            ->get(['id', 'status'])
+            ->mapWithKeys(fn(PurchaseRequest $purchaseRequest): array => [
+                $purchaseRequest->id => $purchaseRequest->status->value,
+            ])
+            ->all();
+    }
+
+    public static function buildPurchaseRequestItemSnapshot(
+        ?int $purchaseRequestItemId,
+        ?int $exceptPurchaseOrderId = null,
+    ): ?array {
+        if (!$purchaseRequestItemId) {
+            return null;
+        }
+
+        $purchaseRequestItem = PurchaseRequestItem::query()->find($purchaseRequestItemId);
+
+        if (!$purchaseRequestItem) {
+            return null;
+        }
+
+        return [
+            'request_qty' => round((float) $purchaseRequestItem->qty, 2),
+            'ordered_qty' => round($purchaseRequestItem->getOrderedQty($exceptPurchaseOrderId), 2),
+        ];
+    }
+
+    public static function validatePurchaseRequestSynchronization(
+        array $purchaseRequestIds,
+        array $purchaseRequestStatusSnapshot,
+        array $items,
+        ?int $currentPurchaseOrderId = null,
+    ): void {
+        $purchaseRequestIds = self::normalizePurchaseRequestIds($purchaseRequestIds);
+
+        if ($purchaseRequestIds === []) {
+            return;
+        }
+
+        $purchaseRequests = PurchaseRequest::query()
+            ->whereIn('id', $purchaseRequestIds)
+            ->get(['id', 'status'])
+            ->keyBy('id');
+
+        if ($purchaseRequests->count() !== count($purchaseRequestIds)) {
+            throw ValidationException::withMessages([
+                'purchaseRequests' => __('purchase-order.validation.source_purchase_request_not_found'),
+            ]);
+        }
+
+        foreach ($purchaseRequestIds as $purchaseRequestId) {
+            /** @var PurchaseRequest $purchaseRequest */
+            $purchaseRequest = $purchaseRequests->get($purchaseRequestId);
+            $snapshotStatus = isset($purchaseRequestStatusSnapshot[$purchaseRequestId])
+                ? (int) $purchaseRequestStatusSnapshot[$purchaseRequestId]
+                : null;
+
+            if ($snapshotStatus !== null && $purchaseRequest->status->value !== $snapshotStatus) {
+                throw ValidationException::withMessages([
+                    'purchaseRequests' => __('purchase-order.validation.purchase_request_status_changed'),
+                ]);
+            }
+        }
+
+        foreach ($items as $index => $item) {
+            $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+
+            if ($purchaseRequestItemId <= 0) {
+                continue;
+            }
+
+            $purchaseRequestItem = PurchaseRequestItem::query()->find($purchaseRequestItemId);
+
+            if (!$purchaseRequestItem) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.purchase_request_item_id" => __('purchase-order.validation.source_item_not_found'),
+                ]);
+            }
+
+            $requestQtySnapshot = round((float) ($item['request_qty_snapshot'] ?? 0), 2);
+            $orderedQtySnapshot = round((float) ($item['ordered_qty_snapshot'] ?? 0), 2);
+            $currentRequestQty = round((float) $purchaseRequestItem->qty, 2);
+            $currentOrderedQty = round($purchaseRequestItem->getOrderedQty($currentPurchaseOrderId), 2);
+
+            if (
+                $currentRequestQty !== $requestQtySnapshot ||
+                $currentOrderedQty !== $orderedQtySnapshot
+            ) {
+                throw ValidationException::withMessages([
+                    "purchaseOrderItems.{$index}.purchase_request_item_id" => __('purchase-order.validation.purchase_request_item_changed'),
+                ]);
+            }
+        }
+    }
+
     public static function validateManualItems(array $items): void
     {
         foreach ($items as $index => $item) {
@@ -526,7 +716,7 @@ class PurchaseOrder extends Model
                 }
 
                 $purchaseRequestItem = PurchaseRequestItem::query()
-                    ->select(['id', 'item_id', 'discount'])
+                    ->select(['id', 'item_id'])
                     ->find($purchaseRequestItemId);
 
                 if (!$purchaseRequestItem) {
@@ -547,10 +737,54 @@ class PurchaseOrder extends Model
 
     public static function calculateItemTotal(array $item): float
     {
-        $grossAmount = (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0);
-        $discountAmount = (float) ($item['discount'] ?? 0);
+        return max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0);
+    }
 
-        return max($grossAmount - $discountAmount, 0.0);
+    public static function calculateSubtotal(array $items): float
+    {
+        return round(
+            collect($items)->sum(fn(array $item): float => self::calculateItemTotal($item)),
+            2,
+        );
+    }
+
+    public function getRoundingAttribute(): float
+    {
+        return (float) ($this->attributes['rounding'] ?? 0);
+    }
+
+    public function setRoundingAttribute(float|int|string|null $value): void
+    {
+        $this->attributes['rounding'] = round((float) $value, 2);
+    }
+
+    public static function calculateTotalSubtotal(
+        array $items,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float {
+        return self::calculateSubtotal($items);
+    }
+
+    public static function calculateNetSubtotal(
+        array $items,
+        float|int|string|null $discount = 0,
+    ): float {
+        return max(round(self::calculateSubtotal($items) - max((float) $discount, 0.0), 2), 0.0);
+    }
+
+    public static function calculateSubtotalDiscount(
+        array $items,
+        float|int|string|null $discount = 0,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float {
+        return (float) (self::calculateOrderSummary(
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+        )['discount'] ?? 0.0);
     }
 
     public static function getTaxPercentageOptions(): array
@@ -568,18 +802,12 @@ class PurchaseOrder extends Model
         PurchaseOrderTaxType|string|null $taxType,
         float|int|string|null $taxPercentage,
     ): float {
-        $taxableAmount = max((float) $netSubtotal, 0.0);
-        $rate = (float) $taxPercentage;
+        $taxableAmount = max(round((float) $netSubtotal, 2), 0.0);
+        $rate = self::resolveIndonesianVatRate($taxPercentage);
         $normalizedTaxType = self::normalizeTaxType($taxType);
 
         if ($taxableAmount <= 0 || $rate <= 0 || !$normalizedTaxType) {
             return 0.0;
-        }
-
-        // Aturan Khusus Indonesia: Include PPN 12% menggunakan DPP Nilai Lain (11/12)
-        if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
-            $dpp = round(($taxableAmount * 11) / 12, 0);
-            return round($dpp * 0.12, 0);
         }
 
         return match ($normalizedTaxType) {
@@ -594,39 +822,81 @@ class PurchaseOrder extends Model
         PurchaseOrderTaxType|string|null $taxType = null,
         float|int|string|null $taxPercentage = null,
     ): float {
-        $breakdown = self::calculateOrderBreakdown(
+        $summary = self::calculateOrderSummary(
             $items,
             $discount,
             $taxType,
             $taxPercentage,
         );
 
-        return (float) ($breakdown['summary']['tax_amount'] ?? 0.0);
+        return (float) ($summary['tax_amount'] ?? 0.0);
+    }
+
+    public static function calculateTotalBeforeRounding(
+        array $items,
+        float|int|string|null $discount = 0,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+    ): float {
+        return (float) (self::calculateOrderSummary(
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+        )['total_before_rounding'] ?? 0.0);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array{
+     *     subtotal: float,
+     *     discount: float,
+     *     subtotal_after_discount: float,
+     *     dpp: float,
+     *     tax_amount: float,
+     *     total_before_rounding: float,
+     *     rounding: float,
+     *     grand_total: float
+     * }
+     */
+    public static function calculateOrderSummary(
+        array $items,
+        float|int|string|null $orderDiscount = 0,
+        PurchaseOrderTaxType|string|null $taxType = null,
+        float|int|string|null $taxPercentage = null,
+        float|int|string|null $rounding = 0,
+    ): array {
+        return self::calculateOrderBreakdown(
+            $items,
+            $orderDiscount,
+            $taxType,
+            $taxPercentage,
+            $rounding,
+        )['summary'];
     }
 
     /**
      * @param  array<int, array<string, mixed>>  $items
      * @return array{
      *     summary: array{
-     *         gross_subtotal: float,
-     *         discount_total: float,
-     *         gross_after_discount: float,
-     *         tax_base: float,
+     *         subtotal: float,
+     *         discount: float,
+     *         subtotal_after_discount: float,
+     *         dpp: float,
      *         tax_amount: float,
-     *         before_rounding: float,
+     *         total_before_rounding: float,
      *         rounding: float,
      *         grand_total: float
      *     },
      *     lines: array<int|string, array{
      *         key: int|string,
-     *         gross_subtotal: float,
-     *         item_discount: float,
-     *         allocated_order_discount: float,
-     *         discount_total: float,
-     *         gross_after_discount: float,
-     *         tax_base: float,
+     *         subtotal: float,
+     *         discount: float,
+     *         subtotal_after_discount: float,
+     *         dpp: float,
      *         tax_amount: float,
-     *         total: float
+     *         total_before_rounding: float,
+     *         grand_total: float
      *     }>
      * }
      */
@@ -637,120 +907,49 @@ class PurchaseOrder extends Model
         float|int|string|null $taxPercentage = null,
         float|int|string|null $rounding = 0,
     ): array {
+        $subtotal = self::calculateSubtotal($items);
+        $discount = min(max(round((float) $orderDiscount, 2), 0.0), $subtotal);
+        $subtotalAfterDiscount = max(round($subtotal - $discount, 2), 0.0);
         $normalizedTaxType = self::normalizeTaxType($taxType);
-        $normalizedItems = collect($items)
-            ->map(function (array $item, int|string $index): array {
-                $grossSubtotal = round(
-                    (float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0),
-                    2,
-                );
-                $itemDiscount = round(min(max((float) ($item['discount'] ?? 0), 0.0), $grossSubtotal), 2);
-
-                return [
-                    'key' => $item['line_key'] ?? $item['id'] ?? $item['purchase_request_item_id'] ?? $index,
-                    'gross_subtotal' => $grossSubtotal,
-                    'item_discount' => $itemDiscount,
-                    'line_subtotal' => max(round($grossSubtotal - $itemDiscount, 2), 0.0),
-                ];
-            })
-            ->values()
-        ;
-
-        $orderDiscount = max(round((float) $orderDiscount, 2), 0.0);
-        $lineSubtotals = $normalizedItems->pluck('line_subtotal')->all();
-        $allocatedOrderDiscounts = self::allocateAmountAcrossLines($orderDiscount, $lineSubtotals, 2);
-
-        $lines = $normalizedItems
-            ->map(function (array $item, int $index) use ($allocatedOrderDiscounts): array {
-                $allocatedOrderDiscount = $allocatedOrderDiscounts[$index] ?? 0.0;
-                $grossAfterDiscount = max(round($item['line_subtotal'] - $allocatedOrderDiscount, 2), 0.0);
-
-                return [
-                    'key' => $item['key'],
-                    'gross_subtotal' => $item['gross_subtotal'],
-                    'item_discount' => $item['item_discount'],
-                    'allocated_order_discount' => $allocatedOrderDiscount,
-                    'discount_total' => round($item['item_discount'] + $allocatedOrderDiscount, 2),
-                    'gross_after_discount' => $grossAfterDiscount,
-                    'tax_base' => 0.0,
-                    'tax_amount' => 0.0,
-                    'total' => 0.0,
-                ];
-            })
-            ->values()
-        ;
-
-        $grossSubtotal = round((float) $lines->sum('gross_subtotal'), 2);
-        $discountTotal = round((float) $lines->sum('discount_total'), 2);
-        $grossAfterDiscount = round((float) $lines->sum('gross_after_discount'), 2);
-
-        $rate = self::resolveIndonesianVatRate($taxPercentage);
-        $totalTaxAmount = self::calculateTaxAmount($grossAfterDiscount, $normalizedTaxType, $rate);
-
-        $exactLineTaxes = $lines
-            ->map(function (array $line) use ($normalizedTaxType, $rate): float {
-                if ($normalizedTaxType === null || $rate <= 0 || $line['gross_after_discount'] <= 0) {
-                    return 0.0;
-                }
-
-                // Gunakan formula 11/12 untuk pajak baris jika Include 12%
-                if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
-                    $dpp = ($line['gross_after_discount'] * 11) / 12;
-                    return $dpp * 0.12;
-                }
-
-                return match ($normalizedTaxType) {
-                    PurchaseOrderTaxType::EXCLUDE => $line['gross_after_discount'] * ($rate / 100),
-                    PurchaseOrderTaxType::INCLUDE => $line['gross_after_discount'] - ($line['gross_after_discount'] / (1 + ($rate / 100))),
-                };
-            })
-            ->all()
-        ;
-
-        $allocatedTaxes = self::allocateRoundedAmountAcrossLines($totalTaxAmount, $exactLineTaxes, 0);
-
-        $lines = $lines
-            ->map(function (array $line, int $index) use ($allocatedTaxes, $normalizedTaxType, $rate): array {
-                $taxAmount = $allocatedTaxes[$index] ?? 0.0;
-
-                if ($normalizedTaxType === PurchaseOrderTaxType::INCLUDE && $rate === 12.0) {
-                    // Skema Include 12%: DPP dihitung dari 11/12 Nilai Setelah Diskon
-                    $taxBase = round(($line['gross_after_discount'] * 11) / 12, 2);
-                    $total = $line['gross_after_discount'];
-                } else {
-                    // Skema Normal
-                    $taxBase = $normalizedTaxType === PurchaseOrderTaxType::INCLUDE
-                        ? max(round($line['gross_after_discount'] - $taxAmount, 2), 0.0)
-                        : $line['gross_after_discount'];
-                    $total = $normalizedTaxType === PurchaseOrderTaxType::EXCLUDE
-                        ? round($line['gross_after_discount'] + $taxAmount, 2)
-                        : $line['gross_after_discount'];
-                }
-
-                $line['tax_base'] = $taxBase;
-                $line['tax_amount'] = $taxAmount;
-                $line['total'] = $total;
-
-                return $line;
-            })
-            ->keyBy('key')
-            ->all()
-        ;
-
-        $taxBaseAmount = round((float) collect($lines)->sum('tax_base'), 2);
-        $beforeRounding = round((float) collect($lines)->sum('total'), 2);
+        $taxAmount = self::calculateTaxAmount($subtotalAfterDiscount, $normalizedTaxType, $taxPercentage);
+        $dpp = $normalizedTaxType === PurchaseOrderTaxType::INCLUDE
+            ? max(round($subtotalAfterDiscount - $taxAmount, 2), 0.0)
+            : $subtotalAfterDiscount;
+        $totalBeforeRounding = $normalizedTaxType === PurchaseOrderTaxType::EXCLUDE
+            ? round($dpp + $taxAmount, 2)
+            : $subtotalAfterDiscount;
         $rounding = round((float) $rounding, 2);
+
+        $lines = collect($items)
+            ->mapWithKeys(function (array $item, int|string $index): array {
+                $lineKey = $item['line_key'] ?? $item['id'] ?? $item['purchase_request_item_id'] ?? $index;
+                $lineSubtotal = round(self::calculateItemTotal($item), 2);
+
+                return [
+                    $lineKey => [
+                        'key' => $lineKey,
+                        'subtotal' => $lineSubtotal,
+                        'discount' => 0.0,
+                        'subtotal_after_discount' => $lineSubtotal,
+                        'dpp' => $lineSubtotal,
+                        'tax_amount' => 0.0,
+                        'total_before_rounding' => $lineSubtotal,
+                        'grand_total' => $lineSubtotal,
+                    ]
+                ];
+            })
+            ->all();
 
         return [
             'summary' => [
-                'gross_subtotal' => $grossSubtotal,
-                'discount_total' => $discountTotal,
-                'gross_after_discount' => $grossAfterDiscount,
-                'tax_base' => $taxBaseAmount,
-                'tax_amount' => round((float) collect($lines)->sum('tax_amount'), 2),
-                'before_rounding' => $beforeRounding,
+                'subtotal' => $subtotal,
+                'discount' => $discount,
+                'subtotal_after_discount' => $subtotalAfterDiscount,
+                'dpp' => $dpp,
+                'tax_amount' => $taxAmount,
+                'total_before_rounding' => $totalBeforeRounding,
                 'rounding' => $rounding,
-                'grand_total' => max(round($beforeRounding + $rounding, 2), 0.0),
+                'grand_total' => max(round($totalBeforeRounding + $rounding, 2), 0.0),
             ],
             'lines' => $lines,
         ];
@@ -758,205 +957,23 @@ class PurchaseOrder extends Model
 
     public static function resolveIndonesianVatRate(float|int|string|null $taxPercentage): float
     {
-        // Mengembalikan nilai persentase apa adanya setelah dibulatkan
-        return round(max((float) $taxPercentage, 0.0), 2);
+        $rate = round(max((float) $taxPercentage, 0.0), 2);
+
+        return $rate === 12.0 ? 11.0 : $rate;
     }
 
-    /**
-     * @param  array<int, float|int|string>  $weights
-     * @return array<int, float>
-     */
-    protected static function allocateAmountAcrossLines(
-        float|int|string|null $amount,
-        array $weights,
-        int $precision = 2,
-    ): array {
-        $normalizedAmount = max(round((float) $amount, $precision), 0.0);
-        $scale = 10 ** $precision;
-        $targetUnits = (int) round($normalizedAmount * $scale);
-        $weightUnits = array_map(
-            fn($weight): int => max((int) round(max((float) $weight, 0.0) * $scale), 0),
-            $weights,
-        );
-        $totalWeightUnits = array_sum($weightUnits);
-
-        if ($targetUnits <= 0 || $totalWeightUnits <= 0 || empty($weights)) {
-            return array_fill(0, count($weights), 0.0);
-        }
-
-        $allocatedUnits = [];
-        $remainders = [];
-        $usedUnits = 0;
-
-        foreach ($weightUnits as $index => $weightUnit) {
-            if ($weightUnit <= 0) {
-                $allocatedUnits[$index] = 0;
-                $remainders[$index] = -INF;
-
-                continue;
-            }
-
-            $exactUnits = ($weightUnit / $totalWeightUnits) * $targetUnits;
-            $floorUnits = min((int) floor($exactUnits), $weightUnit);
-
-            $allocatedUnits[$index] = $floorUnits;
-            $remainders[$index] = $exactUnits - $floorUnits;
-            $usedUnits += $floorUnits;
-        }
-
-        $remainingUnits = max($targetUnits - $usedUnits, 0);
-
-        while ($remainingUnits > 0) {
-            $nextIndex = null;
-            $nextRemainder = -INF;
-
-            foreach ($remainders as $index => $remainder) {
-                if (($allocatedUnits[$index] ?? 0) >= ($weightUnits[$index] ?? 0)) {
-                    continue;
-                }
-
-                if ($remainder > $nextRemainder) {
-                    $nextIndex = $index;
-                    $nextRemainder = $remainder;
-                }
-            }
-
-            if ($nextIndex === null) {
-                break;
-            }
-
-            $allocatedUnits[$nextIndex]++;
-            $remainingUnits--;
-        }
-
-        return array_map(
-            fn(int $units): float => round($units / $scale, $precision),
-            $allocatedUnits,
-        );
-    }
-
-    /**
-     * @param  array<int, float|int|string>  $exactAmounts
-     * @return array<int, float>
-     */
-    protected static function allocateRoundedAmountAcrossLines(
-        float|int|string|null $roundedTotal,
-        array $exactAmounts,
-        int $precision = 0,
-    ): array {
-        $normalizedTotal = max(round((float) $roundedTotal, $precision), 0.0);
-        $scale = 10 ** $precision;
-        $targetUnits = (int) round($normalizedTotal * $scale);
-
-        if ($targetUnits <= 0 || empty($exactAmounts)) {
-            return array_fill(0, count($exactAmounts), 0.0);
-        }
-
-        $allocatedUnits = [];
-        $remainders = [];
-        $usedUnits = 0;
-
-        foreach ($exactAmounts as $index => $exactAmount) {
-            $normalizedAmount = max((float) $exactAmount, 0.0);
-            $exactUnits = $normalizedAmount * $scale;
-            $floorUnits = (int) floor($exactUnits);
-
-            $allocatedUnits[$index] = $floorUnits;
-            $remainders[$index] = $exactUnits - $floorUnits;
-            $usedUnits += $floorUnits;
-        }
-
-        $remainingUnits = max($targetUnits - $usedUnits, 0);
-
-        while ($remainingUnits > 0) {
-            $nextIndex = null;
-            $nextRemainder = -INF;
-
-            foreach ($remainders as $index => $remainder) {
-                if ($remainder > $nextRemainder) {
-                    $nextIndex = $index;
-                    $nextRemainder = $remainder;
-                }
-            }
-
-            if ($nextIndex === null) {
-                break;
-            }
-
-            $allocatedUnits[$nextIndex]++;
-            $remainders[$nextIndex] = -INF;
-            $remainingUnits--;
-        }
-
-        return array_map(
-            fn(int $units): float => round($units / $scale, $precision),
-            $allocatedUnits,
-        );
-    }
-
-    public static function calculateItemAllocatedOrderDiscount(
-        array $item,
+    public static function calculateTotal(
         array $items,
-        float|int|string|null $orderDiscount,
-    ): float {
-        $breakdown = self::calculateOrderBreakdown(
-            $items,
-            $orderDiscount,
-            null,
-            null,
-        );
-        $line = self::resolveBreakdownLine($item, $breakdown['lines']);
-
-        return (float) ($line['allocated_order_discount'] ?? 0.0);
-    }
-
-    public static function calculateItemTaxAmount(
-        array $item,
-        array $items,
-        float|int|string|null $orderDiscount,
+        float|int|string|null $discount,
         PurchaseOrderTaxType|string|null $taxType,
         float|int|string|null $taxPercentage,
     ): float {
-        $breakdown = self::calculateOrderBreakdown(
+        return self::calculateOrderSummary(
             $items,
-            $orderDiscount,
+            $discount,
             $taxType,
             $taxPercentage,
-        );
-        $line = self::resolveBreakdownLine($item, $breakdown['lines']);
-
-        return (float) ($line['tax_amount'] ?? 0.0);
-    }
-
-    public static function calculateItemFinalPrice(
-        array $item,
-        array $items,
-        float|int|string|null $orderDiscount,
-        PurchaseOrderTaxType|string|null $taxType,
-        float|int|string|null $taxPercentage,
-    ): float {
-        $breakdown = self::calculateOrderBreakdown(
-            $items,
-            $orderDiscount,
-            $taxType,
-            $taxPercentage,
-        );
-        $line = self::resolveBreakdownLine($item, $breakdown['lines']);
-
-        return (float) ($line['total'] ?? 0.0);
-    }
-
-    public static function calculateGrandTotalFromNetSubtotal(
-        float|int|string|null $netSubtotal,
-        PurchaseOrderTaxType|string|null $taxType,
-        float|int|string|null $taxPercentage,
-        float|int|string|null $rounding,
-    ): float {
-        $baseTotal = self::normalizeTaxType($taxType) === PurchaseOrderTaxType::EXCLUDE
-            ? max((float) $netSubtotal, 0.0) + self::calculateTaxAmount($netSubtotal, $taxType, $taxPercentage)
-            : max((float) $netSubtotal, 0.0);
-
-        return max($baseTotal + (float) $rounding, 0.0);
+        )['total'];
     }
 
     public static function calculateGrandTotal(
@@ -966,24 +983,24 @@ class PurchaseOrder extends Model
         float|int|string|null $taxPercentage,
         float|int|string|null $rounding,
     ): float {
-        return self::calculateOrderBreakdown(
+        return self::calculateOrderSummary(
             $items,
             $discount,
             $taxType,
             $taxPercentage,
             $rounding,
-        )['summary']['grand_total'];
+        )['grand_total'];
     }
 
     public static function syncTaxTotals(array &$data): void
     {
-        $data['tax'] = self::calculateOrderBreakdown(
-            $data['purchaseOrderItems'] ?? [],
-            $data['discount'] ?? 0,
-            $data['tax_type'] ?? null,
-            $data['tax_percentage'] ?? null,
-            $data['rounding'] ?? 0,
-        )['summary']['tax_amount'];
+        // $data['tax'] = self::calculateOrderSummary(
+        //     $data['purchaseOrderItems'] ?? [],
+        //     $data['discount'] ?? 0,
+        //     $data['tax_type'] ?? null,
+        //     $data['tax_percentage'] ?? null,
+        //     $data['rounding'] ?? 0,
+        // )['tax_amount'];
     }
 
     public function syncCalculatedTotals(): void
@@ -995,50 +1012,20 @@ class PurchaseOrder extends Model
                 'purchase_request_item_id' => $item->purchase_request_item_id,
                 'qty' => (float) $item->qty,
                 'price' => (float) $item->price,
-                'discount' => (float) $item->discount,
             ])
             ->all();
 
-        $taxAmount = self::calculateOrderBreakdown(
-            $items,
-            $this->discount,
-            $this->tax_type,
-            $this->tax_percentage,
-            $this->rounding,
-        )['summary']['tax_amount'];
+        // $taxAmount = self::calculateOrderSummary(
+        //     $items,
+        //     $this->discount,
+        //     $this->tax_type,
+        //     $this->tax_percentage,
+        //     $this->rounding,
+        // )['tax_amount'];
 
-        $this->forceFill([
-            'tax' => $taxAmount,
-        ])->saveQuietly();
-    }
-
-    /**
-     * @param  array<int|string, array<string, mixed>>  $lines
-     * @return array<string, mixed>
-     */
-    protected static function resolveBreakdownLine(array $item, array $lines): array
-    {
-        $lineKey = $item['line_key'] ?? null;
-
-        if ($lineKey !== null && array_key_exists($lineKey, $lines)) {
-            return $lines[$lineKey];
-        }
-
-        $itemId = $item['id'] ?? null;
-
-        if ($itemId !== null && array_key_exists($itemId, $lines)) {
-            return $lines[$itemId];
-        }
-
-        $purchaseRequestItemId = $item['purchase_request_item_id'] ?? null;
-
-        foreach ($lines as $line) {
-            if (($line['key'] ?? null) === $purchaseRequestItemId) {
-                return $line;
-            }
-        }
-
-        return [];
+        // $this->forceFill([
+        //     'tax' => $taxAmount,
+        // ])->saveQuietly();
     }
 
     public static function normalizeTaxType(PurchaseOrderTaxType|string|null $taxType): ?PurchaseOrderTaxType
@@ -1054,19 +1041,64 @@ class PurchaseOrder extends Model
         return PurchaseOrderTaxType::tryFrom((string) $taxType);
     }
 
+    /**
+     * @return array<int, array<string, int|float|null>>
+     */
+    protected function getCalculationItems(): array
+    {
+        return $this->purchaseOrderItems->map(fn(PurchaseOrderItem $item): array => [
+            'id' => $item->id,
+            'purchase_request_item_id' => $item->purchase_request_item_id,
+            'qty' => (float) $item->qty,
+            'price' => (float) $item->price,
+        ])->all();
+    }
 
+    /**
+     * @return array{
+     *     subtotal: float,
+     *     discount: float,
+     *     subtotal_after_discount: float,
+     *     dpp: float,
+     *     tax_amount: float,
+     *     total_before_rounding: float,
+     *     rounding: float,
+     *     grand_total: float
+     * }
+     */
+    protected function getCalculatedSummary(): array
+    {
+        return self::calculateOrderSummary(
+            $this->getCalculationItems(),
+            $this->discount,
+            $this->tax_type,
+            $this->tax_percentage,
+            $this->rounding,
+        );
+    }
+
+
+    /**
+     * Revision Hooks (for HasDocumentRevision)
+     */
     protected function getWatchedFields(): array
     {
         return [
-            'vendor_id',
-            // 'warehouse_address_id',
             'description',
-            'memo',
-            'termin',
+
+            'vendor_id',
+            'warehouse_address_id',
+
+            'delivery_date',
+            'delivery_notes',
+            'shipping_cost',
+            'shipping_method',
+
+            'terms',
+
             'discount',
             'tax_type',
             'tax_percentage',
-            'tax',
             'tax_description',
             'rounding',
         ];
@@ -1084,7 +1116,6 @@ class PurchaseOrder extends Model
             'item_id' => (int) $item->item_id,
             'qty' => (float) $item->qty,
             'price' => (float) $item->price,
-            'discount' => (float) $item->discount,
             'description' => trim((string) $item->description),
         ];
     }
@@ -1096,7 +1127,6 @@ class PurchaseOrder extends Model
             'item_id' => (int) ($item['item_id'] ?? 0),
             'qty' => (float) ($item['qty'] ?? 0),
             'price' => (float) ($item['price'] ?? 0),
-            'discount' => (float) ($item['discount'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
         ];
     }

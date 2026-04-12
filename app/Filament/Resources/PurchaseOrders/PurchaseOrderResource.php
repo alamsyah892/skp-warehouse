@@ -76,10 +76,13 @@ class PurchaseOrderResource extends Resource
     {
         return parent::getRecordRouteBindingEloquentQuery()
             ->with([
-                'purchaseRequests',
+                'purchaseRequests.warehouseAddress',
+                'purchaseRequests.user',
+                'purchaseOrderItems.purchaseOrder',
                 'purchaseOrderItems.item',
                 'purchaseOrderItems.purchaseRequestItem.purchaseRequest',
-                'statusLogs' => fn ($query) => $query->orderBy('id'),
+                'statusLogs' => fn($query) => $query->orderBy('id'),
+                'statusLogs.user',
             ])
             ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
