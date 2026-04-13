@@ -11,56 +11,72 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::create('purchase_requests', function (Blueprint $table) {
+            /** 
+             * Identifier
+             * */
             $table->id();
+            $table->string('number')
+                ->index()
+                ->unique()
+            ;
+            $table->unsignedTinyInteger('type')
+                ->default(1)
+                ->index()
+            ;
+            $table->text('description');
+            $table->unsignedTinyInteger('status')
+                ->default(1)
+                ->index()
+            ;
 
+            /** 
+             * Relation
+             */
+            // Delivery
             $table->foreignId('company_id')
+                ->nullable()
                 ->constrained('companies')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
             $table->foreignId('warehouse_id')
+                ->nullable()
                 ->constrained('warehouses')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
-            $table->foreignId('warehouse_address_id')->nullable()
-                ->constrained('warehouse_addresses')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete()
-            ;
             $table->foreignId('division_id')
+                ->nullable()
                 ->constrained('divisions')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
             $table->foreignId('project_id')
+                ->nullable()
                 ->constrained('projects')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
+            $table->foreignId('warehouse_address_id')
+                ->nullable()
+                ->constrained('warehouse_addresses')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete()
+            ;
+            // User
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
 
-            $table->unsignedTinyInteger('type')
-                ->default(1)
-                ->index()
-            ;
-
-            $table->string('number')->unique(); //->nullable();
-            $table->text('description');
+            /** 
+             * Other
+             */
             $table->string('memo');
             $table->string('boq');
             $table->text('notes');
-
             $table->text('info');
-
-            $table->unsignedTinyInteger('status')
-                ->default(1)
-                ->index()
-            ;
 
             $table->timestamps();
             $table->softDeletes();

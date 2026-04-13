@@ -2,10 +2,12 @@
 
 namespace App\Enums;
 
-enum PurchaseOrderTaxType: string
+enum PurchaseOrderTaxType: int
 {
-    case INCLUDE = 'include';
-    case EXCLUDE = 'exclude';
+    // case INCLUDE = 'include';
+    case INCLUDE = 1;
+    // case EXCLUDE = 'exclude';
+    case EXCLUDE = 2;
 
     public function label(): string
     {
@@ -18,7 +20,7 @@ enum PurchaseOrderTaxType: string
     public static function options(): array
     {
         return collect(self::cases())
-            ->mapWithKeys(fn (self $type): array => [
+            ->mapWithKeys(fn(self $type): array => [
                 $type->value => $type->label(),
             ])
             ->all();
