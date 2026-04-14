@@ -34,6 +34,8 @@ class PermissionRoleSeeder extends Seeder
 
             'Purchase Request',
             'Purchase Order',
+            'Goods Receipt',
+            'Goods Issue',
         ];
 
         // Generate permissions
@@ -77,6 +79,8 @@ class PermissionRoleSeeder extends Seeder
 
             'Purchase Request' => ['Read'],
             'Purchase Order' => ['Read'],
+            'Goods Receipt' => ['Read'],
+            'Goods Issue' => ['Read'],
         ];
 
         $syncPermissions = [];

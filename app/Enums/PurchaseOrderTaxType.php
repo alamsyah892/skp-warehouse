@@ -2,12 +2,12 @@
 
 namespace App\Enums;
 
-enum PurchaseOrderTaxType: int
+enum PurchaseOrderTaxType: string
 {
-    // case INCLUDE = 'include';
-    case INCLUDE = 1;
-    // case EXCLUDE = 'exclude';
-    case EXCLUDE = 2;
+    case INCLUDE = 'include';
+    // case INCLUDE = 1;
+    case EXCLUDE = 'exclude';
+    // case EXCLUDE = 2;
 
     public function label(): string
     {

@@ -6,6 +6,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
@@ -17,6 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -196,75 +198,77 @@ class PurchaseOrderInfolist
                             ->description(__('purchase-order.section.purchase_order_items.description'))
                             ->info()
                             ->color(null),
-                        RepeatableEntry::make('purchaseOrderItems')
-                            ->hiddenLabel()
-                            ->table([
-                                TableColumn::make('#')->wrapHeader(false),
-                                TableColumn::make(__('item.related.code.label')),
-                                TableColumn::make(__('item.related.name.label')),
-                                TableColumn::make('Unit'),
-                                TableColumn::make('Qty'),
-                                TableColumn::make(__('purchase-order.purchase_order_item.price.label'))->wrapHeader(),
-                                TableColumn::make('Subtotal')->wrapHeader(),
-                            ])
-                            ->schema([
-                                TextEntry::make('sort')->label('#')->wrap(false),
 
-                                TextEntry::make('item.code')
-                                    ->label(__('item.related.code.label'))
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->weight(FontWeight::Bold)
-                                    ->icon(Heroicon::Hashtag)
-                                // ->badge()
-                                ,
-                                TextEntry::make('item.name')
-                                    ->label(__('item.related.name.label'))
-                                    ->formatStateUsing(
-                                        fn(PurchaseOrderItem $record): ViewContract =>
-                                        static::purchaseOrderItemSummaryView($record)
-                                    )
-                                ,
-                                TextEntry::make('item.unit')
-                                    ->label(__('item.related.unit.label'))
-                                ,
-                                TextEntry::make('qty')
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                ,
+                        Livewire::make(PurchaseOrderItemsTable::class),
+                        // RepeatableEntry::make('purchaseOrderItems')
+                        //     ->hiddenLabel()
+                        //     ->table([
+                        //         TableColumn::make('#')->wrapHeader(false),
+                        //         TableColumn::make(__('item.related.code.label')),
+                        //         TableColumn::make(__('item.related.name.label')),
+                        //         TableColumn::make('Unit'),
+                        //         TableColumn::make('Qty'),
+                        //         TableColumn::make(__('purchase-order.purchase_order_item.price.label'))->wrapHeader(),
+                        //         TableColumn::make('Subtotal')->wrapHeader(),
+                        //     ])
+                        //     ->schema([
+                        //         TextEntry::make('sort')->label('#')->wrap(false),
 
-                                // TextEntry::make('sort')->label('#')->wrap(false),
-                                // TextEntry::make('item.name')->label('Item')->wrap()
-                                //     ->state(fn(PurchaseOrderItem $record) => collect([
-                                //         collect([$record->item?->code, $record->item?->name])->filter()->implode(' | '),
-                                //         filled($record->description) ? nl2br(e($record->description)) : null,
-                                //     ])->filter()->implode('<br>'))
-                                //     ->html()
-                                // ,
-                                // TextEntry::make('purchaseRequestItem.purchaseRequest.number')
-                                //     ->label('PR')
-                                //     ->placeholder('-')
-                                //     ->url(fn(PurchaseOrderItem $record): ?string => $record->purchaseRequestItem?->purchaseRequest
-                                //         ? PurchaseRequestResource::getUrl('view', ['record' => $record->purchaseRequestItem->purchaseRequest])
-                                //         : null)
-                                //     ->openUrlInNewTab()
-                                //     ->fontFamily(FontFamily::Mono)
-                                // ,
-                                // TextEntry::make('item.unit')->label(__('item.related.unit.label')),
-                                // TextEntry::make('qty')->numeric()->alignment(Alignment::End)->wrap(false),
-                                TextEntry::make('price')
-                                    ->label(__('purchase-order.purchase_order_item.price.label'))
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                ,
-                                TextEntry::make('total')
-                                    ->label('Subtotal')
-                                    ->state(fn(PurchaseOrderItem $record): float => static::getLineSummary($record)['subtotal'] ?? 0.0)
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                    ->wrap(false)
-                                ,
-                            ])
-                        ,
+                        //         TextEntry::make('item.code')
+                        //             ->label(__('item.related.code.label'))
+                        //             ->fontFamily(FontFamily::Mono)
+                        //             ->weight(FontWeight::Bold)
+                        //             ->icon(Heroicon::Hashtag)
+                        //         // ->badge()
+                        //         ,
+                        //         TextEntry::make('item.name')
+                        //             ->label(__('item.related.name.label'))
+                        //             ->formatStateUsing(
+                        //                 fn(PurchaseOrderItem $record): ViewContract =>
+                        //                 static::purchaseOrderItemSummaryView($record)
+                        //             )
+                        //         ,
+                        //         TextEntry::make('item.unit')
+                        //             ->label(__('item.related.unit.label'))
+                        //         ,
+                        //         TextEntry::make('qty')
+                        //             ->numeric()
+                        //             ->alignment(Alignment::End)
+                        //         ,
+
+                        //         // TextEntry::make('sort')->label('#')->wrap(false),
+                        //         // TextEntry::make('item.name')->label('Item')->wrap()
+                        //         //     ->state(fn(PurchaseOrderItem $record) => collect([
+                        //         //         collect([$record->item?->code, $record->item?->name])->filter()->implode(' | '),
+                        //         //         filled($record->description) ? nl2br(e($record->description)) : null,
+                        //         //     ])->filter()->implode('<br>'))
+                        //         //     ->html()
+                        //         // ,
+                        //         // TextEntry::make('purchaseRequestItem.purchaseRequest.number')
+                        //         //     ->label('PR')
+                        //         //     ->placeholder('-')
+                        //         //     ->url(fn(PurchaseOrderItem $record): ?string => $record->purchaseRequestItem?->purchaseRequest
+                        //         //         ? PurchaseRequestResource::getUrl('view', ['record' => $record->purchaseRequestItem->purchaseRequest])
+                        //         //         : null)
+                        //         //     ->openUrlInNewTab()
+                        //         //     ->fontFamily(FontFamily::Mono)
+                        //         // ,
+                        //         // TextEntry::make('item.unit')->label(__('item.related.unit.label')),
+                        //         // TextEntry::make('qty')->numeric()->alignment(Alignment::End)->wrap(false),
+                        //         TextEntry::make('price')
+                        //             ->label(__('purchase-order.purchase_order_item.price.label'))
+                        //             ->numeric()
+                        //             ->alignment(Alignment::End)
+                        //         ,
+                        //         TextEntry::make('total')
+                        //             ->label('Subtotal')
+                        //             ->state(fn(PurchaseOrderItem $record): float => static::getLineSummary($record)['subtotal'] ?? 0.0)
+                        //             ->numeric()
+                        //             ->alignment(Alignment::End)
+                        //             ->wrap(false)
+                        //         ,
+                        //     ])
+                        // ,
                     ]),
                 ActivityLogTab::make(__('common.log_activity.label')),
             ])

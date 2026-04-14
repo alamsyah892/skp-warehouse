@@ -4,29 +4,24 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
-// use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
-// use App\Models\PurchaseRequest;
-// use Filament\Actions\EditAction;
-// use App\Models\User;
+use App\Livewire\PurchaseRequestItemsTable;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Callout;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Livewire;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View as ViewContract;
-// use Kirschbaum\Commentions\Filament\Infolists\Components\CommentsEntry;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseRequestInfolist
@@ -168,38 +163,7 @@ class PurchaseRequestInfolist
                             ->color(fn($state) => $state?->color())
                         ,
 
-                        RepeatableEntry::make('statusLogs')
-                            ->label('Status Timeline')
-                            ->schema([
-                                TextEntry::make('to_status')
-                                    ->hiddenLabel()
-                                    ->formatStateUsing(function ($state, $record) {
-                                        $status = $state?->label();
-                                        $user = $record->user?->name ?? 'System';
-                                        $date = $record->created_at->format('M d, Y');
 
-                                        return __('common.log_format_with_date', [
-                                            'date' => $date,
-                                            'status' => $status,
-                                            'user' => $user,
-                                        ]);
-                                    })
-                                    ->icon(fn($state) => $state?->icon())
-                                    ->iconColor(fn($state) => $state?->color())
-                                    ->color('gray')
-                                ,
-
-                                TextEntry::make('note')
-                                    ->label('')
-                                    ->visible(fn($state) => filled($state))
-                                    ->formatStateUsing(fn($state) => "Note: {$state}")
-                                    ->color('gray')
-                                    ->columnSpanFull()
-                                ,
-                            ])
-                            ->columnSpanFull()
-                            ->contained(false)
-                        ,
                     ])
                 ,
             ])
@@ -276,65 +240,7 @@ class PurchaseRequestInfolist
                             ->color(null)
                         ,
 
-                        RepeatableEntry::make('purchaseRequestItems')
-                            ->hiddenLabel()
-                            ->table([
-                                TableColumn::make('#')->wrapHeader(false),
-                                TableColumn::make(__('item.related.code.label')),
-                                TableColumn::make(__('item.related.name.label')),
-                                TableColumn::make('Unit')->wrapHeader(),
-                                TableColumn::make('Qty'),
-                                TableColumn::make(__('purchase-request.purchase_request_item.ordered_qty.label'))->wrapHeader(),
-                                TableColumn::make(__('purchase-request.purchase_request_item.remaining_qty.label'))->wrapHeader(),
-                            ])
-                            ->schema([
-                                TextEntry::make('sort')->label('#')->wrap(false),
-
-                                TextEntry::make('item.code')
-                                    ->label(__('item.related.code.label'))
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->weight(FontWeight::Bold)
-                                    ->icon(Heroicon::Hashtag)
-                                // ->badge()
-                                ,
-                                // TextEntry::make('item.name')
-                                //     ->label(__('item.related.name.label'))
-                                //     ->state(fn($record) => collect([
-                                //         $record->item?->name,
-                                //         filled($record->description) ? nl2br(e($record->description)) : null,
-                                //         // $record->purchaseRequestItem?->purchaseRequest ? $record->purchaseRequestItem->purchaseRequest->number : null,
-                                //     ])->filter()->implode('<br>'))
-                                //     ->html()
-                                // ,
-
-                                TextEntry::make('item.name')
-                                    ->label(__('item.related.name.label'))
-                                    ->formatStateUsing(
-                                        fn(PurchaseRequestItem $record): ViewContract =>
-                                        static::purchaseRequestItemSummaryView($record)
-                                    )
-                                ,
-                                TextEntry::make('item.unit')
-                                    ->label(__('item.related.unit.label'))
-                                ,
-                                TextEntry::make('qty')
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                ,
-                                TextEntry::make('ordered_qty')
-                                    ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
-                                    ->state(fn($record) => $record->getOrderedQty())
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                ,
-                                TextEntry::make('remaining_qty')
-                                    ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
-                                    ->state(fn($record) => $record->getRemainingQty())
-                                    ->numeric()
-                                    ->alignment(Alignment::End)
-                                ,
-                            ])
-                        ,
+                        Livewire::make(PurchaseRequestItemsTable::class),
                     ])
                 ,
 
@@ -401,6 +307,34 @@ class PurchaseRequestInfolist
                     ->size(TextSize::Small)
                     ->visible(fn($state) => $state != null)
                 ,
+
+                RepeatableEntry::make('statusLogs')
+                    ->label('Status Timeline')
+                    ->schema([
+                        TextEntry::make('to_status')
+                            ->hiddenLabel()
+                            ->formatStateUsing(function ($state, $record) {
+                                $status = $state?->label();
+                                $user = $record->user?->name ?? 'System';
+                                $date = $record->created_at->format('M d, Y');
+                                $note = $record->note ? '<br>Note: ' . $record->note : '';
+
+
+                                return __('common.log_format_with_date', [
+                                    'date' => $date,
+                                    'status' => $status,
+                                    'user' => $user,
+                                ]) . $note;
+                            })
+                            ->html()
+                            ->icon(fn($state) => $state?->icon())
+                            ->iconColor(fn($state) => $state?->color())
+                            ->color('gray')
+                        ,
+                    ])
+                    ->columnSpanFull()
+                    ->contained(false)
+                ,
             ])
         ;
     }
@@ -412,10 +346,9 @@ class PurchaseRequestInfolist
 
     public static function purchaseRequestItemSummaryView(PurchaseRequestItem $record): ViewContract
     {
-        return view('filament.infolists.purchase-order-item-summary', [
+        return view('filament.infolists.purchase-request-item-summary', [
             'itemName' => $record->item?->name,
             'description' => filled($record->description) ? $record->description : null,
-            'purchaseRequestNumber' => $record->purchaseRequestItem?->purchaseRequest?->number,
         ]);
     }
 }
