@@ -16,6 +16,18 @@ class PurchaseRequestItemsTable extends TableWidget
 {
     public $record;
 
+    public static function getOrderedQtyColumnColor(PurchaseRequestItem $purchaseRequestItem): string
+    {
+        $orderedQty = $purchaseRequestItem->getOrderedQty();
+        $requestedQty = (float) $purchaseRequestItem->qty;
+
+        return match (true) {
+            $orderedQty <= 0 => 'danger',
+            $orderedQty < $requestedQty => 'warning',
+            default => 'success',
+        };
+    }
+
     public function table(Table $table): Table
     {
         return $table
@@ -61,8 +73,10 @@ class PurchaseRequestItemsTable extends TableWidget
                 TextColumn::make('ordered_qty')
                     ->label('Dipesan')
                     ->wrapHeader()
-                    ->state(fn($record) => $record->getOrderedQty())
+                    ->state(fn(PurchaseRequestItem $record): float => $record->getOrderedQty())
                     ->numeric()
+                    ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
+                    ->weight(FontWeight::Bold)
                     ->alignment(Alignment::End)
                     ->visible(
                         fn() =>
@@ -71,19 +85,19 @@ class PurchaseRequestItemsTable extends TableWidget
                     )
                     ->grow(false)
                 ,
-                TextColumn::make('remaining_qty')
-                    ->label('Sisa')
-                    ->wrapHeader()
-                    ->state(fn($record) => $record->getRemainingQty())
-                    ->numeric()
-                    ->alignment(Alignment::End)
-                    ->visible(
-                        fn() =>
-                        $this->record->status === PurchaseRequestStatus::ORDERED ||
-                        $this->record->status === PurchaseRequestStatus::FINISHED
-                    )
-                    ->grow(false)
-                ,
+                // TextColumn::make('remaining_qty')
+                //     ->label('Sisa')
+                //     ->wrapHeader()
+                //     ->state(fn($record) => $record->getRemainingQty())
+                //     ->numeric()
+                //     ->alignment(Alignment::End)
+                //     ->visible(
+                //         fn() =>
+                //         $this->record->status === PurchaseRequestStatus::ORDERED ||
+                //         $this->record->status === PurchaseRequestStatus::FINISHED
+                //     )
+                //     ->grow(false)
+                // ,
             ])
             ->defaultSort('id', 'asc')
 

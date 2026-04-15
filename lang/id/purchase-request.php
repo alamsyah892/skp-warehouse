@@ -65,7 +65,7 @@ return [
 
     'boq' => [
         'label' => 'RAB',
-        'placeholder' => 'Tuliskan nomor RAB terkait',
+        'placeholder' => 'Nomor RAB terkait',
         'helper' => 'Contoh: RAB-PRJ-001',
     ],
 

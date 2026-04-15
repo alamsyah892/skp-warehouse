@@ -4,6 +4,7 @@ use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseRequests\Schemas\PurchaseRequestForm;
 use App\Filament\Resources\PurchaseRequests\Schemas\PurchaseRequestInfolist;
+use App\Livewire\PurchaseRequestItemsTable;
 use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Models\Company;
 use App\Models\Division;
@@ -148,6 +149,18 @@ it('allows deleting purchase request items that do not have ordered quantity', f
         ->and(PurchaseRequestForm::isPurchaseRequestItemDeletable())->toBeTrue();
 });
 
+it('shows ordered quantity entry only for ordered and finished purchase requests', function () {
+    expect(PurchaseRequestForm::shouldShowOrderedQty(PurchaseRequestStatus::ORDERED))
+        ->toBeTrue()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty(PurchaseRequestStatus::FINISHED))->toBeTrue()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty(PurchaseRequestStatus::REQUESTED))->toBeFalse()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty(PurchaseRequestStatus::ORDERED->value))->toBeTrue()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty((string) PurchaseRequestStatus::FINISHED->value))->toBeTrue()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty(null))->toBeFalse()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty(''))->toBeFalse()
+        ->and(PurchaseRequestForm::shouldShowOrderedQty('999'))->toBeFalse();
+});
+
 it('renders related purchase orders in the purchase request purchase orders table', function () {
     $purchaseRequest = createPurchaseRequestForInfolist();
     $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
@@ -158,6 +171,38 @@ it('renders related purchase orders in the purchase request purchase orders tabl
         ->call('loadTable')
         ->assertSee($purchaseOrder->number)
         ->assertSee('Vendor PR Test');
+});
+
+it('returns danger color for purchase request items that have not been ordered', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    expect(PurchaseRequestItemsTable::getOrderedQtyColumnColor($purchaseRequestItem))
+        ->toBe('danger');
+});
+
+it('returns warning color for purchase request items that are partially ordered', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    createPurchaseOrderForPurchaseRequest($purchaseRequest, $purchaseRequestItem, 4);
+
+    $purchaseRequestItem->refresh();
+
+    expect(PurchaseRequestItemsTable::getOrderedQtyColumnColor($purchaseRequestItem))
+        ->toBe('warning');
+});
+
+it('returns success color for purchase request items that are fully ordered', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    createPurchaseOrderForPurchaseRequest($purchaseRequest, $purchaseRequestItem, 10);
+
+    $purchaseRequestItem->refresh();
+
+    expect(PurchaseRequestItemsTable::getOrderedQtyColumnColor($purchaseRequestItem))
+        ->toBe('success');
 });
 
 function createPurchaseRequestForInfolist(): PurchaseRequest
