@@ -2,7 +2,9 @@
 
 use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseRequestStatus;
+use App\Filament\Resources\PurchaseRequests\Schemas\PurchaseRequestForm;
 use App\Filament\Resources\PurchaseRequests\Schemas\PurchaseRequestInfolist;
+use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Models\Company;
 use App\Models\Division;
 use App\Models\Item;
@@ -16,6 +18,7 @@ use App\Models\Vendor;
 use App\Models\Warehouse;
 use App\Models\WarehouseAddress;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Livewire\Livewire;
 
 uses(DatabaseTransactions::class);
 
@@ -52,6 +55,7 @@ it('hides canceled purchase request action when any item has ordered quantity', 
         'division_id' => $purchaseRequest->division_id,
         'project_id' => $purchaseRequest->project_id,
         'description' => 'Purchase order for PR test',
+        'delivery_date' => now()->toDateString(),
         'memo' => '',
         'termin' => '',
         'delivery_info' => '',
@@ -80,7 +84,7 @@ it('hides canceled purchase request action when any item has ordered quantity', 
     expect(PurchaseRequestInfolist::shouldHideStatusAction($purchaseRequest, PurchaseRequestStatus::CANCELED))
         ->toBeTrue()
         ->and(PurchaseRequestInfolist::shouldHideStatusAction($purchaseRequest, PurchaseRequestStatus::ORDERED))
-        ->toBeFalse();
+        ->toBeTrue();
 });
 
 it('keeps canceled purchase request action visible when ordered quantity is zero', function () {
@@ -93,6 +97,67 @@ it('keeps canceled purchase request action visible when ordered quantity is zero
 
     expect(PurchaseRequestInfolist::shouldHideStatusAction($purchaseRequest, PurchaseRequestStatus::CANCELED))
         ->toBeFalse();
+});
+
+it('hides finished purchase request action when any item still has remaining quantity', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequest->update([
+        'status' => PurchaseRequestStatus::ORDERED,
+    ]);
+
+    $purchaseRequest->refresh()->load('purchaseRequestItems');
+
+    expect(PurchaseRequestInfolist::shouldHideStatusAction($purchaseRequest, PurchaseRequestStatus::FINISHED))
+        ->toBeTrue();
+});
+
+it('keeps finished purchase request action visible when all items are fully ordered', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequest->update([
+        'status' => PurchaseRequestStatus::ORDERED,
+    ]);
+
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    createPurchaseOrderForPurchaseRequest($purchaseRequest, $purchaseRequestItem, 10);
+
+    $purchaseRequest->refresh()->load('purchaseRequestItems');
+
+    expect(PurchaseRequestInfolist::shouldHideStatusAction($purchaseRequest, PurchaseRequestStatus::FINISHED))
+        ->toBeFalse();
+});
+
+it('prevents deleting purchase request items that already have ordered quantity', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    createPurchaseOrderForPurchaseRequest($purchaseRequest, $purchaseRequestItem, 1);
+
+    expect(PurchaseRequestForm::isPurchaseRequestItemDeletable([
+        'id' => $purchaseRequestItem->id,
+    ]))->toBeFalse();
+});
+
+it('allows deleting purchase request items that do not have ordered quantity', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    expect(PurchaseRequestForm::isPurchaseRequestItemDeletable([
+        'id' => $purchaseRequestItem->id,
+    ]))->toBeTrue()
+        ->and(PurchaseRequestForm::isPurchaseRequestItemDeletable())->toBeTrue();
+});
+
+it('renders related purchase orders in the purchase request purchase orders table', function () {
+    $purchaseRequest = createPurchaseRequestForInfolist();
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->firstOrFail();
+
+    $purchaseOrder = createPurchaseOrderForPurchaseRequest($purchaseRequest, $purchaseRequestItem, 1);
+
+    Livewire::test(PurchaseRequestPurchaseOrdersTable::class, ['record' => $purchaseRequest])
+        ->call('loadTable')
+        ->assertSee($purchaseOrder->number)
+        ->assertSee('Vendor PR Test');
 });
 
 function createPurchaseRequestForInfolist(): PurchaseRequest
@@ -192,4 +257,61 @@ function createPurchaseRequestForInfolist(): PurchaseRequest
     ]);
 
     return $purchaseRequest->fresh(['purchaseRequestItems']);
+}
+
+function createPurchaseOrderForPurchaseRequest(
+    PurchaseRequest $purchaseRequest,
+    PurchaseRequestItem $purchaseRequestItem,
+    float $qty
+): PurchaseOrder {
+    $vendor = Vendor::query()->create([
+        'code' => 'VND-PR-TEST-' . str()->random(6),
+        'name' => 'Vendor PR Test',
+        'description' => '',
+        'address' => 'Jl. Vendor PR',
+        'city' => 'Jakarta',
+        'post_code' => '10110',
+        'contact_person' => 'Vendor PIC',
+        'contact_person_position' => 'Sales',
+        'phone' => '021111111',
+        'fax' => '',
+        'email' => 'vendor-pr-' . str()->lower(str()->random(6)) . '@example.test',
+        'website' => 'https://vendor-pr.test',
+        'tax_number' => 'NPWP-VENDOR-PR-' . str()->upper(str()->random(4)),
+        'is_active' => true,
+    ]);
+
+    $purchaseOrder = PurchaseOrder::query()->create([
+        'vendor_id' => $vendor->id,
+        'company_id' => $purchaseRequest->company_id,
+        'warehouse_id' => $purchaseRequest->warehouse_id,
+        'warehouse_address_id' => $purchaseRequest->warehouse_address_id,
+        'division_id' => $purchaseRequest->division_id,
+        'project_id' => $purchaseRequest->project_id,
+        'description' => 'Purchase order for PR test',
+        'delivery_date' => now()->toDateString(),
+        'memo' => '',
+        'termin' => '',
+        'delivery_info' => '',
+        'notes' => '',
+        'info' => '',
+        'discount' => 0,
+        'tax_type' => PurchaseOrderTaxType::EXCLUDE,
+        'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+        'tax' => 0,
+        'tax_description' => '',
+        'rounding' => 0,
+    ]);
+
+    $purchaseOrder->purchaseRequests()->sync([$purchaseRequest->id]);
+    $purchaseOrder->purchaseOrderItems()->create([
+        'purchase_request_item_id' => $purchaseRequestItem->id,
+        'item_id' => $purchaseRequestItem->item_id,
+        'qty' => $qty,
+        'price' => 10000,
+        'description' => 'Ordered from PR',
+        'sort' => 1,
+    ]);
+
+    return $purchaseOrder;
 }

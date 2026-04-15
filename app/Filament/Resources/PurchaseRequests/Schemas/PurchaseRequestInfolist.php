@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Livewire\PurchaseRequestItemsTable;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
@@ -66,12 +67,12 @@ class PurchaseRequestInfolist
         ]);
     }
 
-    protected static function dataSection(): Section
+    protected static function dataSection(): Section|string
     {
         return Section::make(__('purchase-request.section.main_info.label'))
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
-            ->description(__('purchase-request.section.main_info.description'))
+            // ->description(__('purchase-request.section.main_info.description'))
             // ->afterHeader(
             //     EditAction::make()
             //         ->icon(Heroicon::PencilSquare)
@@ -152,18 +153,32 @@ class PurchaseRequestInfolist
                             ->iconColor('primary')
                         ,
 
-                        UserEntry::make('user')
-                            ->wrapped()
+                        TextEntry::make('memo')
+                            ->color('gray')
+                            ->placeholder('-')
+                        ,
+                        TextEntry::make('boq')
+                            ->label(__('purchase-request.boq.label'))
+                            ->color('gray')
+                            ->placeholder('-')
                         ,
 
-                        TextEntry::make('status')
-                            ->formatStateUsing(fn($state) => $state?->label())
-                            ->icon(fn($state) => $state?->icon())
-                            ->badge()
-                            ->color(fn($state) => $state?->color())
+                        Grid::make()
+                            ->columnSpanFull()
+                            ->schema([
+                                TextEntry::make('status')
+                                    ->formatStateUsing(fn($state) => $state?->label())
+                                    ->icon(fn($state) => $state?->icon())
+                                    ->badge()
+                                    ->color(fn($state) => $state?->color())
+                                ,
+
+                                UserEntry::make('user')
+                                    ->label('Dibuat Oleh')
+                                    ->wrapped()
+                                ,
+                            ])
                         ,
-
-
                     ])
                 ,
             ])
@@ -215,6 +230,10 @@ class PurchaseRequestInfolist
             return true;
         }
 
+        if ($status === PurchaseRequestStatus::FINISHED) {
+            return static::hasRemainingPurchaseRequestItems($record);
+        }
+
         if ($status !== PurchaseRequestStatus::CANCELED) {
             return false;
         }
@@ -230,17 +249,25 @@ class PurchaseRequestInfolist
             ->columnSpanFull()
             ->tabs([
                 Tab::make(__('purchase-request.section.purchase_request_items.label'))
-                    ->icon(Heroicon::OutlinedCube)
+                    ->icon(Heroicon::Cube)
                     ->badge(fn($record) => $record->purchaseRequestItems?->count() ?: null)
                     ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
                     ->schema([
-                        Callout::make()
-                            ->description(__('purchase-request.section.purchase_request_items.description'))
-                            ->info()
-                            ->color(null)
-                        ,
+                        // Callout::make()
+                        //     ->description(__('purchase-request.section.purchase_request_items.description'))
+                        //     ->info()
+                        //     ->color(null)
+                        // ,
 
                         Livewire::make(PurchaseRequestItemsTable::class),
+                    ])
+                ,
+
+                Tab::make(__('purchase-order.model.plural_label'))
+                    ->icon(Heroicon::ShoppingCart)
+                    ->badge(fn($record) => $record->purchaseOrders()->count() ?: null)
+                    ->schema([
+                        Livewire::make(PurchaseRequestPurchaseOrdersTable::class),
                     ])
                 ,
 
@@ -254,21 +281,12 @@ class PurchaseRequestInfolist
         return Section::make(__('purchase-request.section.other_info.label'))
             ->icon(Heroicon::InformationCircle)
             ->iconColor('primary')
-            ->description(__('purchase-request.section.other_info.description'))
+            // ->description(__('purchase-request.section.other_info.description'))
             ->collapsible()
             ->columnSpanFull()
             ->columns(2)
             ->compact()
             ->schema([
-                TextEntry::make('memo')
-                    ->color('gray')
-                    ->placeholder('-')
-                ,
-                TextEntry::make('boq')
-                    ->label(__('purchase-request.boq.label'))
-                    ->color('gray')
-                    ->placeholder('-')
-                ,
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
                     ->columnSpanFull()
@@ -276,19 +294,6 @@ class PurchaseRequestInfolist
                     ->color('gray')
                     ->formatStateUsing(fn($state) => nl2br(e($state)))
                     ->html()
-                ,
-                TextEntry::make('info')
-                    ->label(__('purchase-request.revision_history.label'))
-                    ->placeholder('-')
-                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                    ->columnSpanFull()
-                    ->formatStateUsing(
-                        fn($state) => collect(explode("\n", $state))
-                            ->map(fn($line) => "• " . e($line))
-                            ->implode('<br>')
-                    )
-                    ->html()
-                    ->color('gray')
                 ,
 
                 TextEntry::make('created_at')->date()
@@ -308,8 +313,35 @@ class PurchaseRequestInfolist
                     ->visible(fn($state) => $state != null)
                 ,
 
+                TextEntry::make('info')
+                    ->label(__('purchase-request.revision_history.label'))
+                    ->placeholder('-')
+                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
+                    ->columnSpanFull()
+                    ->formatStateUsing(
+                        fn($state) => collect(explode("\n", $state))
+                            ->map(fn($line) => "• " . e($line))
+                            ->implode('<br>')
+                    )
+                    ->html()
+                    ->color('gray')
+                ,
+            ])
+        ;
+    }
+
+    protected static function relatedDataSection(): Section|string
+    {
+        return Section::make('Status Timeline')
+            ->icon(Heroicon::Clock)
+            ->iconColor('primary')
+            ->collapsible()
+            ->columnSpanFull()
+            ->columns(2)
+            ->compact()
+            ->schema([
                 RepeatableEntry::make('statusLogs')
-                    ->label('Status Timeline')
+                    ->hiddenLabel()
                     ->schema([
                         TextEntry::make('to_status')
                             ->hiddenLabel()
@@ -339,16 +371,18 @@ class PurchaseRequestInfolist
         ;
     }
 
-    protected static function relatedDataSection(): Section|string
-    {
-        return '';
-    }
-
     public static function purchaseRequestItemSummaryView(PurchaseRequestItem $record): ViewContract
     {
         return view('filament.infolists.purchase-request-item-summary', [
             'itemName' => $record->item?->name,
             'description' => filled($record->description) ? $record->description : null,
         ]);
+    }
+
+    protected static function hasRemainingPurchaseRequestItems($record): bool
+    {
+        return $record->purchaseRequestItems->contains(
+            fn($item): bool => $item->getRemainingQty() > 0
+        );
     }
 }

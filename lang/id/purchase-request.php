@@ -55,12 +55,12 @@ return [
 
     'description' => [
         'placeholder' => 'Tuliskan deskripsi permintaan pembelian',
-        'helper' => 'Contoh: Pembelian material untuk pekerjaan pondasi proyek A',
+        'helper' => 'Contoh: Pembelian material untuk pekerjaan pondasi',
     ],
 
     'memo' => [
         'placeholder' => 'Memo internal',
-        'helper' => 'Contoh: Pembelian urgent untuk kebutuhan lapangan, Nomor Memo: MEMO-001',
+        'helper' => 'Contoh: MEMO-001',
     ],
 
     'boq' => [
@@ -72,13 +72,13 @@ return [
     'notes' => [
         'label' => 'Catatan',
         'placeholder' => 'Catatan tambahan',
-        'helper' => 'Contoh: Barang harus dikirim sebelum tanggal 25',
+        'helper' => 'Contoh: Barang harus dikirim sebelum tanggal 25; Urgent',
     ],
 
     'info' => [
         'label' => 'Informasi Revisi',
         'placeholder' => 'Tuliskan alasan revisi',
-        'helper' => 'Contoh: Revisi jumlah barang karena kebutuhan proyek bertambah',
+        'helper' => 'Contoh: Revisi jumlah barang karena kebutuhan bertambah',
     ],
 
     'revision_history' => [

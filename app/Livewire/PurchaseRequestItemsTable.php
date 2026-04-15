@@ -32,12 +32,14 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->label('#')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->grow(false)
                 ,
                 TextColumn::make('item.code')
                     ->label('SKU')
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
+                    ->grow(false)
                 ,
                 TextColumn::make('item.name')
                     ->label('Nama Item | Deskripsi')
@@ -49,10 +51,12 @@ class PurchaseRequestItemsTable extends TableWidget
                 TextColumn::make('item.unit')
                     ->label('Unit')
                     ->color('gray')
+                    ->grow(false)
                 ,
                 TextColumn::make('qty')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->grow(false)
                 ,
                 TextColumn::make('ordered_qty')
                     ->label('Dipesan')
@@ -65,6 +69,7 @@ class PurchaseRequestItemsTable extends TableWidget
                         $this->record->status === PurchaseRequestStatus::ORDERED ||
                         $this->record->status === PurchaseRequestStatus::FINISHED
                     )
+                    ->grow(false)
                 ,
                 TextColumn::make('remaining_qty')
                     ->label('Sisa')
@@ -77,6 +82,7 @@ class PurchaseRequestItemsTable extends TableWidget
                         $this->record->status === PurchaseRequestStatus::ORDERED ||
                         $this->record->status === PurchaseRequestStatus::FINISHED
                     )
+                    ->grow(false)
                 ,
             ])
             ->defaultSort('id', 'asc')
