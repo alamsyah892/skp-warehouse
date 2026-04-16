@@ -14,12 +14,28 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontFamily;
+use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseRequestForm
 {
+    public $record;
+
+    public static function getOrderedQtyColumnColor(PurchaseRequestItem $purchaseRequestItem): string
+    {
+        $orderedQty = $purchaseRequestItem->getOrderedQty();
+        $requestedQty = (float) $purchaseRequestItem->qty;
+
+        return match (true) {
+            $orderedQty == 0 => 'danger',
+            $orderedQty < $requestedQty => 'info',
+            default => 'success',
+        };
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -27,16 +43,19 @@ class PurchaseRequestForm
                 ->columnSpanFull()
                 ->columns([
                     'default' => 1,
-                    // 'lg' => 1,
-                    'xl' => 4,
-                    '2xl' => 4,
+                    'lg' => 4,
+                    // 'xl' => 4,
+                    // '2xl' => 4,
                 ])
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
-                            'xl' => 3,
-                            '2xl' => 3,
+                            'default' => 1,
+                            'lg' => 3,
+                            // 'xl' => 3,
+                            // '2xl' => 3,
                         ])
+                        ->columns(1)
                         ->schema([
                             static::dataSection(), // 1.1
 
@@ -46,13 +65,14 @@ class PurchaseRequestForm
 
                     Grid::make() // right / 2
                         ->columnSpan([
-                            'xl' => 1,
-                            '2xl' => 1,
+                            'default' => 1,
+                            'lg' => 1,
+                            // 'xl' => 1,
+                            // '2xl' => 1,
                         ])
+                        ->columns(1)
                         ->schema([
                             static::infoSection(), // 2.1
-
-                            static::historySection(), // 2.2
                         ])
                     ,
                 ])
@@ -62,16 +82,70 @@ class PurchaseRequestForm
 
     protected static function dataSection(): Section|string
     {
-        return Section::make()
-            ->columnSpanFull()
-            ->columns(12)
+        return Section::make(__('purchase-request.section.main_info.label'))
+            ->icon(Heroicon::ClipboardDocumentList)
+            ->iconColor('primary')
             ->compact()
+            // ->footer(fn($record) => self::dataSectionFooter($record))
+            ->columns([
+                'default' => 1,
+                'lg' => 12,
+            ])
             ->schema([
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->schema([
+                        TextEntry::make('number')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
+                            ->fontFamily(FontFamily::Mono)
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->columnSpanFull()
+                        ,
+                    ])
+                    ->visibleOn('edit')
+                ,
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
+                        TextEntry::make('status')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->badge()
+                            ->color(fn($state) => $state?->color())
+                        ,
+                        TextEntry::make('created_at')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::CalendarDays)
+                            ->iconColor('primary')
+                            ->date()
+                        ,
+                    ])
+                    ->visibleOn('edit')
+                ,
                 Section::make('Gudang Proyek')
-                    ->icon(Heroicon::HomeModern)
-                    ->iconColor('primary')
-                    ->columnSpan(7)
-                    ->columns(2)
+                    // ->icon(Heroicon::HomeModern)
+                    // ->iconColor('primary')
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->columns([
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
                     ->compact()
                     ->contained(false)
                     ->schema([
@@ -211,11 +285,16 @@ class PurchaseRequestForm
                     ])
                 ,
 
-                Section::make('Informasi Pengajuan Pembelian')
-                    ->icon(Heroicon::ClipboardDocumentList)
-                    ->iconColor('primary')
-                    ->columnSpan(5)
-                    ->columns(2)
+                Section::make('Informasi Utama')
+                    // ->icon(Heroicon::ClipboardDocumentList)
+                    // ->iconColor('primary')
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
                     ->compact()
                     ->contained(false)
                     ->schema([
@@ -263,7 +342,7 @@ class PurchaseRequestForm
             ->iconColor('primary')
             ->collapsible()
             ->columnSpanFull()
-            ->columns(2)
+            ->columns(1)
             ->compact()
             ->schema([
                 Repeater::make('purchaseRequestItems')
@@ -271,7 +350,7 @@ class PurchaseRequestForm
                     ->hiddenLabel()
                     ->relationship()
                     ->columnSpanFull()
-                    ->columns(12)
+                    ->columns(['lg' => 12])
                     ->schema([
                         Select::make('item_id')
                             ->label(
@@ -286,7 +365,7 @@ class PurchaseRequestForm
                             )
                             ->required()
                             ->searchable(['code', 'name'])
-                            ->columnSpan(7)
+                            ->columnSpan(['lg' => 7])
                         ,
                         TextInput::make('qty')
                             ->placeholder('0')
@@ -304,7 +383,7 @@ class PurchaseRequestForm
                             })
                             ->required()
                             ->numeric()
-                            ->columnSpan(3)
+                            ->columnSpan(['lg' => 3])
                         ,
                         TextEntry::make('ordered_qty')
                             ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
@@ -326,32 +405,35 @@ class PurchaseRequestForm
                             ->visible(
                                 fn($get): bool => static::showOrderedQty($get('../../status'))
                             )
+                            ->columnSpan(['lg' => 2])
                             ->color('gray')
+                            ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
                         ,
-                        TextEntry::make('remaining_qty')
-                            ->label(__('purchase-request.purchase_request_item.remaining_qty.label'))
-                            ->state(function ($get, $record) {
-                                if ($record) {
-                                    return number_format($record->getRemainingQty(), 2);
-                                }
+                        // TextEntry::make('remaining_qty')
+                        //     ->label(__('purchase-request.purchase_request_item.remaining_qty.label'))
+                        //     ->state(function ($get, $record) {
+                        //         if ($record) {
+                        //             return number_format($record->getRemainingQty(), 2);
+                        //         }
 
-                                $itemId = $get('id');
-                                if (!$itemId) {
-                                    return '0.00';
-                                }
+                        //         $itemId = $get('id');
+                        //         if (!$itemId) {
+                        //             return '0.00';
+                        //         }
 
-                                $source = PurchaseRequestItem::query()->find($itemId);
+                        //         $source = PurchaseRequestItem::query()->find($itemId);
 
-                                return number_format($source?->getRemainingQty() ?? 0, 2);
-                            })
-                            ->numeric()
-                            // ->visible(
-                            //     fn($get, string $operation): bool => $operation === 'edit'
-                            //     && static::shouldShowOrderedQty($get('../../status'))
-                            // )
-                            ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
-                            ->color('gray')
-                        ,
+                        //         return number_format($source?->getRemainingQty() ?? 0, 2);
+                        //     })
+                        //     ->numeric()
+                        //     // ->visible(
+                        //     //     fn($get, string $operation): bool => $operation === 'edit'
+                        //     //     && static::shouldShowOrderedQty($get('../../status'))
+                        //     // )
+                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                        //     ->columnSpan(['lg' => 1])
+                        //     ->color('gray')
+                        // ,
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
@@ -383,15 +465,16 @@ class PurchaseRequestForm
         ;
     }
 
-    protected static function infoSection(): Section
+    protected static function infoSection(): Section|string
     {
-        return Section::make('Informasi Tambahan')
+        return Section::make(__('purchase-request.section.other_info.label'))
             ->icon(Heroicon::InformationCircle)
             ->iconColor('primary')
             ->collapsible()
-            ->columnSpanFull()
-            ->columns(1)
             ->compact()
+            ->columns([
+                'lg' => 2
+            ])
             ->schema([
                 Textarea::make('notes')
                     ->label(__('purchase-request.notes.label'))
@@ -414,50 +497,26 @@ class PurchaseRequestForm
                 //     })
                 //     ->visibleOn('edit')
                 // ,
-            ])
-        ;
-    }
 
-    protected static function historySection(): Section|string
-    {
-        return Section::make('Histori Pengajuan Pembelian')
-            ->icon(Heroicon::Clock)
-            ->iconColor('primary')
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
-            ->compact()
-            ->schema([
-                TextEntry::make('status')
-                    ->formatStateUsing(fn($state) => $state?->label())
-                    ->icon(fn($state) => $state?->icon())
-                    ->badge()
-                    ->color(fn($state) => $state?->color())
-                ,
                 UserEntry::make('user')
-                    ->label('Dibuat Oleh')
-                    ->wrapped()
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
                     ->visibleOn('edit')
+                    ->columnSpanFull()
                 ,
-                TextEntry::make('created_at')->date()
-                    ->label(__('common.created_at.label'))
-                    ->visibleOn('edit')
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                ,
+
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
-                    ->visibleOn('edit')
                     ->color('gray')
                     ->size(TextSize::Small)
+                    ->visibleOn('edit')
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->visibleOn('edit')
                     ->color('gray')
                     ->size(TextSize::Small)
                     ->visible(fn($state) => $state != null)
                 ,
+
                 Textarea::make('info')
                     ->label(__('purchase-request.info.label'))
                     ->placeholder(__('purchase-request.info.placeholder'))
@@ -469,21 +528,22 @@ class PurchaseRequestForm
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->columnSpanFull()
                 ,
+
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
-                    ->placeholder('-')
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                     ->formatStateUsing(
                         fn($state) => collect(explode("\n", $state))
                             ->map(fn($line) => "• " . e($line))
                             ->implode('<br>')
                     )
                     ->html()
+                    ->placeholder('-')
                     ->color('gray')
+                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                     ->columnSpanFull()
+                    ->visibleOn('edit')
                 ,
             ])
-            ->visibleOn('edit')
         ;
     }
 

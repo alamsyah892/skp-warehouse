@@ -33,12 +33,12 @@ class EditPurchaseRequest extends EditRecord
         $record = $this->record;
 
 
-        if ($data['status'] !== $record->status->value) {
-            $this->pendingStatus = PurchaseRequestStatus::from($data['status']);
+        // if ($data['status'] !== $record->status->value) {
+        //     $this->pendingStatus = PurchaseRequestStatus::from($data['status']);
 
-            // biar gak di-overwrite Filament
-            $data['status'] = $record->status->value;
-        }
+        //     // biar gak di-overwrite Filament
+        //     $data['status'] = $record->status->value;
+        // }
 
         $record->applyRevision($data);
 

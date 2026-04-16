@@ -96,10 +96,10 @@ return [
             'helper' => 'Contoh: merk, spesifikasi, dll',
         ],
         'ordered_qty' => [
-            'label' => 'Qty Dipesan',
+            'label' => 'Dipesan',
         ],
         'remaining_qty' => [
-            'label' => 'Qty Tersisa',
+            'label' => 'Tersisa',
         ],
     ],
 

@@ -22,8 +22,8 @@ class PurchaseRequestItemsTable extends TableWidget
         $requestedQty = (float) $purchaseRequestItem->qty;
 
         return match (true) {
-            $orderedQty <= 0 => 'danger',
-            $orderedQty < $requestedQty => 'warning',
+            $orderedQty == 0 => 'danger',
+            $orderedQty < $requestedQty => 'info',
             default => 'success',
         };
     }
@@ -44,6 +44,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->label('#')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
                     ->grow(false)
                 ,
                 TextColumn::make('item.code')
@@ -51,6 +52,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
+                    ->verticallyAlignStart()
                     ->grow(false)
                 ,
                 TextColumn::make('item.name')
@@ -63,11 +65,13 @@ class PurchaseRequestItemsTable extends TableWidget
                 TextColumn::make('item.unit')
                     ->label('Unit')
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->grow(false)
                 ,
                 TextColumn::make('qty')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
                     ->grow(false)
                 ,
                 TextColumn::make('ordered_qty')
@@ -83,6 +87,7 @@ class PurchaseRequestItemsTable extends TableWidget
                         $this->record->status === PurchaseRequestStatus::ORDERED ||
                         $this->record->status === PurchaseRequestStatus::FINISHED
                     )
+                    ->verticallyAlignStart()
                     ->grow(false)
                 ,
                 // TextColumn::make('remaining_qty')
@@ -96,14 +101,13 @@ class PurchaseRequestItemsTable extends TableWidget
                 //         $this->record->status === PurchaseRequestStatus::ORDERED ||
                 //         $this->record->status === PurchaseRequestStatus::FINISHED
                 //     )
+                // ->verticallyAlignStart()
                 //     ->grow(false)
                 // ,
             ])
             ->defaultSort('id', 'asc')
-
             ->striped()
-            ->stackedOnMobile()
-
+            ->stackedOnMobile(false)
             ->paginated(false)
         ;
     }

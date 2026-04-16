@@ -6,7 +6,6 @@ use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Livewire\PurchaseRequestItemsTable;
-use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -22,7 +21,6 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Contracts\View\View as ViewContract;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseRequestInfolist
@@ -34,16 +32,19 @@ class PurchaseRequestInfolist
                 ->columnSpanFull()
                 ->columns([
                     'default' => 1,
-                    // 'lg' => 1,
-                    'xl' => 4,
-                    '2xl' => 4,
+                    'lg' => 4,
+                    // 'xl' => 4,
+                    // '2xl' => 4,
                 ])
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
-                            'xl' => 3,
-                            '2xl' => 3,
+                            'default' => 1,
+                            'lg' => 3,
+                            // 'xl' => 3,
+                            // '2xl' => 3,
                         ])
+                        ->columns(1)
                         ->schema([
                             static::dataSection(), // 1.1
 
@@ -53,11 +54,14 @@ class PurchaseRequestInfolist
 
                     Grid::make() // right / 2
                         ->columnSpan([
-                            'xl' => 1,
-                            '2xl' => 1,
+                            'default' => 1,
+                            'lg' => 1,
+                            // 'xl' => 1,
+                            // '2xl' => 1,
                         ])
+                        ->columns(1)
                         ->schema([
-                            static::otherInfoSection(), // 2.1
+                            static::infoSection(), // 2.1
 
                             static::relatedDataSection(), // 2.2
                         ])
@@ -72,31 +76,63 @@ class PurchaseRequestInfolist
         return Section::make(__('purchase-request.section.main_info.label'))
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
-            // ->description(__('purchase-request.section.main_info.description'))
-            // ->afterHeader(
-            //     EditAction::make()
-            //         ->icon(Heroicon::PencilSquare)
-            //         ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record])),
-            // )
-            // ->collapsible()
             ->compact()
             ->footer(fn($record) => self::dataSectionFooter($record))
-            ->columns(12)
-            ->columnSpanFull()
+            ->columns([
+                'default' => 1,
+                'lg' => 12,
+            ])
             ->schema([
                 Grid::make()
-                    ->columnSpan(7)
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
                     ->schema([
                         TextEntry::make('number')
                             ->hiddenLabel()
-                            ->columnSpanFull()
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
                             ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->icon(Heroicon::Hashtag)
-                            ->iconColor('primary')
+                            ->columnSpanFull()
                         ,
-
+                    ])
+                ,
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
+                        TextEntry::make('status')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->badge()
+                            ->color(fn($state) => $state?->color())
+                        ,
+                        TextEntry::make('created_at')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::CalendarDays)
+                            ->iconColor('primary')
+                            ->date()
+                        ,
+                    ])
+                ,
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->columns([
+                        'default' => 2
+                    ])
+                    ->schema([
                         TextEntry::make('warehouse.name')
                             ->hiddenLabel()
                             ->icon(Heroicon::HomeModern)
@@ -120,31 +156,31 @@ class PurchaseRequestInfolist
 
                         TextEntry::make('warehouseAddress.address')
                             ->label(__('purchase-request.warehouse_address.label'))
-                            ->columnSpanFull()
-                            ->color('gray')
                             ->icon(Heroicon::MapPin)
                             ->iconColor('primary')
-                            ->placeholder('-')
                             ->formatStateUsing(
                                 fn($state, $record) =>
+                                // $state . "</br>" . $record->warehouseAddress?->city
                                 collect([$state, $record->warehouseAddress?->city])
                                     ->filter()
                                     ->join(' - ') ?: '-'
                             )
+                            ->html()
+                            ->placeholder('-')
+                            ->color('gray')
+                            ->columnSpanFull()
                         ,
                     ])
                 ,
                 Grid::make()
-                    ->columnSpan(5)
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
                     ->schema([
-                        TextEntry::make('created_at')
-                            ->hiddenLabel()
-                            ->date()
-                            ->icon(Heroicon::CalendarDays)
-                            ->iconColor('primary')
-                            ->columnSpanFull()
-                        ,
-
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
                             ->columnSpanFull()
@@ -167,12 +203,6 @@ class PurchaseRequestInfolist
                             ->formatStateUsing(fn($state) => nl2br(e($state)))
                             ->html()
                         ,
-
-                        Grid::make()
-                            ->columnSpanFull()
-                            ->schema([
-                            ])
-                        ,
                     ])
                 ,
             ])
@@ -186,20 +216,11 @@ class PurchaseRequestInfolist
             ->map(function ($status) use ($record) {
                 return Action::make('changeStatus' . $status->value)
                     ->label(__($status->actionLabel()))
-                    ->color($status->color())
                     ->icon($status->icon())
+                    ->color($status->color())
                     ->requiresConfirmation()
-                    ->modalHeading(
-                        __($status->actionLabel()) .
-                        ' ' .
-                        __('purchase-request.model.label')
-                    )
-                    ->modalDescription(
-                        __(
-                            'purchase-request.status.action.note',
-                            ['status' => __($status->label())]
-                        )
-                    )
+                    ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-request.model.label'))
+                    ->modalDescription(__('purchase-request.status.action.note', ['status' => __($status->label())]))
                     ->action(function () use ($status, $record) {
                         $record->changeStatus($status);
 
@@ -237,10 +258,16 @@ class PurchaseRequestInfolist
         );
     }
 
-    protected static function tabSection(): Tabs
+    protected static function hasRemainingPurchaseRequestItems($record): bool
+    {
+        return $record->purchaseRequestItems->contains(
+            fn($item): bool => $item->getRemainingQty() > 0
+        );
+    }
+
+    protected static function tabSection(): Tabs|string
     {
         return Tabs::make()
-            ->columnSpanFull()
             ->tabs([
                 Tab::make(__('purchase-request.section.purchase_request_items.label'))
                     ->icon(Heroicon::Cube)
@@ -270,42 +297,31 @@ class PurchaseRequestInfolist
         ;
     }
 
-    protected static function otherInfoSection(): Section
+    protected static function infoSection(): Section|string
     {
         return Section::make(__('purchase-request.section.other_info.label'))
             ->icon(Heroicon::InformationCircle)
             ->iconColor('primary')
-            // ->description(__('purchase-request.section.other_info.description'))
             ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
             ->compact()
+            ->columns([
+                'lg' => 2
+            ])
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
-                    ->columnSpanFull()
-                    ->placeholder('-')
-                    ->color('gray')
                     ->formatStateUsing(fn($state) => nl2br(e($state)))
                     ->html()
-                ,
-                TextEntry::make('status')
-                    ->formatStateUsing(fn($state) => $state?->label())
-                    ->icon(fn($state) => $state?->icon())
-                    ->badge()
-                    ->color(fn($state) => $state?->color())
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->columnSpanFull()
                 ,
 
                 UserEntry::make('user')
-                    ->label('Dibuat Oleh')
-                    ->wrapped()
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->columnSpanFull()
                 ,
 
-                TextEntry::make('created_at')->date()
-                    ->label(__('common.created_at.label'))
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                ,
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
                     ->color('gray')
@@ -320,16 +336,16 @@ class PurchaseRequestInfolist
 
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
-                    ->placeholder('-')
-                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                    ->columnSpanFull()
                     ->formatStateUsing(
                         fn($state) => collect(explode("\n", $state))
                             ->map(fn($line) => "• " . e($line))
                             ->implode('<br>')
                     )
                     ->html()
+                    ->placeholder('-')
                     ->color('gray')
+                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
+                    ->columnSpanFull()
                 ,
             ])
         ;
@@ -341,21 +357,21 @@ class PurchaseRequestInfolist
             ->icon(Heroicon::Clock)
             ->iconColor('primary')
             ->collapsible()
-            ->columnSpanFull()
-            ->columns(2)
             ->compact()
+            ->columnSpanFull()
             ->schema([
                 RepeatableEntry::make('statusLogs')
                     ->hiddenLabel()
                     ->schema([
                         TextEntry::make('to_status')
                             ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->iconColor(fn($state) => $state?->color())
                             ->formatStateUsing(function ($state, $record) {
                                 $status = $state?->label();
                                 $user = $record->user?->name ?? 'System';
                                 $date = $record->created_at->format('M d, Y');
                                 $note = $record->note ? '<br>Note: ' . $record->note : '';
-
 
                                 return __('common.log_format_with_date', [
                                     'date' => $date,
@@ -364,30 +380,12 @@ class PurchaseRequestInfolist
                                 ]) . $note;
                             })
                             ->html()
-                            ->icon(fn($state) => $state?->icon())
-                            ->iconColor(fn($state) => $state?->color())
                             ->color('gray')
                         ,
                     ])
-                    ->columnSpanFull()
                     ->contained(false)
                 ,
             ])
         ;
-    }
-
-    public static function purchaseRequestItemSummaryView(PurchaseRequestItem $record): ViewContract
-    {
-        return view('filament.infolists.purchase-request-item-summary', [
-            'itemName' => $record->item?->name,
-            'description' => filled($record->description) ? $record->description : null,
-        ]);
-    }
-
-    protected static function hasRemainingPurchaseRequestItems($record): bool
-    {
-        return $record->purchaseRequestItems->contains(
-            fn($item): bool => $item->getRemainingQty() > 0
-        );
     }
 }
