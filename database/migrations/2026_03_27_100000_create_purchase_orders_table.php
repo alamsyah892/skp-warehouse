@@ -79,7 +79,7 @@ return new class extends Migration {
             /** 
              * Delivery
              */
-            $table->date('delivery_date')->default(null);
+            $table->date('delivery_date')->nullable()->default(null);
             $table->string('delivery_notes');
             $table->decimal('shipping_cost', 15, 2)->default(0);
             $table->string('shipping_method');

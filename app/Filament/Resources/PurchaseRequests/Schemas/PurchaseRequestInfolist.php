@@ -63,7 +63,7 @@ class PurchaseRequestInfolist
                         ->schema([
                             static::infoSection(), // 2.1
 
-                            static::relatedDataSection(), // 2.2
+                            static::statusTimelineSection(), // 2.2
                         ])
                     ,
                 ])
@@ -351,7 +351,7 @@ class PurchaseRequestInfolist
         ;
     }
 
-    protected static function relatedDataSection(): Section|string
+    protected static function statusTimelineSection(): Section|string
     {
         return Section::make('Status Timeline')
             ->icon(Heroicon::Clock)
