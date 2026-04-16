@@ -78,14 +78,14 @@ class PurchaseRequestInfolist
             //         ->icon(Heroicon::PencilSquare)
             //         ->url(fn($record) => PurchaseRequestResource::getUrl('edit', ['record' => $record])),
             // )
-            ->footer(fn($record) => self::dataSectionFooter($record))
-            ->collapsible()
-            ->columnSpanFull()
-            ->columns(3)
+            // ->collapsible()
             ->compact()
+            ->footer(fn($record) => self::dataSectionFooter($record))
+            ->columns(12)
+            ->columnSpanFull()
             ->schema([
                 Grid::make()
-                    ->columnSpan(2)
+                    ->columnSpan(7)
                     ->schema([
                         TextEntry::make('number')
                             ->hiddenLabel()
@@ -132,6 +132,18 @@ class PurchaseRequestInfolist
                                     ->join(' - ') ?: '-'
                             )
                         ,
+                    ])
+                ,
+                Grid::make()
+                    ->columnSpan(5)
+                    ->schema([
+                        TextEntry::make('created_at')
+                            ->hiddenLabel()
+                            ->date()
+                            ->icon(Heroicon::CalendarDays)
+                            ->iconColor('primary')
+                            ->columnSpanFull()
+                        ,
 
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
@@ -141,42 +153,24 @@ class PurchaseRequestInfolist
                             ->formatStateUsing(fn($state) => nl2br(e($state)))
                             ->html()
                         ,
-                    ])
-                ,
-                Grid::make()
-                    ->columns(1)
-                    ->schema([
-                        TextEntry::make('created_at')
-                            ->hiddenLabel()
-                            ->date()
-                            ->icon(Heroicon::CalendarDays)
-                            ->iconColor('primary')
-                        ,
 
                         TextEntry::make('memo')
                             ->color('gray')
                             ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
                         ,
                         TextEntry::make('boq')
                             ->label(__('purchase-request.boq.label'))
                             ->color('gray')
                             ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
                         ,
 
                         Grid::make()
                             ->columnSpanFull()
                             ->schema([
-                                TextEntry::make('status')
-                                    ->formatStateUsing(fn($state) => $state?->label())
-                                    ->icon(fn($state) => $state?->icon())
-                                    ->badge()
-                                    ->color(fn($state) => $state?->color())
-                                ,
-
-                                UserEntry::make('user')
-                                    ->label('Dibuat Oleh')
-                                    ->wrapped()
-                                ,
                             ])
                         ,
                     ])
@@ -294,6 +288,17 @@ class PurchaseRequestInfolist
                     ->color('gray')
                     ->formatStateUsing(fn($state) => nl2br(e($state)))
                     ->html()
+                ,
+                TextEntry::make('status')
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->badge()
+                    ->color(fn($state) => $state?->color())
+                ,
+
+                UserEntry::make('user')
+                    ->label('Dibuat Oleh')
+                    ->wrapped()
                 ,
 
                 TextEntry::make('created_at')->date()
