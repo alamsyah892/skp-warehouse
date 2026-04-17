@@ -113,8 +113,9 @@ class PurchaseRequestInfolist
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->badge()
+                            ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
+                            ->badge()
                         ,
                         TextEntry::make('created_at')
                             ->hiddenLabel()

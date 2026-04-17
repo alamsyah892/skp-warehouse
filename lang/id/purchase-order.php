@@ -59,9 +59,9 @@ return [
         'helper' => 'Contoh: Termin 30 hari setelah barang diterima',
     ],
 
-    'delivery_info' => [
-        'label' => 'Info pengiriman',
-        'placeholder' => 'Tuliskan info pengiriman',
+    'delivery_notes' => [
+        'label' => 'Catatan Pengiriman',
+        'placeholder' => 'Tuliskan catatan pengiriman',
         'helper' => 'Contoh: Dikirim langsung oleh vendor',
     ],
 
@@ -145,7 +145,7 @@ return [
     ],
 
     'tax_description' => [
-        'label' => 'Keterangan Pajak',
+        'label' => 'Deskripsi Pajak',
         'placeholder' => 'Contoh: PPN 11%',
     ],
 

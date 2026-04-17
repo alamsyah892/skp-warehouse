@@ -4,11 +4,13 @@ namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseOrderType;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
+use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -20,6 +22,7 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
@@ -37,16 +40,19 @@ class PurchaseOrderForm
                 ->columnSpanFull()
                 ->columns([
                     'default' => 1,
-                    // 'lg' => 1,
-                    'xl' => 4,
-                    '2xl' => 4,
+                    'lg' => 4,
+                    // 'xl' => 4,
+                    // '2xl' => 4,
                 ])
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
-                            'xl' => 3,
-                            '2xl' => 3,
+                            'default' => 1,
+                            'lg' => 3,
+                            // 'xl' => 3,
+                            // '2xl' => 3,
                         ])
+                        ->columns(1)
                         ->schema([
                             static::dataSection(), // 1.1
 
@@ -58,9 +64,12 @@ class PurchaseOrderForm
 
                     Grid::make() // right / 2
                         ->columnSpan([
-                            'xl' => 1,
-                            '2xl' => 1,
+                            'default' => 1,
+                            'lg' => 1,
+                            // 'xl' => 1,
+                            // '2xl' => 1,
                         ])
+                        ->columns(1)
                         ->schema([
                             static::otherInfoSection(), // 2.1
 
@@ -74,44 +83,128 @@ class PurchaseOrderForm
         ]);
     }
 
-    protected static function dataSection(): Section
+    protected static function dataSection(): Section|string
     {
-        return Section::make('Form ' . __('purchase-order.section.main_info.label'))
+        return Section::make(__('purchase-order.section.main_info.label'))
             ->icon(Heroicon::ShoppingCart)
             ->iconColor('primary')
-            ->description(__('purchase-order.section.main_info.description'))
-            ->collapsible()
-            ->columnSpanFull()
+            ->compact()
+            // ->footer(fn($record) => self::dataSectionFooter($record))
             ->columns([
                 'default' => 1,
-                'xl' => 12,
+                'lg' => 12,
             ])
-            ->compact()
             ->schema([
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
-                        'xl' => 6,
+                        'lg' => 7,
                     ])
-                    ->columns(1)
+                    ->columns([
+                        'default' => 3,
+                        'lg' => 3,
+                    ])
                     ->schema([
-                        Fieldset::make(__('purchase-order.model.label'))
-                            ->visibleOn('edit')
-                            ->schema([
-                                TextInput::make('number')
-                                    ->label(__('purchase-order.number.label'))
-                                    ->inlineLabel()
-                                    ->hintIcon('heroicon-m-information-circle')
-                                    ->hintIconTooltip('Auto-generated')
-                                    ->readOnly()
-                                    ->visibleOn('edit')
-                                    ->dehydrated(false)
-                                    ->columnSpanFull()
-                                ,
+                        TextEntry::make('number')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
+                            ->fontFamily(FontFamily::Mono)
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
                             ])
+                            ->visibleOn('edit')
+                        ,
+                        TextEntry::make('type')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
+                            ->badge()
+                            ->visibleOn('edit')
                         ,
 
-                        Fieldset::make(__('purchase-order.fieldset.warehouse_project.label'))
+                        Select::make('type')
+                            ->label(__('purchase-order.type.label'))
+                            ->options(PurchaseOrderType::options())
+                            ->native(false)
+                            // ->default(PurchaseOrderTaxType::EXCLUDE->value)
+                            ->live()
+                            // ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
+                            ->required()
+                            ->visibleOn('create')
+                        ,
+                    ])
+                ,
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 3,
+                        'lg' => 3,
+                    ])
+                    ->schema([
+                        TextEntry::make('status')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
+                            ->badge()
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
+                            ])
+                            ->visibleOn('edit')
+                        ,
+                        TextEntry::make('created_at')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::CalendarDays)
+                            ->iconColor('primary')
+                            ->date()
+                            ->visibleOn('edit')
+                        ,
+                    ])
+                ,
+
+                Section::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->columns([
+                        'default' => 1,
+                        'lg' => 2,
+                    ])
+                    ->compact()
+                    ->contained(false)
+                    ->schema([
+                        Select::make('vendor_id')
+                            ->label(__('vendor.model.label'))
+                            // ->inlineLabel()
+                            ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
+                            ->searchable(['name', 'code'])
+                            ->preload()
+                            ->required()
+                            ->columnSpanFull()
+                        ,
+
+                        Section::make('Gudang Proyek')
+                            // ->icon(Heroicon::HomeModern)
+                            // ->iconColor('primary')
+                            ->columnSpanFull()
+                            ->columns([
+                                'default' => 1,
+                                'lg' => 2,
+                            ])
+                            ->compact()
+                            ->contained(false)
                             ->schema([
                                 Select::make('warehouse_id')
                                     ->label(__('warehouse.model.label'))
@@ -187,7 +280,6 @@ class PurchaseOrderForm
                                     ->required()
                                     ->live()
                                     ->dehydrated()
-                                    ->columnSpanFull()
                                 ,
 
                                 Select::make('project_id')
@@ -235,185 +327,151 @@ class PurchaseOrderForm
                                     ->required()
                                     ->live()
                                     ->dehydrated()
-                                    ->columnSpanFull()
-                                ,
-
-                                Select::make('purchaseRequests')
-                                    ->label(__('purchase-request.model.plural_label'))
-                                    ->helperText(__('purchase-order.purchase_requests.helper'))
-                                    ->multiple()
-                                    ->relationship(
-                                        titleAttribute: 'number',
-                                        modifyQueryUsing: function (Builder $query, $get, ?PurchaseOrder $record): Builder {
-                                            $header = array_filter([
-                                                'warehouse_id' => $get('warehouse_id'),
-                                                'company_id' => $get('company_id'),
-                                                'division_id' => $get('division_id'),
-                                                'project_id' => $get('project_id'),
-                                            ]);
-
-                                            foreach ($header as $field => $value) {
-                                                $query->where("purchase_requests.{$field}", $value);
-                                            }
-
-                                            $selectableStatuses = PurchaseOrder::SELECTABLE_PURCHASE_REQUEST_STATUSES;
-
-                                            $selectedIds = [];
-                                            if ($record) {
-                                                $selectedIds = $record->purchaseRequests()->pluck('purchase_requests.id')->all();
-                                            }
-
-                                            $query->where(function (Builder $scopedQuery) use ($selectableStatuses, $selectedIds): void {
-                                                $scopedQuery->whereIn('status', $selectableStatuses);
-
-                                                if ($selectedIds !== []) {
-                                                    $scopedQuery->orWhereIn('purchase_requests.id', $selectedIds);
-                                                }
-                                            });
-
-                                            return $query->orderByDesc('purchase_requests.id');
-                                        },
-                                    )
-                                    ->searchable(['number', 'description'])
-                                    ->preload()
-                                    ->required()
-                                    ->live()
-                                    ->afterStateUpdated(function ($state, $set, $get): void {
-                                        $selection = static::resolvePurchaseRequestSelection((array) $state);
-
-                                        if ($selection['ids'] !== PurchaseOrder::normalizePurchaseRequestIds((array) $state)) {
-                                            $set('purchaseRequests', $selection['ids']);
-                                        }
-
-                                        if ($selection['header']) {
-                                            static::fillHeaderFields($set, $selection['header']);
-                                        }
-                                        static::syncPurchaseRequestStatusSnapshot($set, $selection['ids']);
-                                        static::prunePurchaseOrderItems($set, $get, $selection['ids']);
-                                    })
-                                    ->afterStateHydrated(function ($state, $set, $get): void {
-                                        $selection = static::resolvePurchaseRequestSelection((array) $state);
-
-                                        if ($selection['ids'] !== PurchaseOrder::normalizePurchaseRequestIds((array) $state)) {
-                                            $set('purchaseRequests', $selection['ids']);
-                                        }
-
-                                        if ($selection['header']) {
-                                            static::fillHeaderFields($set, $selection['header']);
-                                        }
-                                        if (blank($get('purchaseRequestStatusSnapshot'))) {
-                                            static::syncPurchaseRequestStatusSnapshot($set, $selection['ids']);
-                                        }
-                                        static::prunePurchaseOrderItems($set, $get, $selection['ids']);
-                                    })
-                                    ->columnSpanFull()
-                                ,
-
-                                Hidden::make('purchaseRequestStatusSnapshot')
-                                    ->default([])
-                                    ->dehydrated()
                                 ,
                             ])
                         ,
 
-                        Fieldset::make('Informasi Pengiriman')
-                            ->schema([
-                                Select::make('warehouse_address_id')
-                                    ->label(__('purchase-request.warehouse_address.label'))
-                                    // ->inlineLabel()
-                                    ->disabled(fn($get) => blank($get('warehouse_id')))
-                                    ->relationship(
-                                        name: 'warehouseAddress',
-                                        titleAttribute: 'address',
-                                        modifyQueryUsing: fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
-                                    )
-                                    ->searchable(['address', 'city'])
-                                    ->preload()
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
-                                    ->default(null)
-                                    ->live()
-                                    ->columnSpanFull()
-                                ,
+                        Select::make('purchaseRequests')
+                            ->label(__('purchase-request.model.plural_label'))
+                            ->helperText(__('purchase-order.purchase_requests.helper'))
+                            ->multiple()
+                            ->relationship(
+                                titleAttribute: 'number',
+                                modifyQueryUsing: function (Builder $query, $get, ?PurchaseOrder $record): Builder {
+                                    $header = array_filter([
+                                        'warehouse_id' => $get('warehouse_id'),
+                                        'company_id' => $get('company_id'),
+                                        'division_id' => $get('division_id'),
+                                        'project_id' => $get('project_id'),
+                                    ]);
 
-                                TextInput::make('delivery_info')
-                                    ->label(__('purchase-order.delivery_info.label'))
-                                    // ->inlineLabel()
-                                    ->placeholder(__('purchase-order.delivery_info.placeholder'))
-                                    ->helperText(__('purchase-order.delivery_info.helper'))
-                                    ->columnSpanFull()
-                                ,
-                            ])
+                                    foreach ($header as $field => $value) {
+                                        $query->where("purchase_requests.{$field}", $value);
+                                    }
+
+                                    $selectableStatuses = PurchaseOrder::SELECTABLE_PURCHASE_REQUEST_STATUSES;
+
+                                    $selectedIds = [];
+                                    if ($record) {
+                                        $selectedIds = $record->purchaseRequests()->pluck('purchase_requests.id')->all();
+                                    }
+
+                                    $query->where(function (Builder $scopedQuery) use ($selectableStatuses, $selectedIds): void {
+                                        $scopedQuery->whereIn('status', $selectableStatuses);
+
+                                        if ($selectedIds !== []) {
+                                            $scopedQuery->orWhereIn('purchase_requests.id', $selectedIds);
+                                        }
+                                    });
+
+                                    return $query->orderByDesc('purchase_requests.id');
+                                },
+                            )
+                            ->searchable(['number', 'description'])
+                            ->preload()
+                            ->required()
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set, $get): void {
+                                $selection = static::resolvePurchaseRequestSelection((array) $state);
+
+                                if ($selection['ids'] !== PurchaseOrder::normalizePurchaseRequestIds((array) $state)) {
+                                    $set('purchaseRequests', $selection['ids']);
+                                }
+
+                                if ($selection['header']) {
+                                    static::fillHeaderFields($set, $selection['header']);
+                                }
+                                static::syncPurchaseRequestStatusSnapshot($set, $selection['ids']);
+                                static::prunePurchaseOrderItems($set, $get, $selection['ids']);
+                            })
+                            ->afterStateHydrated(function ($state, $set, $get): void {
+                                $selection = static::resolvePurchaseRequestSelection((array) $state);
+
+                                if ($selection['ids'] !== PurchaseOrder::normalizePurchaseRequestIds((array) $state)) {
+                                    $set('purchaseRequests', $selection['ids']);
+                                }
+
+                                if ($selection['header']) {
+                                    static::fillHeaderFields($set, $selection['header']);
+                                }
+                                if (blank($get('purchaseRequestStatusSnapshot'))) {
+                                    static::syncPurchaseRequestStatusSnapshot($set, $selection['ids']);
+                                }
+                                static::prunePurchaseOrderItems($set, $get, $selection['ids']);
+                            })
+                            ->columnSpanFull()
                         ,
+
+                        Hidden::make('purchaseRequestStatusSnapshot')
+                            ->default([])
+                            ->dehydrated()
+                        ,
+
+                        Textarea::make('description')
+                            ->label(__('common.description.label'))
+                            ->placeholder(__('purchase-order.description.placeholder'))
+                            ->helperText(__('purchase-order.description.helper'))
+                            ->autosize()
+                            ->columnSpanFull()
+                        ,
+
                     ])
                 ,
 
-                Grid::make()
+                Section::make('Informasi Utama')
+                    // ->icon(Heroicon::ClipboardDocumentList)
+                    // ->iconColor('primary')
                     ->columnSpan([
                         'default' => 1,
-                        'xl' => 6,
+                        'lg' => 5,
                     ])
-                    ->columns(1)
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->compact()
+                    ->contained(false)
                     ->schema([
-                        Fieldset::make(__('purchase-order.fieldset.info.label'))
-                            ->schema([
-                                Select::make('vendor_id')
-                                    ->label(__('vendor.model.label'))
-                                    // ->inlineLabel()
-                                    ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
-                                    ->searchable(['name', 'code'])
-                                    ->preload()
-                                    ->required()
-                                    ->columnSpanFull()
-                                ,
-
-                                TextInput::make('termin')
-                                    ->label('Termin Pembayaran')
-                                    // ->inlineLabel()
-                                    ->placeholder(__('purchase-order.termin.placeholder'))
-                                    ->helperText(__('purchase-order.termin.helper'))
-                                    ->columnSpanFull()
-                                ,
-
-                                Textarea::make('description')
-                                    ->label(__('common.description.label'))
-                                    ->placeholder(__('purchase-order.description.placeholder'))
-                                    ->helperText(__('purchase-order.description.helper'))
-                                    ->autosize()
-                                    ->columnSpanFull()
-                                ,
-                            ])
+                        Select::make('warehouse_address_id')
+                            ->label(__('purchase-request.warehouse_address.label'))
+                            // ->inlineLabel()
+                            ->disabled(fn($get) => blank($get('warehouse_id')))
+                            ->relationship(
+                                name: 'warehouseAddress',
+                                titleAttribute: 'address',
+                                modifyQueryUsing: fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
+                            )
+                            ->searchable(['address', 'city'])
+                            ->preload()
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
+                            ->default(null)
+                            ->live()
+                            ->columnSpanFull()
                         ,
 
-                        Fieldset::make('Informasi Pajak')
-                            ->schema([
-                                Select::make('tax_type')
-                                    ->label(__('purchase-order.tax_type.label'))
-                                    ->options(PurchaseOrderTaxType::options())
-                                    ->native(false)
-                                    ->default(PurchaseOrderTaxType::EXCLUDE->value)
-                                    ->live()
-                                    ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
-                                    ->required()
-                                ,
-
-                                Select::make('tax_percentage')
-                                    ->label(__('purchase-order.tax_percentage.label'))
-                                    ->options(PurchaseOrder::getTaxPercentageOptions())
-                                    ->native(false)
-                                    ->live()
-                                    ->placeholder('-')
-                                    ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ($state + 0) : null))
-                                    ->dehydrateStateUsing(fn($state) => filled($state) ? $state : null)
-                                ,
-
-                                TextInput::make('tax_description')
-                                    ->label(__('purchase-order.tax_description.label'))
-                                    ->placeholder(__('purchase-order.tax_description.placeholder'))
-                                    ->helperText('Contoh: PPN 11%')
-                                    ->columnSpanFull()
-                                ,
-                            ])
+                        DatePicker::make('delivery_date')
+                            ->label('Tanggal Pengiriman')
                         ,
+
+                        TextInput::make('shipping_method')
+                            ->label('Metode Pengiriman')
+                            ->placeholder('Tuliskan metode pengiriman yang digunakan')
+                            ->helperText('Contoh: Pickup')
+                        ,
+
+                        TextArea::make('delivery_notes')
+                            ->label(__('purchase-order.delivery_notes.label'))
+                            // ->inlineLabel()
+                            ->placeholder(__('purchase-order.delivery_notes.placeholder'))
+                            ->helperText(__('purchase-order.delivery_notes.helper'))
+                            ->columnSpanFull()
+                        ,
+                        TextArea::make('terms')
+                            // ->inlineLabel()
+                            ->placeholder(__('purchase-order.termin.placeholder'))
+                            ->helperText(__('purchase-order.termin.helper'))
+                            ->columnSpanFull()
+                        ,
+
                     ])
                 ,
             ])
@@ -423,9 +481,9 @@ class PurchaseOrderForm
     protected static function itemSection(): Section
     {
         return Section::make('Form ' . __('purchase-order.section.purchase_order_items.label'))
-            ->icon(Heroicon::OutlinedCube)
+            ->icon(Heroicon::Cube)
             ->iconColor('primary')
-            ->description(__('purchase-order.section.purchase_order_items.description'))
+            // ->description(__('purchase-order.section.purchase_order_items.description'))
             ->collapsible()
             ->compact()
             ->columnSpanFull()
@@ -531,7 +589,11 @@ class PurchaseOrderForm
                         ,
 
                         Select::make('item_id')
-                            ->label('Kode Item | Nama Item')
+                            ->label(
+                                __('item.related.code.label') .
+                                ' | ' .
+                                __('item.related.name.label')
+                            )
                             ->options(fn(): array => static::getManualItemOptions())
                             ->getOptionLabelUsing(function ($value): ?string {
                                 $item = static::getItemRecord((int) $value);
@@ -661,6 +723,33 @@ class PurchaseOrderForm
             ->schema([
                 Grid::make()
                     ->schema([
+                        Select::make('tax_type')
+                            ->label(__('purchase-order.tax_type.label'))
+                            ->options(PurchaseOrderTaxType::options())
+                            ->native(false)
+                            ->default(PurchaseOrderTaxType::EXCLUDE->value)
+                            ->live()
+                            ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
+                            ->required()
+                        ,
+
+                        Select::make('tax_percentage')
+                            ->label(__('purchase-order.tax_percentage.label'))
+                            ->options(PurchaseOrder::getTaxPercentageOptions())
+                            ->native(false)
+                            ->live()
+                            ->placeholder('-')
+                            ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ($state + 0) : null))
+                            ->dehydrateStateUsing(fn($state) => filled($state) ? $state : null)
+                        ,
+
+                        TextInput::make('tax_description')
+                            ->label(__('purchase-order.tax_description.label'))
+                            ->placeholder(__('purchase-order.tax_description.placeholder'))
+                            ->helperText('Contoh: PPN 11%')
+                            ->columnSpanFull()
+                        ,
+
                         TextInput::make('discount')
                             ->label('Diskon')
                             ->numeric()
@@ -767,38 +856,58 @@ class PurchaseOrderForm
 
     protected static function otherInfoSection(): Section
     {
-        return Section::make('Form ' . __('purchase-order.section.other_info.label'))
+        return Section::make(__('purchase-order.section.other_info.label'))
             ->icon(Heroicon::InformationCircle)
             ->iconColor('primary')
-            ->description(__('purchase-order.section.other_info.description'))
+            // ->description(__('purchase-order.section.other_info.description'))
             ->collapsible()
             ->columnSpanFull()
             ->columns(1)
             ->compact()
             ->schema([
-                Select::make('status')
-                    ->options(fn($record) => $record->getAvailableStatusOptions())
-                    ->native(false)
-                    ->required()
-                    ->disableOptionWhen(function ($value, $record) {
-                        if (!$record) {
-                            return false;
-                        }
+                // Select::make('status')
+                //     ->options(fn($record) => $record->getAvailableStatusOptions())
+                //     ->native(false)
+                //     ->required()
+                //     ->disableOptionWhen(function ($value, $record) {
+                //         if (!$record) {
+                //             return false;
+                //         }
 
-                        return $record && !$record->canChangeStatusTo($value);
-                    })
-                    ->columnSpan(1)
-                    ->visibleOn('edit')
-                ,
-                TextInput::make('memo')
-                    ->placeholder(__('purchase-order.memo.placeholder'))
-                    ->helperText(__('purchase-order.memo.helper')),
+                //         return $record && !$record->canChangeStatusTo($value);
+                //     })
+                //     ->columnSpan(1)
+                //     ->visibleOn('edit')
+                // ,
+                // TextInput::make('memo')
+                //     ->placeholder(__('purchase-order.memo.placeholder'))
+                //     ->helperText(__('purchase-order.memo.helper')),
                 Textarea::make('notes')
                     ->label(__('purchase-order.notes.label'))
                     ->placeholder(__('purchase-order.notes.placeholder'))
                     ->helperText(__('purchase-order.notes.helper'))
                     ->autosize()
                     ->columnSpanFull(),
+
+                UserEntry::make('user')
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->visibleOn('edit')
+                    ->columnSpanFull()
+                ,
+
+                TextEntry::make('updated_at')->date()
+                    ->label(__('common.updated_at.label'))
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                    ->visibleOn('edit')
+                ,
+                TextEntry::make('deleted_at')->date()
+                    ->label(__('common.deleted_at.label'))
+                    ->color('gray')
+                    ->size(TextSize::Small)
+                    ->visible(fn($state) => $state != null)
+                ,
+
                 Textarea::make('info')
                     ->label(__('purchase-order.info.label'))
                     ->placeholder(__('purchase-order.info.placeholder'))
@@ -808,38 +917,23 @@ class PurchaseOrderForm
                     ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
                     ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
                     ->afterStateHydrated(fn($component) => $component->state(null))
-                    ->columnSpanFull(),
+                    ->columnSpanFull()
+                ,
+
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->placeholder('-')
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
-                    ->columnSpanFull()
                     ->formatStateUsing(
                         fn($state) => collect(explode("\n", $state))
-                            ->map(fn($line) => '&bull; ' . e($line))
+                            ->map(fn($line) => "• " . e($line))
                             ->implode('<br>')
                     )
                     ->html()
-                    ->color('gray'),
-                UserEntry::make('user')
-                    ->wrapped()
-                    ->visibleOn('edit'),
-                TextEntry::make('created_at')->date()
-                    ->label(__('common.created_at.label'))
-                    ->visibleOn('edit')
+                    ->placeholder('-')
                     ->color('gray')
-                    ->size(TextSize::Small),
-                TextEntry::make('updated_at')->date()
-                    ->label(__('common.updated_at.label'))
+                    ->visible(fn($record) => !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
+                    ->columnSpanFull()
                     ->visibleOn('edit')
-                    ->color('gray')
-                    ->size(TextSize::Small),
-                TextEntry::make('deleted_at')->date()
-                    ->label(__('common.deleted_at.label'))
-                    ->visibleOn('edit')
-                    ->color('gray')
-                    ->size(TextSize::Small)
-                    ->visible(fn($state) => $state != null),
+                ,
             ]);
     }
 
@@ -868,53 +962,62 @@ class PurchaseOrderForm
                         ->with(['user', 'warehouseAddress'])
                         ->whereIn('id', $ids)
                         ->get()
-                        ->map(function (PurchaseRequest $pr) {
-                            return Fieldset::make($pr->number)
+                        ->map(function (PurchaseRequest $purchaseRequest) {
+                            return Section::make()
+                                ->hiddenLabel()
+                                ->compact()
+                                ->columns([
+                                    'default' => 2,
+                                ])
                                 ->schema([
-                                    TextEntry::make("purchase_request_{$pr->id}_created_at")
+                                    TextEntry::make("purchase_request_{$purchaseRequest->id}_number")
                                         ->hiddenLabel()
-                                        ->state($pr->created_at)
-                                        ->date()
+                                        ->state($purchaseRequest->number)
+                                        ->icon(Heroicon::Hashtag)
+                                        ->iconColor('primary')
+                                        ->fontFamily(FontFamily::Mono)
+                                        ->weight(FontWeight::Bold)
+                                        ->columnSpanFull()
+                                    ,
+                                    TextEntry::make("purchase_request_{$purchaseRequest->id}_status")
+                                        ->hiddenLabel()
+                                        ->icon($purchaseRequest->status->icon())
+                                        ->state($purchaseRequest->status->label())
+                                        ->badge()
+                                        ->color($purchaseRequest->status->color())
+                                    ,
+                                    TextEntry::make("purchase_request_{$purchaseRequest->id}_created_at")
+                                        ->hiddenLabel()
+                                        ->state($purchaseRequest->created_at)
                                         ->icon(Heroicon::CalendarDays)
                                         ->iconColor('primary')
+                                        ->date()
                                     ,
-
-                                    TextEntry::make("purchase_request_{$pr->id}_status")
+                                    TextEntry::make("purchase_request_{$purchaseRequest->id}_warehouse_address")
                                         ->hiddenLabel()
-                                        ->state($pr->status->label())
-                                        ->icon($pr->status->icon())
-                                        ->badge()
-                                        ->color($pr->status->color())
-                                        ->alignEnd()
-                                    ,
-
-                                    TextEntry::make("purchase_request_{$pr->id}_warehouse_address")
-                                        ->label(__('purchase-request.warehouse_address.label'))
-                                        ->hiddenLabel()
-                                        ->color('gray')
                                         ->icon(Heroicon::MapPin)
                                         ->iconColor('primary')
-                                        ->placeholder('-')
-                                        ->state($pr->warehouseAddress ? $pr->warehouseAddress?->address . ' - ' . $pr->warehouseAddress?->city : '')
-                                        ->columnSpanFull()
-                                    ,
-
-                                    TextEntry::make("purchase_request_{$pr->id}_description")
-                                        ->label(__('common.description.label'))
-                                        ->hiddenLabel()
-                                        ->state($pr->description)
+                                        ->state($purchaseRequest->warehouseAddress
+                                            ? collect([$purchaseRequest->warehouseAddress->address, $purchaseRequest->warehouseAddress->city])->filter()->join(' - ')
+                                            : '')
+                                        ->html()
                                         ->placeholder('-')
                                         ->color('gray')
-                                        ->size(TextSize::Small)
-                                        ->formatStateUsing(fn($state) => nl2br(e($state)))
-                                        ->html()
                                         ->columnSpanFull()
                                     ,
-
-                                    UserEntry::make("purchase_request_{$pr->id}_user")
+                                    TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                                         ->hiddenLabel()
-                                        ->state($pr->user)
-                                        ->wrapped()
+                                        ->columnSpanFull()
+                                        ->color('gray')
+                                        ->placeholder('-')
+                                        ->state($purchaseRequest->description)
+                                        ->html()
+                                    ,
+
+                                    UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
+                                        ->hiddenLabel()
+                                        ->state($purchaseRequest->user)
+                                        ->columnSpanFull()
                                     ,
                                 ])
                             ;

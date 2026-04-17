@@ -105,6 +105,10 @@ class PurchaseOrderInfolist
                         'default' => 1,
                         'lg' => 7,
                     ])
+                    ->columns([
+                        'default' => 3,
+                        'lg' => 3,
+                    ])
                     ->schema([
                         TextEntry::make('number')
                             ->hiddenLabel()
@@ -113,7 +117,18 @@ class PurchaseOrderInfolist
                             ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->columnSpanFull()
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
+                            ])
+                        ,
+                        TextEntry::make('type')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
+                            ->badge()
                         ,
                     ])
                 ,
@@ -123,15 +138,21 @@ class PurchaseOrderInfolist
                         'lg' => 5,
                     ])
                     ->columns([
-                        'default' => 2,
+                        'default' => 3,
+                        'lg' => 3,
                     ])
                     ->schema([
                         TextEntry::make('status')
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->badge()
+                            ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
+                            ->badge()
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
+                            ])
                         ,
                         TextEntry::make('created_at')
                             ->hiddenLabel()
@@ -182,6 +203,42 @@ class PurchaseOrderInfolist
                             ->iconColor('primary')
                         ,
 
+                        RepeatableEntry::make('purchaseRequests')
+                            ->label(__('purchase-request.model.plural_label'))
+                            ->schema([
+                                TextEntry::make('number')
+                                    ->hiddenLabel()
+                                    ->icon(Heroicon::Hashtag)
+                                    ->iconColor('primary')
+                                    ->fontFamily(FontFamily::Mono)
+                                    ->badge()
+                                    ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
+                                    ->openUrlInNewTab()
+                                ,
+                            ])
+                            ->columnSpanFull()
+                            ->contained(false)
+                        ,
+
+                        TextEntry::make('description')
+                            ->label(__('common.description.label'))
+                            ->columnSpanFull()
+                            ->color('gray')
+                            ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
+                        ,
+                    ])
+                ,
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
                         TextEntry::make('warehouseAddress.address')
                             ->label(__('purchase-request.warehouse_address.label'))
                             ->icon(Heroicon::MapPin)
@@ -199,66 +256,9 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                         ,
 
-                        RepeatableEntry::make('purchaseRequests')
-                            ->label(__('purchase-request.model.plural_label'))
-                            ->schema([
-                                TextEntry::make('number')
-                                    ->hiddenLabel()
-                                    ->icon(Heroicon::Hashtag)
-                                    ->iconColor('primary')
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->badge()
-                                    ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
-                                    ->openUrlInNewTab()
-                                ,
-                            ])
-                            ->columnSpanFull()
-                            ->contained(false)
-                        ,
-                    ])
-                ,
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 5,
-                    ])
-                    ->columns([
-                        'default' => 2,
-                    ])
-                    ->schema([
-                        TextEntry::make('type')
-                            ->label('PO Type')
-                            ->formatStateUsing(fn($state) => $state?->label())
-                            ->placeholder('-')
-                            ->columnSpanFull()
-                        ,
-
-                        TextEntry::make('description')
-                            ->label(__('common.description.label'))
-                            ->columnSpanFull()
-                            ->color('gray')
-                            ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
-                            ->html()
-                        ,
-
                         TextEntry::make('delivery_date')
                             ->label('Tanggal Pengiriman')
                             ->date()
-                            ->placeholder('-')
-                        ,
-
-                        TextEntry::make('delivery_notes')
-                            ->label('Catatan Pengiriman')
-                            ->color('gray')
-                            ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
-                            ->html()
-                        ,
-
-                        TextEntry::make('shipping_cost')
-                            ->label('Biaya Pengiriman')
-                            ->numeric()
                             ->placeholder('-')
                         ,
 
@@ -266,6 +266,21 @@ class PurchaseOrderInfolist
                             ->label('Metode Pengiriman')
                             ->placeholder('-')
                         ,
+
+                        TextEntry::make('delivery_notes')
+                            ->label(__('purchase-order.delivery_notes.label'))
+                            ->color('gray')
+                            ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
+                            ->columnSpanFull()
+                        ,
+
+                        // TextEntry::make('shipping_cost')
+                        //     ->label('Biaya Pengiriman')
+                        //     ->numeric()
+                        //     ->placeholder('-')
+                        // ,
 
                         TextEntry::make('terms')
                             ->placeholder('-')
@@ -425,6 +440,7 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                         ,
                         TextEntry::make('tax_description')
+                            ->label(__('purchase-order.tax_description.label'))
                             ->placeholder('-')
                             ->columnSpanFull()
                         ,
@@ -511,9 +527,6 @@ class PurchaseOrderInfolist
                 'lg' => 2
             ])
             ->schema([
-                // TextEntry::make('memo')->color('gray')->placeholder('-'),
-                // TextEntry::make('termin')->color('gray')->placeholder('-'),
-
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
                     ->formatStateUsing(fn($state) => nl2br(e($state)))
@@ -553,34 +566,8 @@ class PurchaseOrderInfolist
                     ->visible(fn($record) => !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
                     ->columnSpanFull()
                 ,
-
-                // TextEntry::make('notes')
-                //     ->label(__('purchase-order.notes.label'))
-                //     ->columnSpanFull()
-                //     ->placeholder('-')
-                //     ->color('gray')
-                //     ->formatStateUsing(fn($state) => nl2br(e($state)))
-                //     ->html(),
-                // TextEntry::make('info')
-                //     ->label(__('purchase-order.revision_history.label'))
-                //     ->placeholder('-')
-                //     ->visible(fn($record) => !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
-                //     ->columnSpanFull()
-                //     ->formatStateUsing(
-                //         fn($state) => collect(explode("\n", $state))
-                //             ->map(fn($line) => '• ' . e($line))
-                //             ->implode('<br>')
-                //     )
-                //     ->html()
-                //     ->color('gray'),
-                // TextEntry::make('created_at')->date()->label(__('common.created_at.label'))->color('gray')->size(TextSize::Small),
-                // TextEntry::make('updated_at')->date()->label(__('common.updated_at.label'))->color('gray')->size(TextSize::Small),
-                // TextEntry::make('deleted_at')->date()
-                //     ->label(__('common.deleted_at.label'))
-                //     ->color('gray')
-                //     ->size(TextSize::Small)
-                //     ->visible(fn($state) => $state != null),
-            ]);
+            ])
+        ;
     }
 
     protected static function vendorSection(): Section
@@ -592,9 +579,53 @@ class PurchaseOrderInfolist
             ->compact()
             ->columnSpanFull()
             ->schema([
-                TextEntry::make('vendor.name'),
-                TextEntry::make('vendor.address'),
-                TextEntry::make('vendor.city'),
+                TextEntry::make('vendor.name')
+                    ->hiddenLabel()
+                    ->icon(Heroicon::BuildingStorefront)
+                    ->iconColor('primary')
+                    ->weight(FontWeight::Bold)
+                ,
+                TextEntry::make('vendor.address')
+                    ->hiddenLabel()
+                    ->icon(Heroicon::MapPin)
+                    ->iconColor('primary')
+                    ->state(fn($record) => collect([$record->vendor?->address, $record->vendor?->city])->filter()->join(' - '))
+                    ->color('gray')
+                ,
+                Grid::make()
+                    ->schema([
+                        TextEntry::make('vendor.phone')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Phone)
+                            ->iconColor('primary')
+                            ->color('gray')
+                        ,
+                        TextEntry::make('vendor.fax')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::DocumentText)
+                            ->iconColor('primary')
+                            ->color('gray')
+                        ,
+                    ])
+                ,
+                TextEntry::make('vendor.contact_person')
+                    ->hiddenLabel()
+                    ->icon(Heroicon::UserCircle)
+                    ->iconColor('primary')
+                    ->color('gray')
+                ,
+                TextEntry::make('vendor.email')
+                    ->hiddenLabel()
+                    ->icon(Heroicon::Envelope)
+                    ->iconColor('primary')
+                    ->color('gray')
+                ,
+                TextEntry::make('vendor.website')
+                    ->hiddenLabel()
+                    ->icon(Heroicon::GlobeAlt)
+                    ->iconColor('primary')
+                    ->color('gray')
+                ,
             ])
         ;
     }
@@ -625,9 +656,13 @@ class PurchaseOrderInfolist
         }
 
         return $purchaseRequests
-            ->map(function (PurchaseRequest $purchaseRequest): Fieldset {
-                return Fieldset::make($purchaseRequest->number)
+            ->map(function (PurchaseRequest $purchaseRequest): Section {
+                return Section::make()
                     ->hiddenLabel()
+                    ->compact()
+                    ->columns([
+                        'default' => 2,
+                    ])
                     ->schema([
                         TextEntry::make("purchase_request_{$purchaseRequest->id}_number")
                             ->hiddenLabel()

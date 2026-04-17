@@ -32,12 +32,14 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->label('#')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
                     ->label('SKU')
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
                     ->label('Nama Item | Deskripsi')
@@ -49,46 +51,23 @@ class PurchaseOrderItemsTable extends TableWidget
                 TextColumn::make('item.unit')
                     ->label('Unit')
                     ->color('gray')
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('price')
                     ->label('Harga')
                     ->numeric()
                     ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
                 ,
-                // TextColumn::make('ordered_qty')
-                //     ->label('Dipesan')
-                //     ->wrapHeader()
-                //     ->state(fn($record) => $record->getOrderedQty())
-                //     ->numeric()
-                //     ->alignment(Alignment::End)
-                //     ->visible(
-                //         fn() =>
-                //         $this->record->status === PurchaseOrderStatus::ORDERED ||
-                //         $this->record->status === PurchaseOrderStatus::FINISHED
-                //     )
-                // ,
-                // TextColumn::make('remaining_qty')
-                //     ->label('Sisa')
-                //     ->wrapHeader()
-                //     ->state(fn($record) => $record->getRemainingQty())
-                //     ->numeric()
-                //     ->alignment(Alignment::End)
-                //     ->visible(
-                //         fn() =>
-                //         $this->record->status === PurchaseOrderStatus::ORDERED ||
-                //         $this->record->status === PurchaseOrderStatus::FINISHED
-                //     )
-                // ,
             ])
             ->defaultSort('id', 'asc')
-
             ->striped()
-            ->stackedOnMobile()
-
+            ->stackedOnMobile(false)
             ->paginated(false)
         ;
     }

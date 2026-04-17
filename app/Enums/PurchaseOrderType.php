@@ -2,6 +2,8 @@
 
 namespace App\Enums;
 
+use Filament\Support\Icons\Heroicon;
+
 enum PurchaseOrderType: int
 {
     case RED = 1;
@@ -23,6 +25,24 @@ enum PurchaseOrderType: int
             self::RED => 'PO-M',
             self::WHITE => 'PO-P',
             self::WORK_ORDER => 'SPK',
+        };
+    }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::RED => 'danger',
+            self::WHITE => 'gray',
+            self::WORK_ORDER => 'info',
+        };
+    }
+
+    public function icon()
+    {
+        return match ($this) {
+            self::RED => Heroicon::OutlinedDocument,
+            self::WHITE => Heroicon::OutlinedDocument,
+            self::WORK_ORDER => Heroicon::OutlinedDocument,
         };
     }
 
