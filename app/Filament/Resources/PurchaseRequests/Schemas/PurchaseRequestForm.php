@@ -123,8 +123,9 @@ class PurchaseRequestForm
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->badge()
+                            ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
+                            ->badge()
                         ,
                         TextEntry::make('created_at')
                             ->hiddenLabel()
@@ -341,7 +342,6 @@ class PurchaseRequestForm
         return Section::make(__('purchase-request.section.purchase_request_items.label'))
             ->icon(Heroicon::Cube)
             ->iconColor('primary')
-            ->collapsible()
             ->columnSpanFull()
             ->columns(1)
             ->compact()

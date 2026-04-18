@@ -563,7 +563,7 @@ class PurchaseOrderInfolist
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($record) => !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
                     ->columnSpanFull()
                 ,
             ])
@@ -599,12 +599,14 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::Phone)
                             ->iconColor('primary')
                             ->color('gray')
+                            ->visible(fn($state) => $state != null)
                         ,
                         TextEntry::make('vendor.fax')
                             ->hiddenLabel()
                             ->icon(Heroicon::DocumentText)
                             ->iconColor('primary')
                             ->color('gray')
+                            ->visible(fn($state) => $state != null)
                         ,
                     ])
                 ,
@@ -613,18 +615,21 @@ class PurchaseOrderInfolist
                     ->icon(Heroicon::UserCircle)
                     ->iconColor('primary')
                     ->color('gray')
+                    ->visible(fn($state) => $state != null)
                 ,
                 TextEntry::make('vendor.email')
                     ->hiddenLabel()
                     ->icon(Heroicon::Envelope)
                     ->iconColor('primary')
                     ->color('gray')
+                    ->visible(fn($state) => $state != null)
                 ,
                 TextEntry::make('vendor.website')
                     ->hiddenLabel()
                     ->icon(Heroicon::GlobeAlt)
                     ->iconColor('primary')
                     ->color('gray')
+                    ->visible(fn($state) => $state != null)
                 ,
             ])
         ;
@@ -698,6 +703,7 @@ class PurchaseOrderInfolist
                             ->placeholder('-')
                             ->color('gray')
                             ->columnSpanFull()
+                            ->visible(fn($state) => filled($state))
                         ,
                         TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                             ->hiddenLabel()
@@ -706,6 +712,7 @@ class PurchaseOrderInfolist
                             ->placeholder('-')
                             ->state($purchaseRequest->description)
                             ->html()
+                            ->visible(fn($state) => filled($state))
                         ,
 
                         UserEntry::make("purchase_request_{$purchaseRequest->id}_user")

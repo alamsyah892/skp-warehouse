@@ -55,13 +55,15 @@ class EditPurchaseOrder extends EditRecord
                 return $item;
             })
             ->values()
-            ->all();
-        $selectedStatus = filled($data['status'] ?? null) ? (int) $data['status'] : null;
+            ->all()
+        ;
 
-        if ($selectedStatus !== $record->status->value) {
-            $this->pendingStatus = PurchaseOrderStatus::from($selectedStatus);
-            $data['status'] = $record->status->value;
-        }
+        // $selectedStatus = filled($data['status'] ?? null) ? (int) $data['status'] : null;
+
+        // if ($selectedStatus !== $record->status->value) {
+        //     $this->pendingStatus = PurchaseOrderStatus::from($selectedStatus);
+        //     $data['status'] = $record->status->value;
+        // }
 
         PurchaseOrder::syncHeaderFromPurchaseRequests($data);
         PurchaseOrder::syncPurchaseOrderItemsFromPurchaseRequestItems($data);
@@ -80,9 +82,11 @@ class EditPurchaseOrder extends EditRecord
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? [], $record->id);
 
         $record->applyRevision($data);
+
         $record->hasWatchedFieldChanges($data);
 
-        return Arr::except($data, ['purchaseRequestStatusSnapshot']);
+        // return Arr::except($data, ['purchaseRequestStatusSnapshot']);
+        return $data;
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model
@@ -126,7 +130,7 @@ class EditPurchaseOrder extends EditRecord
 
         $purchaseRequestIds = $this->record->purchaseRequests
             ->pluck('id')
-            ->map(fn (mixed $id): int => (int) $id)
+            ->map(fn(mixed $id): int => (int) $id)
             ->all();
 
         $this->initialPurchaseRequestStatusSnapshot = PurchaseOrder::buildPurchaseRequestStatusSnapshot($purchaseRequestIds);

@@ -103,9 +103,6 @@ return [
             'label' => 'Harga',
             'include_label' => 'Harga (Include Tax)',
         ],
-        'discount' => [
-            'label' => 'Diskon Item (satuan)',
-        ],
         'tax' => [
             'label' => 'Pajak Item',
         ],
@@ -127,11 +124,15 @@ return [
     ],
 
     'discount' => [
-        'label' => 'Diskon PO (keseluruhan)',
+        'label' => 'Diskon',
+    ],
+
+    'after_discount' => [
+        'label' => 'Subtotal Setelah Diskon',
     ],
 
     'tax' => [
-        'label' => 'Nominal Pajak',
+        'label' => 'PPN :percentage',
     ],
 
     'tax_type' => [
@@ -146,14 +147,25 @@ return [
 
     'tax_description' => [
         'label' => 'Deskripsi Pajak',
-        'placeholder' => 'Contoh: PPN 11%',
+        'placeholder' => 'Tuliskan deskripsi pajak (opsional)',
+        'helper' => 'Contoh: PPN 11%',
+    ],
+
+    'tax_base' => [
+        'label' => 'DPP',
     ],
 
     'rounding' => [
         'label' => 'Pembulatan',
     ],
 
+    'subtotal' => [
+        'label' => 'Subtotal',
+    ],
+
     'total' => [
+        'label' => 'Total',
+
         'subtotal' => 'Subtotal Pesanan',
         'after_discount' => 'Subtotal Setelah Diskon',
         'tax_base' => 'DPP',
@@ -162,6 +174,10 @@ return [
         'tax' => 'Pajak',
         'before_rounding' => 'Total Sebelum Pembulatan',
         'grand_total' => 'Total Pembayaran',
+    ],
+
+    'grand_total' => [
+        'label' => 'Total Pembayaran',
     ],
 
     'validation' => [
@@ -188,6 +204,10 @@ return [
             'label' => 'Item Purchase Order',
             'description' => 'Item yang dialokasikan dari pengajuan.',
         ],
+        'summary_total' => [
+            'label' => 'Ringkasan Total',
+            'description' => '',
+        ],
     ],
 
     'fieldset' => [
@@ -196,6 +216,9 @@ return [
         ],
         'info' => [
             'label' => 'Informasi Purchase Order',
+        ],
+        'detail_total' => [
+            'label' => 'Rincian Total',
         ],
     ],
 ];
