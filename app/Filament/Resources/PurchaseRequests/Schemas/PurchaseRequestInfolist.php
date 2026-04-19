@@ -36,6 +36,7 @@ class PurchaseRequestInfolist
                     // 'xl' => 4,
                     // '2xl' => 4,
                 ])
+                ->dense()
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
@@ -305,9 +306,6 @@ class PurchaseRequestInfolist
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->columns([
-                'lg' => 2
-            ])
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
@@ -315,38 +313,28 @@ class PurchaseRequestInfolist
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->columnSpanFull()
                 ,
-
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
-                    ->columnSpanFull()
                 ,
-
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                     ->visible(fn($state) => $state != null)
                 ,
-
                 TextEntry::make('info')
-                    ->label(__('purchase-request.revision_history.label'))
-                    ->formatStateUsing(
-                        fn($state) => collect(explode("\n", $state))
-                            ->map(fn($line) => "• " . e($line))
-                            ->implode('<br>')
-                    )
+                    ->label(__('purchase-order.revision_history.label'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                    ->columnSpanFull()
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                 ,
             ])
         ;

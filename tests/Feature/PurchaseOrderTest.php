@@ -5,6 +5,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderInfolist;
 use App\Filament\Resources\PurchaseOrders\Pages\EditPurchaseOrder;
+use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\Company;
 use App\Models\Division;
 use App\Models\Item;
@@ -578,6 +579,19 @@ it('renders purchase order item summary with spacing and muted metadata', functi
         ->toContain('Test Item')
         ->toContain('Ordered item')
         ->toContain('PR: ' . $purchaseOrder->purchaseRequests()->firstOrFail()->number);
+});
+
+it('renders purchase order items table with source purchase request number and subtotal', function () {
+    $purchaseOrder = createEditablePurchaseOrder();
+    $purchaseRequest = $purchaseOrder->purchaseRequests()->firstOrFail();
+
+    Livewire::test(PurchaseOrderItemsTable::class, ['record' => $purchaseOrder])
+        ->assertSuccessful()
+        ->loadTable()
+        ->assertSee('# ' . $purchaseRequest->number)
+        ->assertSee('Ordered item')
+        ->assertSee('align-top [&_td]:py-1.5 [&_th]:py-1.5', escape: false)
+        ->assertSee('10.000,00');
 });
 
 function createEditablePurchaseOrder(PurchaseRequestStatus $purchaseRequestStatus = PurchaseRequestStatus::APPROVED): PurchaseOrder

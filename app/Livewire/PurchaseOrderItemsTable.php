@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrderItem;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
@@ -24,6 +23,7 @@ class PurchaseOrderItemsTable extends TableWidget
                 PurchaseOrderItem::query()
                     ->with([
                         'item',
+                        'purchaseRequestItem.purchaseRequest',
                     ])
                     ->where('purchase_order_id', $this->record->id)
             )
@@ -44,7 +44,18 @@ class PurchaseOrderItemsTable extends TableWidget
                 TextColumn::make('item.name')
                     ->label('Nama Item | Deskripsi')
                     ->wrapHeader()
-                    ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
+                    ->description(function (PurchaseOrderItem $record): HtmlString {
+                        $descriptionLines = collect([
+                            filled($record->description) ? e($record->description) : null,
+                            $record->purchaseRequestItem?->purchaseRequest?->number
+                            ? '# ' . e($record->purchaseRequestItem->purchaseRequest->number)
+                            : null,
+                        ])->filter();
+
+                        return new HtmlString($descriptionLines->isNotEmpty()
+                            ? $descriptionLines->implode('<br>')
+                            : '-');
+                    })
                     ->searchable()
                     ->wrap()
                 ,
@@ -61,6 +72,13 @@ class PurchaseOrderItemsTable extends TableWidget
                 TextColumn::make('price')
                     ->label('Harga')
                     ->numeric()
+                    ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
+                ,
+                TextColumn::make('subtotal')
+                    ->label(__('purchase-order.subtotal.label'))
+                    ->state(fn(PurchaseOrderItem $record): float => $record->getLineTotalAmount())
+                    ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()
                 ,

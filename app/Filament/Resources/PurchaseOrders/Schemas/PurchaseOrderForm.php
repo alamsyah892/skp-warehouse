@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PurchaseOrders\Schemas;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseOrderType;
+use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
@@ -134,10 +135,9 @@ class PurchaseOrderForm
                             ->label(__('purchase-order.type.label'))
                             ->options(PurchaseOrderType::options())
                             ->native(false)
-                            // ->default(PurchaseOrderTaxType::EXCLUDE->value)
                             ->live()
-                            // ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
                             ->required()
+                            ->columnSpanFull()
                             ->visibleOn('create')
                         ,
                     ])
@@ -452,13 +452,13 @@ class PurchaseOrderForm
                         ,
 
                         DatePicker::make('delivery_date')
-                            ->label('Tanggal Pengiriman')
+                            ->label(__('purchase-order.delivery_date.label'))
                         ,
 
                         TextInput::make('shipping_method')
-                            ->label('Metode Pengiriman')
-                            ->placeholder('Tuliskan metode pengiriman yang digunakan')
-                            ->helperText('Contoh: Pickup')
+                            ->label(__('purchase-order.shipping_method.label'))
+                            ->placeholder(__('purchase-order.shipping_method.placeholder'))
+                            ->helperText(__('purchase-order.shipping_method.helper'))
                         ,
 
                         TextArea::make('delivery_notes')
@@ -470,11 +470,10 @@ class PurchaseOrderForm
                         ,
                         TextArea::make('terms')
                             // ->inlineLabel()
-                            ->placeholder(__('purchase-order.termin.placeholder'))
-                            ->helperText(__('purchase-order.termin.helper'))
+                            ->placeholder(__('purchase-order.terms.placeholder'))
+                            ->helperText(__('purchase-order.terms.helper'))
                             ->columnSpanFull()
                         ,
-
                     ])
                 ,
             ])
@@ -526,7 +525,7 @@ class PurchaseOrderForm
                         ,
 
                         Select::make('purchase_request_item_id')
-                            ->label('Sumber Item Pengajuan')
+                            ->label(__('purchase-order.purchase_request_item.label'))
                             ->options(function ($get): array {
                                 $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('../../purchaseRequests') ?? []));
                                 return static::getPurchaseRequestItemOptions($purchaseRequestIds);
@@ -679,7 +678,7 @@ class PurchaseOrderForm
                         ,
 
                         TextEntry::make('subtotal')
-                            ->label('Subtotal')
+                            ->label(__('purchase-order.subtotal.label'))
                             ->state(function ($get): string {
                                 return static::formatMoney(static::getCurrentLineBreakdown($get)['subtotal'] ?? 0.0);
                             })
@@ -775,6 +774,7 @@ class PurchaseOrderForm
                 ,
 
                 Fieldset::make(__('purchase-order.fieldset.detail_total.label'))
+                    ->dense()
                     ->columns([
                         'default' => 1,
                         'lg' => 1
@@ -905,6 +905,7 @@ class PurchaseOrderForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
+            ->dense()
             ->visible(fn($get) => filled($get('vendor_id')))
             ->schema(function ($get) {
                 $vendorId = $get('vendor_id');
@@ -996,6 +997,7 @@ class PurchaseOrderForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
+            ->dense()
             ->visible(fn($get) => filled($get('purchaseRequests')))
             ->schema(function ($get) {
                 $purchaseRequestIds = PurchaseOrder::normalizePurchaseRequestIds((array) ($get('purchaseRequests') ?? []));
@@ -1020,6 +1022,7 @@ class PurchaseOrderForm
                                     ->state($purchaseRequest->number)
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
+                                    ->url(fn(): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id]))
                                 ,
                                 Grid::make()
                                     ->columns([

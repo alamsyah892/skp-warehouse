@@ -47,6 +47,7 @@ class PurchaseOrderInfolist
                     // 'xl' => 4,
                     // '2xl' => 4,
                 ])
+                ->dense()
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
@@ -61,7 +62,7 @@ class PurchaseOrderInfolist
 
                             static::tabSection(), // 1.2
 
-                            static::totalSection(), // 1.3
+                            static::summaryTotalSection(), // 1.3
                         ])
                     ,
 
@@ -76,9 +77,9 @@ class PurchaseOrderInfolist
                         ->schema([
                             static::infoSection(), // 2.1
 
-                            static::vendorSection(), // 2.2
+                            static::vendorInfoSection(), // 2.2
 
-                            static::purchaseRequestsSection(), // 2.3
+                            static::purchaseRequestInfoSection(), // 2.3
 
                             static::statusTimelineSection(), // 2.4
                         ])
@@ -171,15 +172,6 @@ class PurchaseOrderInfolist
                         'default' => 2
                     ])
                     ->schema([
-                        // TextEntry::make('number')
-                        //     ->hiddenLabel()
-                        //     ->columnSpanFull()
-                        //     ->fontFamily(FontFamily::Mono)
-                        //     ->weight(FontWeight::Bold)
-                        //     ->size(TextSize::Large)
-                        //     ->icon(Heroicon::Hashtag)
-                        //     ->iconColor('primary'),
-
                         TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
 
                         TextEntry::make('warehouse.name')
@@ -202,7 +194,6 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::Square3Stack3d)
                             ->iconColor('primary')
                         ,
-
                         RepeatableEntry::make('purchaseRequests')
                             ->label(__('purchase-request.model.plural_label'))
                             ->schema([
@@ -219,7 +210,6 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                             ->contained(false)
                         ,
-
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
                             ->columnSpanFull()
@@ -255,18 +245,15 @@ class PurchaseOrderInfolist
                             ->color('gray')
                             ->columnSpanFull()
                         ,
-
                         TextEntry::make('delivery_date')
-                            ->label('Tanggal Pengiriman')
+                            ->label(__('purchase-order.delivery_date.label'))
                             ->date()
                             ->placeholder('-')
                         ,
-
                         TextEntry::make('shipping_method')
-                            ->label('Metode Pengiriman')
+                            ->label(__('purchase-order.shipping_method.label'))
                             ->placeholder('-')
                         ,
-
                         TextEntry::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
                             ->color('gray')
@@ -275,26 +262,13 @@ class PurchaseOrderInfolist
                             ->html()
                             ->columnSpanFull()
                         ,
-
-                        // TextEntry::make('shipping_cost')
-                        //     ->label('Biaya Pengiriman')
-                        //     ->numeric()
-                        //     ->placeholder('-')
-                        // ,
-
                         TextEntry::make('terms')
                             ->placeholder('-')
                         ,
-
-                        // TextEntry::make('created_at')->hiddenLabel()->date()->icon(Heroicon::CalendarDays)->iconColor('primary'),
-                        // UserEntry::make('user')->wrapped(),
-                        // TextEntry::make('status')
-                        //     ->formatStateUsing(fn($state) => $state?->label())
-                        //     ->icon(fn($state) => $state?->icon())
-                        //     ->badge()
-                        //     ->color(fn($state) => $state?->color()),
-                    ]),
-            ]);
+                    ])
+                ,
+            ])
+        ;
     }
 
     protected static function dataSectionFooter($record): array
@@ -320,7 +294,8 @@ class PurchaseOrderInfolist
                         ->send();
 
                     return redirect(request()->header('Referer'));
-                });
+                })
+            ;
         })->values()->all();
     }
 
@@ -340,87 +315,17 @@ class PurchaseOrderInfolist
                         //     ->color(null),
 
                         Livewire::make(PurchaseOrderItemsTable::class),
-                        // RepeatableEntry::make('purchaseOrderItems')
-                        //     ->hiddenLabel()
-                        //     ->table([
-                        //         TableColumn::make('#')->wrapHeader(false),
-                        //         TableColumn::make(__('item.related.code.label')),
-                        //         TableColumn::make(__('item.related.name.label')),
-                        //         TableColumn::make('Unit'),
-                        //         TableColumn::make('Qty'),
-                        //         TableColumn::make(__('purchase-order.purchase_order_item.price.label'))->wrapHeader(),
-                        //         TableColumn::make('Subtotal')->wrapHeader(),
-                        //     ])
-                        //     ->schema([
-                        //         TextEntry::make('sort')->label('#')->wrap(false),
-
-                        //         TextEntry::make('item.code')
-                        //             ->label(__('item.related.code.label'))
-                        //             ->fontFamily(FontFamily::Mono)
-                        //             ->weight(FontWeight::Bold)
-                        //             ->icon(Heroicon::Hashtag)
-                        //         // ->badge()
-                        //         ,
-                        //         TextEntry::make('item.name')
-                        //             ->label(__('item.related.name.label'))
-                        //             ->formatStateUsing(
-                        //                 fn(PurchaseOrderItem $record): ViewContract =>
-                        //                 static::purchaseOrderItemSummaryView($record)
-                        //             )
-                        //         ,
-                        //         TextEntry::make('item.unit')
-                        //             ->label(__('item.related.unit.label'))
-                        //         ,
-                        //         TextEntry::make('qty')
-                        //             ->numeric()
-                        //             ->alignment(Alignment::End)
-                        //         ,
-
-                        //         // TextEntry::make('sort')->label('#')->wrap(false),
-                        //         // TextEntry::make('item.name')->label('Item')->wrap()
-                        //         //     ->state(fn(PurchaseOrderItem $record) => collect([
-                        //         //         collect([$record->item?->code, $record->item?->name])->filter()->implode(' | '),
-                        //         //         filled($record->description) ? nl2br(e($record->description)) : null,
-                        //         //     ])->filter()->implode('<br>'))
-                        //         //     ->html()
-                        //         // ,
-                        //         // TextEntry::make('purchaseRequestItem.purchaseRequest.number')
-                        //         //     ->label('PR')
-                        //         //     ->placeholder('-')
-                        //         //     ->url(fn(PurchaseOrderItem $record): ?string => $record->purchaseRequestItem?->purchaseRequest
-                        //         //         ? PurchaseRequestResource::getUrl('view', ['record' => $record->purchaseRequestItem->purchaseRequest])
-                        //         //         : null)
-                        //         //     ->openUrlInNewTab()
-                        //         //     ->fontFamily(FontFamily::Mono)
-                        //         // ,
-                        //         // TextEntry::make('item.unit')->label(__('item.related.unit.label')),
-                        //         // TextEntry::make('qty')->numeric()->alignment(Alignment::End)->wrap(false),
-                        //         TextEntry::make('price')
-                        //             ->label(__('purchase-order.purchase_order_item.price.label'))
-                        //             ->numeric()
-                        //             ->alignment(Alignment::End)
-                        //         ,
-                        //         TextEntry::make('total')
-                        //             ->label('Subtotal')
-                        //             ->state(fn(PurchaseOrderItem $record): float => static::getLineSummary($record)['subtotal'] ?? 0.0)
-                        //             ->numeric()
-                        //             ->alignment(Alignment::End)
-                        //             ->wrap(false)
-                        //         ,
-                        //     ])
-                        // ,
                     ]),
                 ActivityLogTab::make(__('common.log_activity.label')),
             ])
         ;
     }
 
-    protected static function totalSection(): Section
+    protected static function summaryTotalSection(): Section
     {
-        return Section::make('Ringkasan Total')
+        return Section::make(__('purchase-order.section.summary_total.label'))
             ->icon(Heroicon::Calculator)
             ->iconColor('primary')
-            ->collapsible()
             ->columnSpanFull()
             ->columns(3)
             ->compact()
@@ -448,72 +353,69 @@ class PurchaseOrderInfolist
                 ,
 
                 Fieldset::make('Rincian Total')
-                    ->columns(1)
+                    ->columns([
+                        'default' => 1,
+                        'lg' => 1
+                    ])
                     ->columnSpan(2)
+                    ->inlineLabel()
                     ->schema([
                         TextEntry::make('total_subtotal')
-                            ->label('Subtotal')
+                            ->label(__('purchase-order.subtotal.label'))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['subtotal'] ?? 0))
-                            ->numeric()
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('total_discount')
-                            ->label('Diskon')
+                            ->label(__('purchase-order.discount.label'))
                             ->state(fn($record) => '-' . static::formatMoney(static::getSummary($record)['discount'] ?? 0))
-                            ->numeric()
                             ->color('danger')
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('total_after_discount')
-                            ->label('Subtotal Setelah Diskon')
+                            ->label(__('purchase-order.after_discount.label'))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['subtotal_after_discount'] ?? 0))
-                            ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
 
                         View::make('components.divider'),
 
                         TextEntry::make('total_dpp')
-                            ->label('DPP')
+                            ->label(__('purchase-order.tax_base.label'))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['dpp'] ?? 0))
-                            ->numeric()
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('total_ppn')
-                            ->label(fn($record) => filled($record->tax_percentage) ? "PPN ({$record->tax_percentage}%)" : 'PPN')
+                            ->label(fn($get) => __('purchase-order.tax.label', ['percentage' => $get('tax_percentage') > 0 ? "({$get('tax_percentage')}%)" : '']))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['tax_amount'] ?? 0))
-                            ->numeric()
                             ->color('warning')
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('total_before_rounding')
-                            ->label('Total')
+                            ->label(__('purchase-order.total.label'))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['total_before_rounding'] ?? 0))
-                            ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('summary_rounding')
-                            ->label('Pembulatan')
+                            ->label(__('purchase-order.rounding.label'))
                             ->state(fn($record) => static::formatMoney($record->rounding ?? 0))
-                            ->numeric()
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                         TextEntry::make('total_grand_total')
-                            ->label('Total Pembayaran')
+                            ->label(__('purchase-order.grand_total.label'))
                             ->state(fn($record) => static::formatMoney(static::getSummary($record)['grand_total'] ?? 0))
-                            ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->color('primary')
-                            ->inlineLabel()
-                            ->alignEnd(),
+                            ->alignEnd()
+                        ,
                     ])
                 ,
-            ]);
+            ])
+        ;
     }
 
     protected static function infoSection(): Section
@@ -523,9 +425,6 @@ class PurchaseOrderInfolist
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->columns([
-                'lg' => 2
-            ])
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
@@ -533,44 +432,34 @@ class PurchaseOrderInfolist
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->columnSpanFull()
                 ,
-
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
-                    ->columnSpanFull()
                 ,
-
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                     ->visible(fn($state) => $state != null)
                 ,
-
                 TextEntry::make('info')
-                    ->label(__('purchase-request.revision_history.label'))
-                    ->formatStateUsing(
-                        fn($state) => collect(explode("\n", $state))
-                            ->map(fn($line) => "• " . e($line))
-                            ->implode('<br>')
-                    )
+                    ->label(__('purchase-order.revision_history.label'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
                     ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
-                    ->columnSpanFull()
                 ,
             ])
         ;
     }
 
-    protected static function vendorSection(): Section
+    protected static function vendorInfoSection(): Section
     {
         return Section::make('Detail Vendor')
             ->icon(Heroicon::BuildingStorefront)
@@ -635,7 +524,7 @@ class PurchaseOrderInfolist
         ;
     }
 
-    protected static function purchaseRequestsSection(): Section|string
+    protected static function purchaseRequestInfoSection(): Section|string
     {
         return Section::make('Detail ' . __('purchase-request.model.plural_label'))
             ->icon(Heroicon::ClipboardDocumentList)
@@ -676,6 +565,7 @@ class PurchaseOrderInfolist
                             ->iconColor('primary')
                             ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
+                            ->url(fn(): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id]))
                             ->columnSpanFull()
                         ,
                         TextEntry::make("purchase_request_{$purchaseRequest->id}_status")

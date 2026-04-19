@@ -8,6 +8,10 @@ return [
         'plural_label' => 'Purchase Order',
     ],
 
+    'type' => [
+        'label' => 'Tipe PO',
+    ],
+
     'warehouse_address' => [
         'label' => 'Alamat Pengiriman/Gudang',
     ],
@@ -49,14 +53,19 @@ return [
         'helper' => 'Contoh: PO material struktur tahap pertama',
     ],
 
-    'memo' => [
-        'placeholder' => 'Memo internal',
-        'helper' => 'Contoh: Prioritas pengiriman minggu ini',
-    ],
-
-    'termin' => [
+    'terms' => [
         'placeholder' => 'Termin pembayaran',
         'helper' => 'Contoh: Termin 30 hari setelah barang diterima',
+    ],
+
+    'delivery_date' => [
+        'label' => 'Tanggal Pengiriman',
+    ],
+
+    'shipping_method' => [
+        'label' => 'Metode Pengiriman',
+        'placeholder' => 'Tuliskan metode pengiriman yang digunakan',
+        'helper' => 'Contoh: Pickup',
     ],
 
     'delivery_notes' => [
@@ -87,12 +96,14 @@ return [
     ],
 
     'purchase_requests' => [
-        // 'label' => 'Pengajuan',
         'number' => [
             'label' => 'Nomor Pengajuan',
         ],
-        // 'helper' => 'Pilih satu pengajuan atau lebih. Pengajuan pertama yang dipilih akan menjadi sumber acuan untuk Gudang, Perusahaan / Gudang Kecil, Divisi, Proyek, dan Alamat Pengiriman/Gudang (jika ada).',
         'helper' => 'Pilih satu pengajuan atau lebih.',
+    ],
+
+    'purchase_request_item' => [
+        'label' => 'Sumber Item Pengajuan',
     ],
 
     'purchase_order_item' => [
@@ -103,18 +114,8 @@ return [
             'label' => 'Harga',
             'include_label' => 'Harga (Include Tax)',
         ],
-        'tax' => [
-            'label' => 'Pajak Item',
-        ],
-        'final_price' => [
-            'label' => 'Harga Final (satuan)',
-        ],
-        'total' => [
-            'label' => 'Total Harga',
-        ],
         'source_item' => [
             'context' => 'Konteks Sumber Item Pengajuan',
-            // 'context_value' => 'Kode Item: :code | Nama Item: :name | Pengajuan: :number | Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
             'context_value' => 'Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
         ],
         'description' => [
@@ -137,8 +138,8 @@ return [
 
     'tax_type' => [
         'label' => 'Mode Pajak',
-        'include' => 'Include Tax',
-        'exclude' => 'Exclude Tax',
+        'include' => 'Include',
+        'exclude' => 'Exclude',
     ],
 
     'tax_percentage' => [
@@ -165,15 +166,6 @@ return [
 
     'total' => [
         'label' => 'Total',
-
-        'subtotal' => 'Subtotal Pesanan',
-        'after_discount' => 'Subtotal Setelah Diskon',
-        'tax_base' => 'DPP',
-        'net_subtotal' => 'Subtotal Setelah Diskon PO',
-        'discount' => 'Diskon',
-        'tax' => 'Pajak',
-        'before_rounding' => 'Total Sebelum Pembulatan',
-        'grand_total' => 'Total Pembayaran',
     ],
 
     'grand_total' => [
