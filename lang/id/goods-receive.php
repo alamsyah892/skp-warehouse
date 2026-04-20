@@ -77,6 +77,9 @@ return [
 
     'goods_receive_items' => [
         'label' => 'Item Penerimaan',
+        'received_qty' => [
+            'label' => 'Diterima',
+        ],
     ],
 
     'purchase_order' => [
@@ -88,7 +91,7 @@ return [
     ],
 
     'qty' => [
-        'label' => 'Qty Diterima',
+        'label' => 'Qty',
         'placeholder' => 0.01,
     ],
 

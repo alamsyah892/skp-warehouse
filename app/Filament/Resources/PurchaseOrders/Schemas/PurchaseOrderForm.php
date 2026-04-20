@@ -8,6 +8,7 @@ use App\Enums\PurchaseOrderType;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
+use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
@@ -34,6 +35,20 @@ use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseOrderForm
 {
+    public $record;
+
+    public static function getReceivedQtyColumnColor(PurchaseOrderItem $purchaseOrderItem): string
+    {
+        $receivedQty = $purchaseOrderItem->getReceivedQty();
+        $orderedQty = (float) $purchaseOrderItem->qty;
+
+        return match (true) {
+            $receivedQty == 0 => 'danger',
+            $receivedQty < $orderedQty => 'info',
+            default => 'success',
+        };
+    }
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -573,129 +588,171 @@ class PurchaseOrderForm
                             })
                             ->columnSpanFull()
                         ,
-                        Select::make('item_id')
-                            ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
-                            ->options(fn(): array => static::getManualItemOptions())
-                            ->getOptionLabelUsing(function ($value): ?string {
-                                $item = static::getItemRecord((int) $value);
-
-                                if (!$item) {
-                                    return null;
-                                }
-
-                                return "{$item->code} | {$item->name}";
-                            })
-                            ->preload()
-                            ->searchable()
-                            ->getSearchResultsUsing(fn(string $search): array => static::getManualItemOptions($search))
-                            ->required()
-                            ->live()
-                            ->disabled(fn($get): bool => filled($get('purchase_request_item_id')))
-                            ->dehydrated()
+                        Grid::make()
                             ->columnSpan([
                                 'default' => 1,
-                                'md' => 2,
-                                'xl' => 6,
+                                'lg' => 8,
+                            ])
+                            ->columns(1)
+                            ->schema([
+                                Select::make('item_id')
+                                    ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
+                                    ->options(fn(): array => static::getManualItemOptions())
+                                    ->getOptionLabelUsing(function ($value): ?string {
+                                        $item = static::getItemRecord((int) $value);
+
+                                        if (!$item) {
+                                            return null;
+                                        }
+
+                                        return "{$item->code} | {$item->name}";
+                                    })
+                                    ->preload()
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn(string $search): array => static::getManualItemOptions($search))
+                                    ->required()
+                                    ->live()
+                                    ->disabled(fn($get): bool => filled($get('purchase_request_item_id')))
+                                    ->dehydrated()
+                                ,
+
+                                Textarea::make('description')
+                                    ->label(__('common.description.label'))
+                                    ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
+                                    ->helperText(__('purchase-order.purchase_order_item.description.helper'))
+                                    ->autosize()
+                                    ->columnSpanFull()
+                                ,
                             ])
                         ,
-
-                        TextInput::make('qty')
-                            ->numeric()
-                            ->minValue(0.01)
-                            ->placeholder(0.01)
-                            ->required()
-                            ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
-                            ->live(debounce: 500)
-                            ->rule(function ($get, $record) {
-                                return function (string $attribute, $value, $fail) use ($get, $record): void {
-                                    $sourceId = (int) $get('purchase_request_item_id');
-
-                                    if ($sourceId <= 0) {
-                                        return;
-                                    }
-
-                                    $source = static::getPurchaseRequestItemRecord($sourceId);
-
-                                    if (!$source) {
-                                        return;
-                                    }
-
-                                    $purchaseOrderId = $record?->purchase_order_id;
-                                    $remaining = $source->getRemainingQty($purchaseOrderId);
-
-                                    if ((float) $value > $remaining) {
-                                        $fail(__('purchase-order.validation.qty_exceeded', [
-                                            'remaining' => number_format($remaining, 2),
-                                        ]));
-                                    }
-                                };
-                            })
+                        Grid::make()
                             ->columnSpan([
                                 'default' => 1,
-                                'md' => 2,
-                                'xl' => 2,
+                                'lg' => 4,
                             ])
-                        ,
-                        TextEntry::make('received_qty')
-                            ->label(__('goods-receive.qty.label'))
-                            ->state(function ($get): string {
-                                $purchaseOrderItemId = (int) ($get('id') ?? 0);
-
-                                if ($purchaseOrderItemId <= 0) {
-                                    return number_format(0, 2);
-                                }
-
-                                static $cache = [];
-
-                                if (!array_key_exists($purchaseOrderItemId, $cache)) {
-                                    $cache[$purchaseOrderItemId] = \App\Models\PurchaseOrderItem::query()->find($purchaseOrderItemId);
-                                }
-
-                                $item = $cache[$purchaseOrderItemId];
-
-                                return number_format($item?->getReceivedQty() ?? 0, 2);
-                            })
-                            ->columnSpan([
-                                'default' => 1,
-                                'md' => 2,
-                                'xl' => 2,
+                            ->columns([
+                                'default' => 2,
+                                'lg' => 2,
                             ])
-                        ,
-                        TextInput::make('price')
-                            ->label(function ($get): string {
-                                return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
-                                    ? __('purchase-order.purchase_order_item.price.include_label')
-                                    : __('purchase-order.purchase_order_item.price.label')
-                                ;
-                            })
-                            ->numeric()
-                            ->minValue(0)
-                            ->placeholder(0)
-                            ->required()
-                            ->live(debounce: 500)
-                            ->columnSpan([
-                                'default' => 1,
-                                'md' => 2,
-                                'xl' => 2,
+                            ->schema([
+                                TextInput::make('qty')
+                                    ->numeric()
+                                    ->minValue(function ($record, $operation) {
+                                        if ($operation === 'edit' && $record) {
+                                            return (float) $record->getReceivedQty();
+                                        }
+
+                                        return 0.01;
+                                    })
+                                    ->placeholder(0.01)
+                                    ->required()
+                                    // ->hint(function ($get): string {
+                                    //     $purchaseOrderItemId = (int) ($get('id') ?? 0);
+
+                                    //     if ($purchaseOrderItemId <= 0) {
+                                    //         return number_format(0, 2);
+                                    //     }
+
+                                    //     static $cache = [];
+
+                                    //     if (!array_key_exists($purchaseOrderItemId, $cache)) {
+                                    //         $cache[$purchaseOrderItemId] = \App\Models\PurchaseOrderItem::query()->find($purchaseOrderItemId);
+                                    //     }
+
+                                    //     $item = $cache[$purchaseOrderItemId];
+
+                                    //     return number_format($item?->getReceivedQty() ?? 0, 2);
+                                    // })
+                                    ->hint(fn($get) => '(' . static::getItemUnit((int) ($get('item_id') ?? 0)) . ')')
+                                    // ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
+                                    ->live(debounce: 500)
+                                    ->rule(function ($get, $record) {
+                                        return function (string $attribute, $value, $fail) use ($get, $record): void {
+                                            $sourceId = (int) $get('purchase_request_item_id');
+
+                                            if ($sourceId <= 0) {
+                                                return;
+                                            }
+
+                                            $source = static::getPurchaseRequestItemRecord($sourceId);
+
+                                            if (!$source) {
+                                                return;
+                                            }
+
+                                            $purchaseOrderId = $record?->purchase_order_id;
+                                            $remaining = $source->getRemainingQty($purchaseOrderId);
+
+                                            if ((float) $value > $remaining) {
+                                                $fail(__('purchase-order.validation.qty_exceeded', [
+                                                    'remaining' => number_format($remaining, 2),
+                                                ]));
+                                            }
+                                        };
+                                    })
+                                // ->columnSpan([
+                                //     'default' => 1,
+                                //     'md' => 2,
+                                //     'xl' => 2,
+                                // ])
+                                ,
+                                TextEntry::make('received_qty')
+                                    ->label(__('goods-receive.goods_receive_items.received_qty.label'))
+                                    ->numeric()
+                                    ->state(function ($get): string {
+                                        $purchaseOrderItemId = (int) ($get('id') ?? 0);
+
+                                        if ($purchaseOrderItemId <= 0) {
+                                            return number_format(0, 2);
+                                        }
+
+                                        static $cache = [];
+
+                                        if (!array_key_exists($purchaseOrderItemId, $cache)) {
+                                            $cache[$purchaseOrderItemId] = PurchaseOrderItem::query()->find($purchaseOrderItemId);
+                                        }
+
+                                        $item = $cache[$purchaseOrderItemId];
+
+                                        return number_format($item?->getReceivedQty() ?? 0, 2);
+                                    })
+                                    ->color(fn(PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
+                                // ->columnSpan([
+                                //     'default' => 1,
+                                //     'md' => 2,
+                                //     'xl' => 2,
+                                // ])
+                                ,
+                                TextInput::make('price')
+                                    ->label(function ($get): string {
+                                        return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
+                                            ? __('purchase-order.purchase_order_item.price.include_label')
+                                            : __('purchase-order.purchase_order_item.price.label')
+                                        ;
+                                    })
+                                    ->numeric()
+                                    ->minValue(0)
+                                    ->placeholder(0)
+                                    ->required()
+                                    ->live(debounce: 500)
+                                // ->columnSpan([
+                                //     'default' => 1,
+                                //     'md' => 2,
+                                //     'xl' => 2,
+                                // ])
+                                ,
+                                TextEntry::make('subtotal')
+                                    ->label(__('purchase-order.subtotal.label'))
+                                    ->state(function ($get): string {
+                                        return static::formatMoney(static::getCurrentLineBreakdown($get)['subtotal'] ?? 0.0);
+                                    })
+                                // ->columnSpan([
+                                //     'default' => 1,
+                                //     'md' => 2,
+                                //     'xl' => 2,
+                                // ])
+                                ,
                             ])
-                        ,
-                        TextEntry::make('subtotal')
-                            ->label(__('purchase-order.subtotal.label'))
-                            ->state(function ($get): string {
-                                return static::formatMoney(static::getCurrentLineBreakdown($get)['subtotal'] ?? 0.0);
-                            })
-                            ->columnSpan([
-                                'default' => 1,
-                                'md' => 2,
-                                'xl' => 2,
-                            ])
-                        ,
-                        Textarea::make('description')
-                            ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
-                            ->helperText(__('purchase-order.purchase_order_item.description.helper'))
-                            ->autosize()
-                            ->columnSpanFull()
                         ,
                     ])
                     ->collapsible()
@@ -704,6 +761,17 @@ class PurchaseOrderForm
                     ->itemLabel('#')
                     ->itemNumbers()
                     ->deleteAction(fn(Action $action) => $action->requiresConfirmation())
+                    ->deleteAction(
+                        fn(Action $action) => $action
+                            ->requiresConfirmation()
+                            ->visible(function (array $arguments, Repeater $component): bool {
+                                $itemState = $component->getRawState()[$arguments['item']] ?? [];
+
+                                return static::isPurchaseOrderItemDeletable(
+                                    itemState: is_array($itemState) ? $itemState : [],
+                                );
+                            }),
+                    )
                     ->defaultItems(0)
                     ->minItems(1)
                     ->live()
@@ -1449,5 +1517,22 @@ class PurchaseOrderForm
         }
 
         return !$record->canChangeStatusTo((int) $value);
+    }
+
+    public static function isPurchaseOrderItemDeletable(array $itemState = []): bool
+    {
+        $itemId = $itemState['id'] ?? null;
+
+        if (blank($itemId)) {
+            return true;
+        }
+
+        $purchaseOrderItem = PurchaseOrderItem::query()->find($itemId);
+
+        if (!$purchaseOrderItem) {
+            return true;
+        }
+
+        return $purchaseOrderItem->getReceivedQty() <= 0;
     }
 }
