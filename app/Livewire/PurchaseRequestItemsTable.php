@@ -48,7 +48,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->grow(false)
                 ,
                 TextColumn::make('item.code')
-                    ->label('SKU')
+                    ->label(__('item.related.code.label'))
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
@@ -56,7 +56,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->grow(false)
                 ,
                 TextColumn::make('item.name')
-                    ->label('Nama Item | Deskripsi')
+                    ->label(__('item.related.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
                     ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->searchable()
@@ -75,7 +75,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->grow(false)
                 ,
                 TextColumn::make('ordered_qty')
-                    ->label('Dipesan')
+                    ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
                     ->wrapHeader()
                     ->state(fn(PurchaseRequestItem $record): float => $record->getOrderedQty())
                     ->numeric()
@@ -84,6 +84,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->alignment(Alignment::End)
                     ->visible(
                         fn() =>
+                        $this->record->status === PurchaseRequestStatus::APPROVED ||
                         $this->record->status === PurchaseRequestStatus::ORDERED ||
                         $this->record->status === PurchaseRequestStatus::FINISHED
                     )

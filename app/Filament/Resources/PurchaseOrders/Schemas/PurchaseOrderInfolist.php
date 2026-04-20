@@ -248,22 +248,28 @@ class PurchaseOrderInfolist
                         TextEntry::make('delivery_date')
                             ->label(__('purchase-order.delivery_date.label'))
                             ->date()
+                            ->color('gray')
                             ->placeholder('-')
                         ,
                         TextEntry::make('shipping_method')
                             ->label(__('purchase-order.shipping_method.label'))
                             ->placeholder('-')
+                            ->color('gray')
                         ,
                         TextEntry::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
-                            ->color('gray')
-                            ->placeholder('-')
                             ->formatStateUsing(fn($state) => nl2br(e($state)))
                             ->html()
+                            ->placeholder('-')
+                            ->color('gray')
                             ->columnSpanFull()
                         ,
                         TextEntry::make('terms')
+                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->html()
                             ->placeholder('-')
+                            ->color('gray')
+                            ->columnSpanFull()
                         ,
                     ])
                 ,
@@ -327,26 +333,36 @@ class PurchaseOrderInfolist
             ->icon(Heroicon::Calculator)
             ->iconColor('primary')
             ->columnSpanFull()
-            ->columns(3)
+            ->columns([
+                'default' => 1,
+                'lg' => 12
+            ])
             ->compact()
             ->schema([
                 Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
                     ->schema([
                         TextEntry::make('tax_type')
                             ->label(__('purchase-order.tax_type.label'))
                             ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
                             ->placeholder('-')
+                            ->color('gray')
                             ->columnSpanFull()
                         ,
                         TextEntry::make('tax_percentage')
                             ->label(__('purchase-order.tax_percentage.label'))
                             ->formatStateUsing(fn($state) => filled($state) ? ($state + 0) . '%' : '-')
                             ->placeholder('-')
+                            ->color('gray')
                             ->columnSpanFull()
                         ,
                         TextEntry::make('tax_description')
                             ->label(__('purchase-order.tax_description.label'))
                             ->placeholder('-')
+                            ->color('gray')
                             ->columnSpanFull()
                         ,
                     ])
@@ -357,7 +373,10 @@ class PurchaseOrderInfolist
                         'default' => 1,
                         'lg' => 1
                     ])
-                    ->columnSpan(2)
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
                     ->inlineLabel()
                     ->schema([
                         TextEntry::make('total_subtotal')
@@ -435,6 +454,7 @@ class PurchaseOrderInfolist
                 ,
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->color('gray')
                 ,
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
@@ -600,7 +620,7 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
-                            ->state($purchaseRequest->description)
+                            ->state(nl2br(e($purchaseRequest->description)))
                             ->html()
                             ->visible(fn($state) => filled($state))
                         ,
@@ -608,6 +628,7 @@ class PurchaseOrderInfolist
                         UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                             ->hiddenLabel()
                             ->state($purchaseRequest->user)
+                            ->color('gray')
                             ->columnSpanFull()
                         ,
                     ]);

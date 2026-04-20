@@ -47,6 +47,7 @@ class PurchaseRequestForm
                     // 'xl' => 4,
                     // '2xl' => 4,
                 ])
+                ->dense()
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
@@ -86,7 +87,6 @@ class PurchaseRequestForm
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
             ->compact()
-            // ->footer(fn($record) => self::dataSectionFooter($record))
             ->columns([
                 'default' => 1,
                 'lg' => 12,
@@ -137,9 +137,7 @@ class PurchaseRequestForm
                     ->visibleOn('edit')
                 ,
 
-                Section::make('Gudang Proyek')
-                    // ->icon(Heroicon::HomeModern)
-                    // ->iconColor('primary')
+                Section::make(__('purchase-request.fieldset.warehouse_project.label'))
                     ->columnSpan([
                         'default' => 1,
                         'lg' => 7,
@@ -156,14 +154,10 @@ class PurchaseRequestForm
                             ->relationship(
                                 'warehouse',
                                 'name',
-                                fn($query) => $query
-                                    ->when(
-                                        auth()->user()->warehouses()->exists(),
-                                        fn($q) => $q->whereIn(
-                                            'warehouses.id',
-                                            auth()->user()->warehouses->pluck('id')
-                                        )
-                                    )->orderBy('name')->orderBy('code'),
+                                fn($query) => $query->when(
+                                    auth()->user()->warehouses()->exists(),
+                                    fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id')),
+                                )->orderBy('name')->orderBy('code'),
                             )
                             ->searchable()
                             ->preload()
@@ -190,10 +184,7 @@ class PurchaseRequestForm
                             ->live()
                             ->afterStateUpdated(fn($set) => $set('project_id', null))
                             ->required()
-                            ->disabled(
-                                fn($get, string $operation) =>
-                                $operation === 'edit' || blank($get('warehouse_id'))
-                            )
+                            ->disabled(fn($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id')))
                             ->dehydrated()
                         ,
                         Select::make('division_id')
@@ -215,10 +206,7 @@ class PurchaseRequestForm
                             ->searchable()
                             ->preload()
                             ->required()
-                            ->disabled(
-                                fn($get, string $operation) =>
-                                $operation === 'edit' || blank($get('company_id'))
-                            )
+                            ->disabled(fn($get, string $operation) => $operation === 'edit' || blank($get('company_id')))
                             ->dehydrated()
                         ,
                         Select::make('project_id')
@@ -253,17 +241,12 @@ class PurchaseRequestForm
                                 }
                             )
                             ->searchable(['name', 'code', 'po_code'])
-                            ->getOptionLabelFromRecordUsing(
-                                fn($record) =>
-                                "{$record->code} / {$record->po_code} | {$record->name}"
-                            )
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                             ->preload()
                             ->required()
                             ->disabled(
                                 fn($get, string $operation) =>
-                                $operation === 'edit' ||
-                                blank($get('warehouse_id')) ||
-                                blank($get('company_id'))
+                                $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id'))
                             )
                             ->dehydrated()
                         ,
@@ -274,9 +257,7 @@ class PurchaseRequestForm
                                 'address',
                                 fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
                             )
-                            ->getOptionLabelFromRecordUsing(
-                                fn($record) => "{$record->address} - {$record->city}"
-                            )
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
                             ->searchable()
                             ->preload()
                             ->default(null)
@@ -287,7 +268,7 @@ class PurchaseRequestForm
                     ])
                 ,
 
-                Section::make('Informasi Utama')
+                Section::make(__('purchase-request.fieldset.main_info.label'))
                     // ->icon(Heroicon::ClipboardDocumentList)
                     // ->iconColor('primary')
                     ->columnSpan([
@@ -300,16 +281,6 @@ class PurchaseRequestForm
                     ->compact()
                     ->contained(false)
                     ->schema([
-                        // TextInput::make('number')
-                        //     ->label(__('purchase-request.number.label'))
-                        //     ->hint('Auto-generated')
-                        //     ->hintIcon('heroicon-m-information-circle')
-                        //     ->hintIconTooltip('Auto-generated by system')
-                        //     ->readOnly()
-                        //     ->visibleOn('edit')
-                        //     ->dehydrated(false)
-                        //     ->columnSpanFull()
-                        // ,
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-request.description.placeholder'))
@@ -343,7 +314,6 @@ class PurchaseRequestForm
             ->icon(Heroicon::Cube)
             ->iconColor('primary')
             ->columnSpanFull()
-            ->columns(1)
             ->compact()
             ->schema([
                 Repeater::make('purchaseRequestItems')
@@ -351,30 +321,23 @@ class PurchaseRequestForm
                     ->hiddenLabel()
                     ->relationship()
                     ->columnSpanFull()
-                    ->columns(['lg' => 12])
+                    ->columns([
+                        'lg' => 12
+                    ])
                     ->schema([
                         Select::make('item_id')
-                            ->label(
-                                __('item.related.code.label') .
-                                ' | ' .
-                                __('item.related.name.label')
-                            )
+                            ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
                             ->relationship('item', 'name')
                             // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->getOptionLabelFromRecordUsing(
-                                fn($record) => "{$record->code} | {$record->name}"
-                            )
-                            ->required()
+                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
                             ->searchable(['code', 'name'])
-                            ->columnSpan(['lg' => 7])
+                            ->required()
+                            ->columnSpan([
+                                'lg' => 7,
+                            ])
                         ,
                         TextInput::make('qty')
-                            ->placeholder('0')
-                            ->suffix(
-                                fn($get) => Item::query()
-                                    ->whereKey($get('item_id'))
-                                    ->value('unit')
-                            )
+                            ->numeric()
                             ->minValue(function ($record, $operation) {
                                 if ($operation === 'edit' && $record) {
                                     return (float) $record->getOrderedQty();
@@ -382,12 +345,15 @@ class PurchaseRequestForm
 
                                 return 0.01;
                             })
+                            ->placeholder(0.01)
+                            ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
                             ->required()
-                            ->numeric()
-                            ->columnSpan(['lg' => 3])
+                            ->columnSpan([
+                                'lg' => 3,
+                            ])
                         ,
                         TextEntry::make('ordered_qty')
-                            ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
+                            ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
                             ->state(function ($get, $record) {
                                 if ($record) {
                                     return number_format($record->getOrderedQty(), 2);
@@ -403,15 +369,14 @@ class PurchaseRequestForm
                                 return number_format($source?->getOrderedQty() ?? 0, 2);
                             })
                             ->numeric()
-                            ->visible(
-                                fn($get): bool => static::showOrderedQty($get('../../status'))
-                            )
-                            ->columnSpan(['lg' => 2])
-                            ->color('gray')
                             ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
+                            ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                            ->columnSpan([
+                                'lg' => 2,
+                            ])
                         ,
                         // TextEntry::make('remaining_qty')
-                        //     ->label(__('purchase-request.purchase_request_item.remaining_qty.label'))
+                        //     ->label(__('purchase-order.purchase_order_item.remaining_qty.label'))
                         //     ->state(function ($get, $record) {
                         //         if ($record) {
                         //             return number_format($record->getRemainingQty(), 2);
@@ -427,13 +392,11 @@ class PurchaseRequestForm
                         //         return number_format($source?->getRemainingQty() ?? 0, 2);
                         //     })
                         //     ->numeric()
-                        //     // ->visible(
-                        //     //     fn($get, string $operation): bool => $operation === 'edit'
-                        //     //     && static::shouldShowOrderedQty($get('../../status'))
-                        //     // )
-                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
-                        //     ->columnSpan(['lg' => 1])
                         //     ->color('gray')
+                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                        //     ->columnSpan([
+                        //         'lg' => 1,
+                        //     ])
                         // ,
                         Textarea::make('description')
                             ->label(__('common.description.label'))
@@ -473,76 +436,47 @@ class PurchaseRequestForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->columns([
-                'lg' => 2
-            ])
             ->schema([
                 Textarea::make('notes')
                     ->label(__('purchase-request.notes.label'))
                     ->placeholder(__('purchase-request.notes.placeholder'))
                     ->helperText(__('purchase-request.notes.helper'))
                     ->autosize()
-                    ->columnSpanFull()
                 ,
-
-                // Select::make('status')
-                //     ->options(fn($record): array => $record?->getAvailableStatusOptions() ?? PurchaseRequestStatus::options())
-                //     ->native(false)
-                //     ->required()
-                //     ->disableOptionWhen(function ($value, $record) {
-                //         if (!$record) {
-                //             return false;
-                //         }
-
-                //         return $record && !$record->canChangeStatusTo($value);
-                //     })
-                //     ->visibleOn('edit')
-                // ,
-
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->color('gray')
                     ->visibleOn('edit')
-                    ->columnSpanFull()
                 ,
-
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                     ->visibleOn('edit')
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->color('gray')
                     ->size(TextSize::Small)
+                    ->color('gray')
                     ->visible(fn($state) => $state != null)
                 ,
-
                 Textarea::make('info')
                     ->label(__('purchase-request.info.label'))
                     ->placeholder(__('purchase-request.info.placeholder'))
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                     ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
                     ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
                     ->afterStateHydrated(fn($component) => $component->state(null))
-                    ->columnSpanFull()
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                 ,
-
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
-                    ->formatStateUsing(
-                        fn($state) => collect(explode("\n", $state))
-                            ->map(fn($line) => "• " . e($line))
-                            ->implode('<br>')
-                    )
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($record) => !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                    ->columnSpanFull()
-                    ->visibleOn('edit')
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                 ,
             ])
         ;
@@ -571,6 +505,10 @@ class PurchaseRequestForm
             $status = PurchaseRequestStatus::tryFrom((int) $status);
         }
 
-        return $status === PurchaseRequestStatus::ORDERED || $status === PurchaseRequestStatus::FINISHED;
+        return
+            $status === PurchaseRequestStatus::APPROVED ||
+            $status === PurchaseRequestStatus::ORDERED ||
+            $status === PurchaseRequestStatus::FINISHED
+        ;
     }
 }

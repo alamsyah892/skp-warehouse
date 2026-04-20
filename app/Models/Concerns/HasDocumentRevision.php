@@ -103,6 +103,14 @@ trait HasDocumentRevision
             return $value->value;
         }
 
+        if (is_numeric($value)) {
+            return $value + 0;
+        }
+
+        if (is_null($value)) {
+            return '';
+        }
+
         return $value;
     }
 }

@@ -95,12 +95,6 @@ return [
             'placeholder' => 'Deskripsi item yang dipesan',
             'helper' => 'Contoh: merk, spesifikasi, dll',
         ],
-        'ordered_qty' => [
-            'label' => 'Dipesan',
-        ],
-        'remaining_qty' => [
-            'label' => 'Tersisa',
-        ],
     ],
 
     'section' => [
@@ -125,8 +119,8 @@ return [
             'label' => 'Gudang Proyek',
         ],
 
-        'info' => [
-            'label' => 'Informasi Pengajuan Pembelian',
+        'main_info' => [
+            'label' => 'Informasi Utama',
         ],
     ],
 ];

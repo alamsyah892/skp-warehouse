@@ -45,6 +45,7 @@ class PurchaseOrderForm
                     // 'xl' => 4,
                     // '2xl' => 4,
                 ])
+                ->dense()
                 ->schema([
                     Grid::make() // left / 1
                         ->columnSpan([
@@ -174,7 +175,6 @@ class PurchaseOrderForm
                         ,
                     ])
                 ,
-
                 Section::make()
                     ->columnSpan([
                         'default' => 1,
@@ -189,7 +189,6 @@ class PurchaseOrderForm
                     ->schema([
                         Select::make('vendor_id')
                             ->label(__('vendor.model.label'))
-                            // ->inlineLabel()
                             ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
                             ->searchable(['name', 'code'])
                             ->preload()
@@ -197,8 +196,7 @@ class PurchaseOrderForm
                             ->live()
                             ->columnSpanFull()
                         ,
-
-                        Section::make('Gudang Proyek')
+                        Section::make(__('purchase-order.fieldset.warehouse_project.label'))
                             // ->icon(Heroicon::HomeModern)
                             // ->iconColor('primary')
                             ->columnSpanFull()
@@ -211,7 +209,6 @@ class PurchaseOrderForm
                             ->schema([
                                 Select::make('warehouse_id')
                                     ->label(__('warehouse.model.label'))
-                                    // ->inlineLabel()
                                     ->disabled(fn($get, $operation) => $operation === 'edit' || filled($get('purchaseRequests')))
                                     ->relationship(
                                         name: 'warehouse',
@@ -233,10 +230,8 @@ class PurchaseOrderForm
                                     })
                                     ->dehydrated()
                                 ,
-
                                 Select::make('company_id')
                                     ->label(__('purchase-request.company.label'))
-                                    // ->inlineLabel()
                                     ->disabled(
                                         fn($get, $operation) =>
                                         $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
@@ -253,10 +248,8 @@ class PurchaseOrderForm
                                     ->afterStateUpdated(fn($set) => $set('project_id', null))
                                     ->dehydrated()
                                 ,
-
                                 Select::make('division_id')
                                     ->label(__('division.model.label'))
-                                    // ->inlineLabel()
                                     ->disabled(
                                         fn($get, $operation) =>
                                         $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
@@ -284,10 +277,8 @@ class PurchaseOrderForm
                                     ->live()
                                     ->dehydrated()
                                 ,
-
                                 Select::make('project_id')
                                     ->label(__('project.model.label'))
-                                    // ->inlineLabel()
                                     ->disabled(
                                         fn($get, $operation) =>
                                         $operation === 'edit' ||
@@ -333,7 +324,6 @@ class PurchaseOrderForm
                                 ,
                             ])
                         ,
-
                         Select::make('purchaseRequests')
                             ->label(__('purchase-request.model.plural_label'))
                             ->helperText(__('purchase-order.purchase_requests.helper'))
@@ -404,12 +394,10 @@ class PurchaseOrderForm
                             })
                             ->columnSpanFull()
                         ,
-
                         Hidden::make('purchaseRequestStatusSnapshot')
                             ->default([])
                             ->dehydrated()
                         ,
-
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-order.description.placeholder'))
@@ -417,11 +405,9 @@ class PurchaseOrderForm
                             ->autosize()
                             ->columnSpanFull()
                         ,
-
                     ])
                 ,
-
-                Section::make('Informasi Utama')
+                Section::make(__('purchase-order.fieldset.main_info.label'))
                     // ->icon(Heroicon::ClipboardDocumentList)
                     // ->iconColor('primary')
                     ->columnSpan([
@@ -436,7 +422,6 @@ class PurchaseOrderForm
                     ->schema([
                         Select::make('warehouse_address_id')
                             ->label(__('purchase-request.warehouse_address.label'))
-                            // ->inlineLabel()
                             ->disabled(fn($get) => blank($get('warehouse_id')))
                             ->relationship(
                                 name: 'warehouseAddress',
@@ -450,26 +435,21 @@ class PurchaseOrderForm
                             ->live()
                             ->columnSpanFull()
                         ,
-
                         DatePicker::make('delivery_date')
                             ->label(__('purchase-order.delivery_date.label'))
                         ,
-
                         TextInput::make('shipping_method')
                             ->label(__('purchase-order.shipping_method.label'))
                             ->placeholder(__('purchase-order.shipping_method.placeholder'))
                             ->helperText(__('purchase-order.shipping_method.helper'))
                         ,
-
                         TextArea::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
-                            // ->inlineLabel()
                             ->placeholder(__('purchase-order.delivery_notes.placeholder'))
                             ->helperText(__('purchase-order.delivery_notes.helper'))
                             ->columnSpanFull()
                         ,
                         TextArea::make('terms')
-                            // ->inlineLabel()
                             ->placeholder(__('purchase-order.terms.placeholder'))
                             ->helperText(__('purchase-order.terms.helper'))
                             ->columnSpanFull()
@@ -504,7 +484,9 @@ class PurchaseOrderForm
                     ->mutateRelationshipDataBeforeCreateUsing(fn(array $data): array => Arr::except($data, ['line_key', 'request_qty_snapshot', 'ordered_qty_snapshot']))
                     ->mutateRelationshipDataBeforeSaveUsing(fn(array $data): array => Arr::except($data, ['line_key', 'request_qty_snapshot', 'ordered_qty_snapshot']))
                     ->columnSpanFull()
-                    ->columns(['lg' => 12])
+                    ->columns([
+                        'lg' => 12,
+                    ])
                     ->schema([
                         Hidden::make('line_key')
                             ->default(fn(): string => (string) str()->uuid())
@@ -515,15 +497,12 @@ class PurchaseOrderForm
                             })
                             ->dehydrated()
                         ,
-
                         Hidden::make('request_qty_snapshot')
                             ->dehydrated()
                         ,
-
                         Hidden::make('ordered_qty_snapshot')
                             ->dehydrated()
                         ,
-
                         Select::make('purchase_request_item_id')
                             ->label(__('purchase-order.purchase_request_item.label'))
                             ->options(function ($get): array {
@@ -563,6 +542,9 @@ class PurchaseOrderForm
                             })
                             ->afterStateUpdated(function ($state, $set): void {
                                 if (!$state) {
+                                    $set('item_id', null);
+                                    $set('qty', null);
+                                    $set('description', null);
                                     static::fillPurchaseRequestItemSnapshot($set, null);
                                     return;
                                 }
@@ -570,12 +552,16 @@ class PurchaseOrderForm
                                 $source = static::getPurchaseRequestItemRecord((int) $state);
 
                                 if (!$source) {
+                                    $set('item_id', null);
+                                    $set('qty', null);
+                                    $set('description', null);
                                     static::fillPurchaseRequestItemSnapshot($set, null);
                                     return;
                                 }
 
                                 $set('item_id', $source->item_id);
                                 $set('qty', $source->getRemainingQty());
+                                $set('description', $source->description);
                                 static::fillPurchaseRequestItemSnapshot($set, $source);
                             })
                             ->afterStateHydrated(function ($state, $set, $get): void {
@@ -587,13 +573,8 @@ class PurchaseOrderForm
                             })
                             ->columnSpanFull()
                         ,
-
                         Select::make('item_id')
-                            ->label(
-                                __('item.related.code.label') .
-                                ' | ' .
-                                __('item.related.name.label')
-                            )
+                            ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
                             ->options(fn(): array => static::getManualItemOptions())
                             ->getOptionLabelUsing(function ($value): ?string {
                                 $item = static::getItemRecord((int) $value);
@@ -623,10 +604,8 @@ class PurchaseOrderForm
                             ->minValue(0.01)
                             ->placeholder(0.01)
                             ->required()
+                            ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
                             ->live(debounce: 500)
-                            ->suffix(
-                                fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0))
-                            )
                             ->rule(function ($get, $record) {
                                 return function (string $attribute, $value, $fail) use ($get, $record): void {
                                     $sourceId = (int) $get('purchase_request_item_id');
@@ -657,7 +636,6 @@ class PurchaseOrderForm
                                 'xl' => 2,
                             ])
                         ,
-
                         TextInput::make('price')
                             ->label(function ($get): string {
                                 return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
@@ -676,7 +654,6 @@ class PurchaseOrderForm
                                 'xl' => 2,
                             ])
                         ,
-
                         TextEntry::make('subtotal')
                             ->label(__('purchase-order.subtotal.label'))
                             ->state(function ($get): string {
@@ -688,7 +665,6 @@ class PurchaseOrderForm
                                 'xl' => 2,
                             ])
                         ,
-
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
@@ -720,11 +696,15 @@ class PurchaseOrderForm
             ->columnSpanFull()
             ->columns([
                 'default' => 1,
-                'lg' => 3
+                'lg' => 12
             ])
             ->compact()
             ->schema([
                 Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
                     ->schema([
                         Select::make('tax_type')
                             ->label(__('purchase-order.tax_type.label'))
@@ -735,24 +715,20 @@ class PurchaseOrderForm
                             ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
                             ->required()
                         ,
-
                         Select::make('tax_percentage')
                             ->label(__('purchase-order.tax_percentage.label'))
                             ->options(PurchaseOrder::getTaxPercentageOptions())
                             ->native(false)
                             ->live()
-                            ->placeholder('-')
                             ->afterStateHydrated(fn($component, $state) => $component->state(filled($state) ? (string) ($state + 0) : null))
                             ->dehydrateStateUsing(fn($state) => filled($state) ? $state : null)
                         ,
-
                         TextInput::make('tax_description')
                             ->label(__('purchase-order.tax_description.label'))
                             ->placeholder(__('purchase-order.tax_description.placeholder'))
                             ->helperText(__('purchase-order.tax_description.helper'))
                             ->columnSpanFull()
                         ,
-
                         TextInput::make('discount')
                             ->label(__('purchase-order.discount.label'))
                             ->numeric()
@@ -761,7 +737,6 @@ class PurchaseOrderForm
                             ->dehydrateStateUsing(fn($state) => $state ?? 0)
                             ->columnSpanFull()
                         ,
-
                         TextInput::make('rounding')
                             ->label(__('purchase-order.rounding.label'))
                             ->numeric()
@@ -772,14 +747,16 @@ class PurchaseOrderForm
                         ,
                     ])
                 ,
-
                 Fieldset::make(__('purchase-order.fieldset.detail_total.label'))
                     ->dense()
                     ->columns([
                         'default' => 1,
                         'lg' => 1
                     ])
-                    ->columnSpan(2)
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
                     ->inlineLabel()
                     ->schema([
                         TextEntry::make('total_subtotal')
@@ -787,14 +764,12 @@ class PurchaseOrderForm
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['subtotal'] ?? 0.0))
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total_discount')
                             ->label(__('purchase-order.discount.label'))
                             ->state(fn($get): string => '-' . static::formatMoney(static::getSummaryBreakdown($get)['discount'] ?? 0.0))
                             ->color('danger')
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total_after_discount')
                             ->label(__('purchase-order.after_discount.label'))
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['subtotal_after_discount'] ?? 0.0))
@@ -810,14 +785,12 @@ class PurchaseOrderForm
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['dpp'] ?? 0.0))
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total_ppn')
                             ->label(fn($get) => __('purchase-order.tax.label', ['percentage' => filled($get('tax_percentage')) ? "({$get('tax_percentage')}%)" : '']))
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['tax_amount'] ?? 0.0))
                             ->color('warning')
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total')
                             ->label(__('purchase-order.total.label'))
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['total_before_rounding'] ?? 0.0))
@@ -825,13 +798,11 @@ class PurchaseOrderForm
                             ->size(TextSize::Large)
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total_rounding')
                             ->label(__('purchase-order.rounding.label'))
                             ->state(fn($get): string => static::formatMoney($get('rounding') ?? 0))
                             ->alignEnd()
                         ,
-
                         TextEntry::make('total_grand_total')
                             ->label(__('purchase-order.grand_total.label'))
                             ->state(fn($get): string => static::formatMoney(static::getSummaryBreakdown($get)['grand_total'] ?? 0.0))
@@ -862,6 +833,7 @@ class PurchaseOrderForm
                 ,
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->color('gray')
                     ->visibleOn('edit')
                 ,
                 TextEntry::make('updated_at')->date()
@@ -1060,7 +1032,7 @@ class PurchaseOrderForm
                                 ,
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                                     ->hiddenLabel()
-                                    ->state($purchaseRequest->description)
+                                    ->state(nl2br(e($purchaseRequest->description)))
                                     ->html()
                                     ->size(TextSize::Small)
                                     ->color('gray')
@@ -1070,6 +1042,7 @@ class PurchaseOrderForm
                                 UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                                     ->hiddenLabel()
                                     ->state($purchaseRequest->user)
+                                    ->color('gray')
                                 ,
                             ])
                         ;

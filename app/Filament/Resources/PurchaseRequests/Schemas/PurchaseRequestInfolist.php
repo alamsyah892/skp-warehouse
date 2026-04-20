@@ -132,7 +132,7 @@ class PurchaseRequestInfolist
                         'lg' => 7,
                     ])
                     ->columns([
-                        'default' => 2
+                        'default' => 2,
                     ])
                     ->schema([
                         TextEntry::make('warehouse.name')
@@ -316,6 +316,7 @@ class PurchaseRequestInfolist
                 ,
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->color('gray')
                 ,
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))

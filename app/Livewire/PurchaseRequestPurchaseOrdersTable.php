@@ -72,7 +72,7 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('purchase_order_items_count')
-                    ->label(__('purchase-request.purchase_request_item.ordered_qty.label'))
+                    ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
                     ->wrapHeader()
                     ->sortable()
                     ->color('gray')

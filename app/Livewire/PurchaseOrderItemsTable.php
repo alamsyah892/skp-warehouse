@@ -35,26 +35,26 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
-                    ->label('SKU')
+                    ->label(__('item.related.code.label'))
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
-                    ->label('Nama Item | Deskripsi')
+                    ->label(__('item.related.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
                     ->description(function (PurchaseOrderItem $record): HtmlString {
                         $descriptionLines = collect([
-                            filled($record->description) ? e($record->description) : null,
+                            filled($record->description) ? nl2br($record->description) : null,
                             $record->purchaseRequestItem?->purchaseRequest?->number
-                            ? '# ' . e($record->purchaseRequestItem->purchaseRequest->number)
+                            ? '# ' . $record->purchaseRequestItem->purchaseRequest->number
                             : null,
                         ])->filter();
 
                         return new HtmlString($descriptionLines->isNotEmpty()
                             ? $descriptionLines->implode('<br>')
-                            : '-');
+                            : '');
                     })
                     ->searchable()
                     ->wrap()
@@ -70,7 +70,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('price')
-                    ->label('Harga')
+                    ->label(__('purchase-order.purchase_order_item.price.label'))
                     ->numeric()
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()

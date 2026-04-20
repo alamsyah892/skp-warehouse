@@ -1,8 +1,13 @@
 {
     "agents": [
-        "gemini"
+        "cursor"
     ],
-    "mcp": true,
-    "nightwatch_mcp": false,
-    "sail": false
+    "packages": [
+        "filament/filament"
+    ],
+    "skills": [
+        "laravel-best-practices",
+        "pest-testing",
+        "tailwindcss-development"
+    ]
 }

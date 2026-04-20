@@ -205,6 +205,28 @@ it('returns success color for purchase request items that are fully ordered', fu
         ->toBe('success');
 });
 
+it('does not mark revision fields as changed when only notes changes', function () {
+    $purchaseRequest = new PurchaseRequest();
+    $purchaseRequest->setRawAttributes([
+        'warehouse_address_id' => 7,
+        'description' => 'Purchase request for infolist test',
+        'memo' => '',
+        'boq' => '',
+    ], true);
+    $purchaseRequest->setRelation('purchaseRequestItems', collect());
+
+    $formData = [
+        'warehouse_address_id' => '7',
+        'description' => 'Purchase request for infolist test',
+        'memo' => '',
+        'boq' => '',
+        'notes' => 'Updated notes only',
+        'purchaseRequestItems' => [],
+    ];
+
+    expect($purchaseRequest->hasWatchedFieldChanges($formData))->toBeFalse();
+});
+
 function createPurchaseRequestForInfolist(): PurchaseRequest
 {
     $user = User::factory()->create();

@@ -107,9 +107,6 @@ return [
     ],
 
     'purchase_order_item' => [
-        'qty' => [
-            'label' => 'Qty Dipesan',
-        ],
         'price' => [
             'label' => 'Harga',
             'include_label' => 'Harga (Include Tax)',
@@ -121,6 +118,12 @@ return [
         'description' => [
             'placeholder' => 'Deskripsi item PO',
             'helper' => 'Contoh: spesifikasi, merk, atau instruksi pengiriman',
+        ],
+        'ordered_qty' => [
+            'label' => 'Dipesan',
+        ],
+        'remaining_qty' => [
+            'label' => 'Tersisa',
         ],
     ],
 
@@ -204,10 +207,10 @@ return [
 
     'fieldset' => [
         'warehouse_project' => [
-            'label' => 'Sumber Pengajuan',
+            'label' => 'Gudang Proyek',
         ],
-        'info' => [
-            'label' => 'Informasi Purchase Order',
+        'main_info' => [
+            'label' => 'Informasi Utama',
         ],
         'detail_total' => [
             'label' => 'Rincian Total',

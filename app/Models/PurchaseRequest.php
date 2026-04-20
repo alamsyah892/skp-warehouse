@@ -218,7 +218,10 @@ class PurchaseRequest extends Model
     {
         return [
             'warehouse_address_id',
+
             'description',
+            'memo',
+            'boq',
         ];
     }
 
