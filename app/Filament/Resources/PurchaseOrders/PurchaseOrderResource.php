@@ -78,6 +78,7 @@ class PurchaseOrderResource extends Resource
             ->with([
                 'purchaseRequests.warehouseAddress',
                 'purchaseRequests.user',
+                'goodsReceives',
                 'purchaseOrderItems.purchaseOrder',
                 'purchaseOrderItems.item',
                 'purchaseOrderItems.purchaseRequestItem.purchaseRequest',

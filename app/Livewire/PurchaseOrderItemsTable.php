@@ -24,6 +24,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->with([
                         'item',
                         'purchaseRequestItem.purchaseRequest',
+                        'goodsReceiveItems.goodsReceive',
                     ])
                     ->where('purchase_order_id', $this->record->id)
             )
@@ -65,6 +66,21 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
+                    ->numeric()
+                    ->alignment(Alignment::End)
+                    ->verticallyAlignStart()
+                ,
+                TextColumn::make('received_qty')
+                    ->label(__('goods-receive.qty.label'))
+                    ->state(function (PurchaseOrderItem $record): float {
+                        if ($record->relationLoaded('goodsReceiveItems')) {
+                            return (float) $record->goodsReceiveItems
+                                ->filter(fn ($item) => $item->goodsReceive?->status?->value === \App\Enums\GoodsReceiveStatus::RECEIVED->value)
+                                ->sum('qty');
+                        }
+
+                        return $record->getReceivedQty();
+                    })
                     ->numeric()
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()

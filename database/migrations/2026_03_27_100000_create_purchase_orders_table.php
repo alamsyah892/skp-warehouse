@@ -96,7 +96,7 @@ return new class extends Migration {
              */
             $table->decimal('discount', 15, 2)->default(0);
             $table->string('tax_type');
-            $table->decimal('tax_percentage', 5, 2)->default(0);
+            $table->decimal('tax_percentage', 5, 2)->nullable()->default(null);
             $table->string('tax_description');
             $table->decimal('rounding', 15, 2)->default(0);
 

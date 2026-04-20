@@ -7,6 +7,7 @@ use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseOrderType;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
+use App\Livewire\PurchaseOrderGoodsReceivesTable;
 use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
@@ -321,6 +322,12 @@ class PurchaseOrderInfolist
                         //     ->color(null),
 
                         Livewire::make(PurchaseOrderItemsTable::class),
+                    ]),
+                Tab::make(__('goods-receive.model.plural_label'))
+                    ->icon(Heroicon::InboxArrowDown)
+                    ->badge(fn($record) => $record->goodsReceives?->count() ?: null)
+                    ->schema([
+                        Livewire::make(PurchaseOrderGoodsReceivesTable::class),
                     ]),
                 ActivityLogTab::make(__('common.log_activity.label')),
             ])

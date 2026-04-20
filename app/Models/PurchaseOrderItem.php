@@ -2,11 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\GoodsReceiveStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PurchaseOrderItem extends Model
 {
@@ -57,6 +59,31 @@ class PurchaseOrderItem extends Model
     public function purchaseRequestItem(): BelongsTo
     {
         return $this->belongsTo(PurchaseRequestItem::class);
+    }
+
+    public function goodsReceiveItems(): HasMany
+    {
+        return $this->hasMany(GoodsReceiveItem::class);
+    }
+
+    public function getReceivedQty(?int $exceptGoodsReceiveId = null): float
+    {
+        return (float) $this->goodsReceiveItems()
+            ->whereHas('goodsReceive', function ($query) use ($exceptGoodsReceiveId) {
+                $query->where('status', GoodsReceiveStatus::RECEIVED->value);
+
+                if ($exceptGoodsReceiveId) {
+                    $query->where('id', '!=', $exceptGoodsReceiveId);
+                }
+            })
+            ->sum('qty');
+    }
+
+    public function getRemainingReceiveQty(?int $exceptGoodsReceiveId = null): float
+    {
+        $remaining = (float) $this->qty - $this->getReceivedQty($exceptGoodsReceiveId);
+
+        return max($remaining, 0.0);
     }
 
 

@@ -134,16 +134,19 @@ class EditPurchaseOrder extends EditRecord
             ->all();
 
         $this->initialPurchaseRequestStatusSnapshot = PurchaseOrder::buildPurchaseRequestStatusSnapshot($purchaseRequestIds);
-        $this->initialPurchaseRequestItemSnapshots = $this->record->purchaseOrderItems
-            ->mapWithKeys(function ($item): array {
-                $purchaseRequestItemId = (int) $item->purchase_request_item_id;
 
-                if ($purchaseRequestItemId <= 0) {
-                    return [];
-                }
-
-                return [$purchaseRequestItemId => PurchaseOrder::buildPurchaseRequestItemSnapshot($purchaseRequestItemId, $this->record->id) ?? []];
-            })
+        $purchaseRequestItemIds = $this->record->purchaseOrderItems
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values()
             ->all();
+
+        $this->initialPurchaseRequestItemSnapshots = PurchaseOrder::buildPurchaseRequestItemSnapshots(
+            $purchaseRequestItemIds,
+            $this->record->id,
+        );
     }
 }

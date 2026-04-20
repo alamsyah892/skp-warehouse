@@ -636,6 +636,31 @@ class PurchaseOrderForm
                                 'xl' => 2,
                             ])
                         ,
+                        TextEntry::make('received_qty')
+                            ->label(__('goods-receive.qty.label'))
+                            ->state(function ($get): string {
+                                $purchaseOrderItemId = (int) ($get('id') ?? 0);
+
+                                if ($purchaseOrderItemId <= 0) {
+                                    return number_format(0, 2);
+                                }
+
+                                static $cache = [];
+
+                                if (!array_key_exists($purchaseOrderItemId, $cache)) {
+                                    $cache[$purchaseOrderItemId] = \App\Models\PurchaseOrderItem::query()->find($purchaseOrderItemId);
+                                }
+
+                                $item = $cache[$purchaseOrderItemId];
+
+                                return number_format($item?->getReceivedQty() ?? 0, 2);
+                            })
+                            ->columnSpan([
+                                'default' => 1,
+                                'md' => 2,
+                                'xl' => 2,
+                            ])
+                        ,
                         TextInput::make('price')
                             ->label(function ($get): string {
                                 return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value

@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
 
 class PurchaseOrder extends Model
@@ -188,6 +189,11 @@ class PurchaseOrder extends Model
     public function purchaseRequests(): BelongsToMany
     {
         return $this->belongsToMany(PurchaseRequest::class);
+    }
+
+    public function goodsReceives(): HasMany
+    {
+        return $this->hasMany(GoodsReceive::class);
     }
 
     public function statusLogs(): HasMany
@@ -488,6 +494,22 @@ class PurchaseOrder extends Model
 
     public static function validateAllocationQuantities(array $items, ?int $currentPurchaseOrderId = null): void
     {
+        $ids = collect($items)
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        /** @var Collection<int, PurchaseRequestItem> $purchaseRequestItems */
+        $purchaseRequestItems = $ids->isEmpty()
+            ? collect()
+            : PurchaseRequestItem::query()
+                ->whereIn('id', $ids->all())
+                ->get()
+                ->keyBy('id');
+
         foreach ($items as $index => $item) {
             $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
             $qty = (float) ($item['qty'] ?? 0);
@@ -496,7 +518,8 @@ class PurchaseOrder extends Model
                 continue;
             }
 
-            $purchaseRequestItem = PurchaseRequestItem::query()->find($purchaseRequestItemId);
+            /** @var PurchaseRequestItem|null $purchaseRequestItem */
+            $purchaseRequestItem = $purchaseRequestItems->get($purchaseRequestItemId);
 
             if (!$purchaseRequestItem) {
                 throw ValidationException::withMessages([
@@ -520,6 +543,23 @@ class PurchaseOrder extends Model
     {
         $purchaseRequestIds = self::normalizePurchaseRequestIds($purchaseRequestIds);
 
+        $ids = collect($items)
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        /** @var Collection<int, PurchaseRequestItem> $purchaseRequestItems */
+        $purchaseRequestItems = $ids->isEmpty()
+            ? collect()
+            : PurchaseRequestItem::query()
+                ->select(['id', 'purchase_request_id'])
+                ->whereIn('id', $ids->all())
+                ->get()
+                ->keyBy('id');
+
         foreach ($items as $index => $item) {
             $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
 
@@ -527,10 +567,8 @@ class PurchaseOrder extends Model
                 continue;
             }
 
-            $purchaseRequestItem = PurchaseRequestItem::query()
-                ->select(['id', 'purchase_request_id'])
-                ->find($purchaseRequestItemId)
-            ;
+            /** @var PurchaseRequestItem|null $purchaseRequestItem */
+            $purchaseRequestItem = $purchaseRequestItems->get($purchaseRequestItemId);
 
             if (!$purchaseRequestItem) {
                 throw ValidationException::withMessages([
@@ -577,6 +615,48 @@ class PurchaseOrder extends Model
         ];
     }
 
+    /**
+     * @param  array<int, int|string|null>  $purchaseRequestItemIds
+     * @return array<int, array{request_qty: float, ordered_qty: float}>
+     */
+    public static function buildPurchaseRequestItemSnapshots(array $purchaseRequestItemIds, ?int $exceptPurchaseOrderId = null): array
+    {
+        $ids = collect($purchaseRequestItemIds)
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        /** @var Collection<int, PurchaseRequestItem> $items */
+        $items = PurchaseRequestItem::query()
+            ->whereIn('id', $ids->all())
+            ->get(['id', 'qty'])
+            ->keyBy('id');
+
+        return $ids
+            ->mapWithKeys(function (int $id) use ($items, $exceptPurchaseOrderId): array {
+                /** @var PurchaseRequestItem|null $item */
+                $item = $items->get($id);
+
+                if (!$item) {
+                    return [];
+                }
+
+                return [
+                    $id => [
+                        'request_qty' => round((float) $item->qty, 2),
+                        'ordered_qty' => round($item->getOrderedQty($exceptPurchaseOrderId), 2),
+                    ],
+                ];
+            })
+            ->all();
+    }
+
     public static function validatePurchaseRequestSynchronization(
         array $purchaseRequestIds,
         array $purchaseRequestStatusSnapshot,
@@ -614,6 +694,22 @@ class PurchaseOrder extends Model
             }
         }
 
+        $purchaseRequestItemIds = collect($items)
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        /** @var Collection<int, PurchaseRequestItem> $purchaseRequestItems */
+        $purchaseRequestItems = $purchaseRequestItemIds->isEmpty()
+            ? collect()
+            : PurchaseRequestItem::query()
+                ->whereIn('id', $purchaseRequestItemIds->all())
+                ->get(['id', 'qty'])
+                ->keyBy('id');
+
         foreach ($items as $index => $item) {
             $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
 
@@ -621,7 +717,8 @@ class PurchaseOrder extends Model
                 continue;
             }
 
-            $purchaseRequestItem = PurchaseRequestItem::query()->find($purchaseRequestItemId);
+            /** @var PurchaseRequestItem|null $purchaseRequestItem */
+            $purchaseRequestItem = $purchaseRequestItems->get($purchaseRequestItemId);
 
             if (!$purchaseRequestItem) {
                 throw ValidationException::withMessages([
@@ -707,17 +804,35 @@ class PurchaseOrder extends Model
 
     public static function syncPurchaseOrderItemsFromPurchaseRequestItems(array &$data): void
     {
-        $items = collect($data['purchaseOrderItems'] ?? [])
-            ->map(function (array $item): array {
+        $rawItems = collect($data['purchaseOrderItems'] ?? []);
+
+        $purchaseRequestItemIds = $rawItems
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->unique()
+            ->values();
+
+        /** @var Collection<int, PurchaseRequestItem> $purchaseRequestItems */
+        $purchaseRequestItems = $purchaseRequestItemIds->isEmpty()
+            ? collect()
+            : PurchaseRequestItem::query()
+                ->select(['id', 'item_id'])
+                ->whereIn('id', $purchaseRequestItemIds->all())
+                ->get()
+                ->keyBy('id');
+
+        $items = $rawItems
+            ->map(function (array $item) use ($purchaseRequestItems): array {
                 $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
 
                 if ($purchaseRequestItemId <= 0) {
                     return $item;
                 }
 
-                $purchaseRequestItem = PurchaseRequestItem::query()
-                    ->select(['id', 'item_id'])
-                    ->find($purchaseRequestItemId);
+                /** @var PurchaseRequestItem|null $purchaseRequestItem */
+                $purchaseRequestItem = $purchaseRequestItems->get($purchaseRequestItemId);
 
                 if (!$purchaseRequestItem) {
                     return $item;
@@ -728,8 +843,7 @@ class PurchaseOrder extends Model
                 return $item;
             })
             ->values()
-            ->all()
-        ;
+            ->all();
 
         $data['purchaseOrderItems'] = $items;
     }
