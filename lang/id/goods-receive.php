@@ -51,7 +51,7 @@ return [
             'label' => 'BPB Manual',
         ],
         'correction' => [
-            'label' => 'Koreksi',
+            'label' => 'Koreksi Stok',
         ],
     ],
 
