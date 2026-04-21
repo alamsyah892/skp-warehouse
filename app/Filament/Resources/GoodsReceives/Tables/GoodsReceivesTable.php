@@ -23,35 +23,42 @@ class GoodsReceivesTable
                     ->sortable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('purchaseOrder.number')
-                    ->label(__('goods-receive.purchase_order.label'))
+                    ->label(__('purchase-order.model.label'))
                     ->searchable()
                     ->sortable()
                     ->fontFamily(FontFamily::Mono)
+                    ->weight(FontWeight::Bold)
                     ->color('gray')
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('type')
                     ->label(__('goods-receive.type.label'))
-                    ->formatStateUsing(fn ($state) => $state?->label())
-                    ->icon(fn ($state) => $state?->icon())
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->color(fn($state) => $state?->color())
                     ->badge()
-                    ->color(fn ($state) => $state?->color())
-                    ->sortable(),
+                    ->sortable()
+                ,
                 TextColumn::make('status')
-                    ->formatStateUsing(fn ($state) => $state?->label())
-                    ->icon(fn ($state) => $state?->icon())
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->color(fn($state) => $state?->color())
                     ->badge()
-                    ->color(fn ($state) => $state?->color())
-                    ->sortable(),
+                    ->sortable()
+                ,
                 TextColumn::make('goods_receive_items_count')
                     ->label(__('goods-receive.goods_receive_items.label'))
                     ->color('gray')
-                    ->sortable(),
+                    ->sortable()
+                ,
                 TextColumn::make('created_at')
                     ->label(__('common.created_at.label'))
                     ->date()
-                    ->sortable(),
+                    ->sortable()
+                ,
             ])
             ->filters([
                 //
@@ -64,6 +71,7 @@ class GoodsReceivesTable
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
                 ]),
-            ]);
+            ])
+        ;
     }
 }

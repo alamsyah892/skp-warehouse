@@ -488,7 +488,7 @@ class PurchaseOrderInfolist
 
     protected static function vendorInfoSection(): Section
     {
-        return Section::make('Detail Vendor')
+        return Section::make(__('vendor.section.main_info.label'))
             ->icon(Heroicon::BuildingStorefront)
             ->iconColor('primary')
             ->collapsible()
@@ -631,7 +631,6 @@ class PurchaseOrderInfolist
                             ->html()
                             ->visible(fn($state) => filled($state))
                         ,
-
                         UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                             ->hiddenLabel()
                             ->state($purchaseRequest->user)

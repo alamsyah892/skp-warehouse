@@ -6,29 +6,52 @@ return [
         'plural_label' => 'Penerimaan Barang',
     ],
 
+    'number' => [
+        'label' => 'Nomor',
+    ],
+
+    'company' => [
+        'label' => 'Perusahaan (Gudang Kecil)',
+    ],
+
+    'warehouse_address' => [
+        'label' => 'Alamat Penerimaan (Gudang)',
+    ],
+
     'section' => [
         'main_info' => [
-            'label' => 'Informasi Utama',
+            'label' => 'Informasi Penerimaan Barang',
         ],
+
         'goods_receive_items' => [
             'label' => 'Item Penerimaan',
         ],
+
         'other_info' => [
             'label' => 'Informasi Lainnya',
         ],
     ],
 
-    'number' => [
-        'label' => 'Nomor',
+    'fieldset' => [
+        'warehouse_project' => [
+            'label' => 'Gudang Proyek',
+        ],
+
+        'main_info' => [
+            'label' => 'Informasi Utama',
+        ],
     ],
 
     'type' => [
-        'label' => 'Tipe',
+        'label' => 'Tipe Penerimaan',
         'purchase_order' => [
-            'label' => 'Purchase Order',
+            'label' => 'BPB PO',
         ],
         'manual' => [
-            'label' => 'Manual',
+            'label' => 'BPB Manual',
+        ],
+        'correction' => [
+            'label' => 'Koreksi',
         ],
     ],
 
@@ -39,7 +62,7 @@ return [
         ],
         'returned' => [
             'label' => 'Returned',
-            'action_label' => 'Return',
+            'action_label' => 'Dikembalikan',
         ],
         'canceled' => [
             'label' => 'Canceled',
@@ -52,7 +75,6 @@ return [
     ],
 
     'description' => [
-        'label' => 'Deskripsi',
         'placeholder' => 'Contoh: Penerimaan barang tahap 1',
         'helper' => 'Boleh diisi untuk memberikan konteks penerimaan.',
     ],
@@ -77,26 +99,16 @@ return [
 
     'goods_receive_items' => [
         'label' => 'Item Penerimaan',
-        'received_qty' => [
-            'label' => 'Diterima',
-        ],
-    ],
-
-    'purchase_order' => [
-        'label' => 'Purchase Order',
     ],
 
     'purchase_order_item' => [
-        'label' => 'Item Purchase Order',
-    ],
-
-    'qty' => [
-        'label' => 'Qty',
-        'placeholder' => 0.01,
+        'source_item' => [
+            'context_value' => 'Dipesan: :ordered_qty | Diterima: :received_qty | Kuota: :remaining_qty',
+        ],
     ],
 
     'validation' => [
-        'qty_exceeded' => 'Qty melebihi sisa yang bisa diterima (:remaining).',
+        'qty_exceeded' => 'Qty melebihi kuota yang bisa diterima (:remaining).',
         'source_item_not_found' => 'Item sumber tidak ditemukan.',
     ],
 ];

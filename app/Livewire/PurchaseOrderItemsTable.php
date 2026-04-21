@@ -48,14 +48,14 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
-                    ->label(__('item.related.code.label'))
+                    ->label(__('item.code.label'))
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
-                    ->label(__('item.related.name.label') . ' | ' . __('common.description.label'))
+                    ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
                     ->description(function (PurchaseOrderItem $record): HtmlString {
                         $descriptionLines = collect([
@@ -96,7 +96,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('received_qty')
-                    ->label(__('goods-receive.goods_receive_items.received_qty.label'))
+                    ->label(__('purchase-order.purchase_order_item.received_qty.label'))
                     ->state(function (PurchaseOrderItem $record): float {
                         if ($record->relationLoaded('goodsReceiveItems')) {
                             return (float) $record->goodsReceiveItems

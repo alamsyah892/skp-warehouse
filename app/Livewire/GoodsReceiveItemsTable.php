@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\GoodsReceiveItem;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
@@ -31,17 +30,18 @@ class GoodsReceiveItemsTable extends TableWidget
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
-                    ->alignment(Alignment::End)
-                    ->verticallyAlignStart(),
+                    ->alignEnd()
+                    ->verticallyAlignStart()
+                ,
                 TextColumn::make('item.code')
-                    ->label(__('item.related.code.label'))
+                    ->label(__('item.code.label'))
                     ->searchable()
-                    ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
-                    ->verticallyAlignStart(),
+                    ->fontFamily(FontFamily::Mono)
+                    ->verticallyAlignStart()
+                ,
                 TextColumn::make('item.name')
-                    ->label(__('item.related.name.label') . ' | ' . __('common.description.label'))
-                    ->wrapHeader()
+                    ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->description(function (GoodsReceiveItem $record): HtmlString {
                         $purchaseRequestNumber = $record->purchaseOrderItem?->purchaseRequestItem?->purchaseRequest?->number;
 
@@ -50,26 +50,29 @@ class GoodsReceiveItemsTable extends TableWidget
                             $purchaseRequestNumber ? '# ' . $purchaseRequestNumber : null,
                         ])->filter();
 
-                        return new HtmlString($descriptionLines->isNotEmpty()
-                            ? $descriptionLines->implode('<br>')
-                            : '');
+                        return new HtmlString(
+                            $descriptionLines->isNotEmpty() ? $descriptionLines->implode('<br>') : ''
+                        );
                     })
                     ->searchable()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('item.unit')
-                    ->label('Unit')
+                    ->label(__('item.unit.label'))
                     ->color('gray')
-                    ->verticallyAlignStart(),
+                    ->verticallyAlignStart()
+                ,
                 TextColumn::make('qty')
-                    ->label(__('goods-receive.qty.label'))
                     ->numeric()
-                    ->alignment(Alignment::End)
-                    ->verticallyAlignStart(),
+                    ->alignEnd()
+                    ->verticallyAlignStart()
+                ,
             ])
             ->defaultSort('id', 'asc')
             ->striped()
             ->stackedOnMobile(false)
-            ->paginated(false);
+            ->paginated(false)
+        ;
     }
 }
 

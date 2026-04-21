@@ -596,7 +596,7 @@ class PurchaseOrderForm
                             ->columns(1)
                             ->schema([
                                 Select::make('item_id')
-                                    ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
+                                    ->label(__('item.code.label') . ' | ' . __('item.name.label'))
                                     ->options(fn(): array => static::getManualItemOptions())
                                     ->getOptionLabelUsing(function ($value): ?string {
                                         $item = static::getItemRecord((int) $value);
@@ -697,7 +697,7 @@ class PurchaseOrderForm
                                 // ])
                                 ,
                                 TextEntry::make('received_qty')
-                                    ->label(__('goods-receive.goods_receive_items.received_qty.label'))
+                                    ->label(__('purchase-order.purchase_order_item.received_qty.label'))
                                     ->numeric()
                                     ->state(function ($get): string {
                                         $purchaseOrderItemId = (int) ($get('id') ?? 0);

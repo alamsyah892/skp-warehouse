@@ -17,6 +17,14 @@ enum GoodsReceiveType: int
         };
     }
 
+    public function initial(): string
+    {
+        return match ($this) {
+            self::PURCHASE_ORDER => 'BPB',
+            self::MANUAL => 'BPB-N',
+        };
+    }
+
     public function color(): string
     {
         return match ($this) {
@@ -38,7 +46,7 @@ enum GoodsReceiveType: int
         static $cache = null;
 
         return $cache ??= collect(self::cases())
-            ->mapWithKeys(fn (self $type): array => [
+            ->mapWithKeys(fn(self $type): array => [
                 (string) $type->value => $type->label(),
             ])
             ->toArray();

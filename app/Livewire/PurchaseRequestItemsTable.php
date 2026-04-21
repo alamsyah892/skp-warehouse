@@ -48,7 +48,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->grow(false)
                 ,
                 TextColumn::make('item.code')
-                    ->label(__('item.related.code.label'))
+                    ->label(__('item.code.label'))
                     ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
@@ -56,7 +56,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->grow(false)
                 ,
                 TextColumn::make('item.name')
-                    ->label(__('item.related.name.label') . ' | ' . __('common.description.label'))
+                    ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
                     ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->searchable()

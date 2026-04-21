@@ -7,9 +7,9 @@ return [
     'model.plural_label' => 'Item',
 
 
-    'related.code.label' => 'SKU',
-    'related.name.label' => 'Nama Item',
-    'related.unit.label' => 'Satuan Item',
+    'code.label' => 'SKU',
+    'name.label' => 'Nama Item',
+    'unit.label' => 'Unit',
 
 
     'section.main_info.label' => 'Informasi Item',

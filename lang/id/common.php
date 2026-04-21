@@ -6,6 +6,7 @@ return [
     'code.label' => 'Kode',
     'name.label' => 'Nama',
     'description.label' => 'Deskripsi',
+    'notes.label' => 'Catatan',
     'is_active.label' => 'Aktif',
     'created_at.label' => 'Dibuat Pada',
     'updated_at.label' => 'Diperbarui Pada',

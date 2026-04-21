@@ -326,7 +326,7 @@ class PurchaseRequestForm
                     ])
                     ->schema([
                         Select::make('item_id')
-                            ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
+                            ->label(__('item.code.label') . ' | ' . __('item.name.label'))
                             ->relationship('item', 'name')
                             // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")

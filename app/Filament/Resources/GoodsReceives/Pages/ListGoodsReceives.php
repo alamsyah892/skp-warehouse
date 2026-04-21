@@ -5,6 +5,7 @@ namespace App\Filament\Resources\GoodsReceives\Pages;
 use App\Filament\Resources\GoodsReceives\GoodsReceiveResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Support\Icons\Heroicon;
 
 class ListGoodsReceives extends ListRecords
 {
@@ -13,7 +14,10 @@ class ListGoodsReceives extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            CreateAction::make(),
+            CreateAction::make()
+                ->icon(Heroicon::Plus)
+                ->button()
+            ,
         ];
     }
 }

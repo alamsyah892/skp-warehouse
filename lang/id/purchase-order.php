@@ -125,6 +125,9 @@ return [
         'remaining_qty' => [
             'label' => 'Tersisa',
         ],
+        'received_qty' => [
+            'label' => 'Diterima',
+        ],
     ],
 
     'discount' => [

@@ -5,19 +5,17 @@ namespace App\Filament\Resources\GoodsReceives\Schemas;
 use App\Enums\GoodsReceiveStatus;
 use App\Enums\GoodsReceiveType;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
-use App\Models\GoodsReceive;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
+use App\Models\Vendor;
 use Filament\Actions\Action;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -51,7 +49,8 @@ class GoodsReceiveForm
                         ->schema([
                             static::dataSection(),
                             static::itemSection(),
-                        ]),
+                        ])
+                    ,
                     Grid::make()
                         ->columnSpan([
                             'default' => 1,
@@ -61,8 +60,11 @@ class GoodsReceiveForm
                         ->schema([
                             static::infoSection(),
                             static::purchaseOrderInfoSection(),
-                        ]),
-                ]),
+                            static::vendorInfoSection(),
+                        ])
+                    ,
+                ])
+            ,
         ]);
     }
 
@@ -98,7 +100,8 @@ class GoodsReceiveForm
                                 'default' => 2,
                                 'lg' => 2,
                             ])
-                            ->visibleOn('edit'),
+                            ->visibleOn('edit')
+                        ,
                         // TextEntry::make('type')
                         //     ->hiddenLabel()
                         //     ->icon(fn($state) => $state?->icon())
@@ -106,7 +109,8 @@ class GoodsReceiveForm
                         //     ->size(TextSize::Large)
                         //     ->color(fn($state) => $state?->color())
                         //     ->badge()
-                        //     ->visibleOn('edit'),
+                        //     ->visibleOn('edit')
+                        // ,
                         Select::make('type')
                             ->label(__('goods-receive.type.label'))
                             ->options(GoodsReceiveType::options())
@@ -114,8 +118,10 @@ class GoodsReceiveForm
                             ->required()
                             ->live()
                             ->columnSpanFull()
-                            ->visibleOn('create'),
-                    ]),
+                            ->visibleOn('create')
+                        ,
+                    ])
+                ,
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
@@ -137,13 +143,15 @@ class GoodsReceiveForm
                                 'default' => 2,
                                 'lg' => 2,
                             ])
-                            ->visibleOn('edit'),
+                            ->visibleOn('edit')
+                        ,
                         TextEntry::make('created_at')
                             ->hiddenLabel()
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
-                            ->visibleOn('edit'),
+                            ->visibleOn('edit')
+                        ,
                     ]),
                 Section::make()
                     ->columnSpan([
@@ -157,32 +165,7 @@ class GoodsReceiveForm
                     ->compact()
                     ->contained(false)
                     ->schema([
-                        Select::make('purchase_order_id')
-                            ->label(__('goods-receive.purchase_order.label'))
-                            ->relationship(
-                                name: 'purchaseOrder',
-                                titleAttribute: 'number',
-                                modifyQueryUsing: fn(Builder $query) => $query->orderByDesc('id'),
-                            )
-                            ->searchable(['number', 'description'])
-                            ->preload()
-                            ->required(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
-                            ->visible(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
-                            ->live()
-                            ->afterStateUpdated(function ($state, $set): void {
-                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
-                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
-                            })
-                            ->afterStateHydrated(function ($state, $set, $get): void {
-                                if (static::normalizeTypeState($get('type')) !== GoodsReceiveType::PURCHASE_ORDER) {
-                                    return;
-                                }
-
-                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
-                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
-                            })
-                            ->columnSpanFull(),
-                        Section::make(__('purchase-order.fieldset.warehouse_project.label'))
+                        Section::make(__('goods-receive.fieldset.warehouse_project.label'))
                             ->columnSpanFull()
                             ->columns([
                                 'default' => 1,
@@ -212,9 +195,10 @@ class GoodsReceiveForm
                                         $set('project_id', null);
                                         $set('warehouse_address_id', null);
                                     })
-                                    ->dehydrated(),
+                                    ->dehydrated()
+                                ,
                                 Select::make('company_id')
-                                    ->label(__('purchase-request.company.label'))
+                                    ->label(__('goods-receive.company.label'))
                                     ->disabled(fn($get, $operation) => $operation === 'edit' || blank($get('warehouse_id')) || static::shouldLockHeader($get))
                                     ->relationship(
                                         name: 'company',
@@ -226,7 +210,8 @@ class GoodsReceiveForm
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(fn($set) => $set('project_id', null))
-                                    ->dehydrated(),
+                                    ->dehydrated()
+                                ,
                                 Select::make('division_id')
                                     ->label(__('division.model.label'))
                                     ->disabled(fn($get, $operation) => $operation === 'edit' || blank($get('company_id')) || static::shouldLockHeader($get))
@@ -240,16 +225,19 @@ class GoodsReceiveForm
                                                 ->when($companyId, function ($q) use ($companyId) {
                                                     $q
                                                         ->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId))
-                                                        ->orWhereDoesntHave('companies');
+                                                        ->orWhereDoesntHave('companies')
+                                                    ;
                                                 })
-                                                ->orderBy('name')->orderBy('code');
+                                                ->orderBy('name')->orderBy('code')
+                                            ;
                                         },
                                     )
                                     ->searchable()
                                     ->preload()
                                     ->required()
                                     ->live()
-                                    ->dehydrated(),
+                                    ->dehydrated()
+                                ,
                                 Select::make('project_id')
                                     ->label(__('project.model.label'))
                                     ->disabled(fn($get, $operation) => $operation === 'edit'
@@ -268,43 +256,76 @@ class GoodsReceiveForm
                                                     $q->where(function ($qq) use ($companyId) {
                                                         $qq
                                                             ->whereHas('companies', fn($q) => $q->where('companies.id', $companyId))
-                                                            ->orWhereDoesntHave('companies');
+                                                            ->orWhereDoesntHave('companies')
+                                                        ;
                                                     });
                                                 })
                                                 ->when($warehouseId, function ($q) use ($warehouseId) {
                                                     $q->where(function ($qq) use ($warehouseId) {
                                                         $qq
                                                             ->whereHas('warehouses', fn($q) => $q->where('warehouses.id', $warehouseId))
-                                                            ->orWhereDoesntHave('warehouses');
+                                                            ->orWhereDoesntHave('warehouses')
+                                                        ;
                                                     });
                                                 })
                                                 ->where('allow_po', true)
-                                                ->orderBy('name')->orderBy('code');
+                                                ->orderBy('name')->orderBy('code')
+                                            ;
                                         },
                                     )
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                                     ->searchable(['name', 'code', 'po_code'])
                                     ->preload()
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                                     ->required()
                                     ->live()
-                                    ->dehydrated(),
+                                    ->dehydrated()
+                                ,
                                 Select::make('warehouse_address_id')
-                                    ->label(__('purchase-request.warehouse_address.label'))
+                                    ->label(__('goods-receive.warehouse_address.label'))
                                     ->disabled(fn($get) => blank($get('warehouse_id')))
                                     ->relationship(
                                         name: 'warehouseAddress',
                                         titleAttribute: 'address',
                                         modifyQueryUsing: fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id')),
                                     )
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
                                     ->searchable(['address', 'city'])
                                     ->preload()
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
                                     ->default(null)
                                     ->live()
-                                    ->columnSpanFull(),
-                            ]),
-                    ]),
-                Section::make(__('purchase-order.fieldset.main_info.label'))
+                                    ->columnSpanFull()
+                                ,
+                            ])
+                        ,
+                        Select::make('purchase_order_id')
+                            ->label(__('purchase-order.model.label'))
+                            ->relationship(
+                                name: 'purchaseOrder',
+                                titleAttribute: 'number',
+                                modifyQueryUsing: fn(Builder $query) => $query->orderByDesc('id'),
+                            )
+                            ->searchable(['number', 'description'])
+                            ->preload()
+                            ->required(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
+                            ->visible(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
+                            ->live()
+                            ->afterStateUpdated(function ($state, $set): void {
+                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
+                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
+                            })
+                            ->afterStateHydrated(function ($state, $set, $get): void {
+                                if (static::normalizeTypeState($get('type')) !== GoodsReceiveType::PURCHASE_ORDER) {
+                                    return;
+                                }
+
+                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
+                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
+                            })
+                            ->columnSpanFull()
+                        ,
+                    ])
+                ,
+                Section::make(__('goods-receive.fieldset.main_info.label'))
                     ->columnSpan([
                         'default' => 1,
                         'lg' => 5,
@@ -316,18 +337,22 @@ class GoodsReceiveForm
                     ->contained(false)
                     ->schema([
                         Textarea::make('description')
-                            ->label(__('goods-receive.description.label'))
+                            ->label(__('common.description.label'))
                             ->placeholder(__('goods-receive.description.placeholder'))
                             ->helperText(__('goods-receive.description.helper'))
                             ->autosize()
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                        ,
                         TextInput::make('delivery_order')
                             ->label(__('goods-receive.delivery_order.label'))
                             ->placeholder(__('goods-receive.delivery_order.placeholder'))
                             ->helperText(__('goods-receive.delivery_order.helper'))
-                            ->columnSpanFull(),
-                    ]),
-            ]);
+                            ->columnSpanFull()
+                        ,
+                    ])
+                ,
+            ])
+        ;
     }
 
     protected static function itemSection(): Section|string
@@ -335,8 +360,6 @@ class GoodsReceiveForm
         return Section::make(__('goods-receive.section.goods_receive_items.label'))
             ->icon(Heroicon::Cube)
             ->iconColor('primary')
-            ->columnSpanFull()
-            ->columns(1)
             ->compact()
             ->schema([
                 Repeater::make('goodsReceiveItems')
@@ -352,9 +375,10 @@ class GoodsReceiveForm
                     ->schema([
                         Hidden::make('line_key')
                             ->default(fn(): string => (string) str()->uuid())
-                            ->dehydrated(),
+                            ->dehydrated()
+                        ,
                         Select::make('purchase_order_item_id')
-                            ->label(__('goods-receive.purchase_order_item.label'))
+                            ->label(__('purchase-order.purchase_order_items.label'))
                             ->options(function ($get): array {
                                 $type = static::normalizeTypeState($get('../../type'));
                                 if ($type !== GoodsReceiveType::PURCHASE_ORDER) {
@@ -365,7 +389,8 @@ class GoodsReceiveForm
 
                                 return $purchaseOrderId > 0
                                     ? static::getPurchaseOrderItemOptions($purchaseOrderId)
-                                    : [];
+                                    : []
+                                ;
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
                                 $record = static::getPurchaseOrderItemRecord((int) $value);
@@ -374,9 +399,9 @@ class GoodsReceiveForm
                                 }
 
                                 $purchaseRequestNumber = $record->purchaseRequestItem?->purchaseRequest?->number;
-                                $prefix = $purchaseRequestNumber ? "PR: {$purchaseRequestNumber} | " : '';
+                                $suffix = $purchaseRequestNumber ? " | # {$purchaseRequestNumber}" : '';
 
-                                return $prefix . "{$record->item?->code} | {$record->item?->name}";
+                                return "{$record->item?->code} | {$record->item?->name}" . $suffix;
                             })
                             ->preload()
                             ->searchable()
@@ -390,7 +415,8 @@ class GoodsReceiveForm
 
                                 return $purchaseOrderId > 0
                                     ? static::getPurchaseOrderItemOptions($purchaseOrderId, $search)
-                                    : [];
+                                    : []
+                                ;
                             })
                             ->disabled(fn($get): bool => static::normalizeTypeState($get('../../type')) !== GoodsReceiveType::PURCHASE_ORDER || blank($get('../../purchase_order_id')))
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
@@ -405,9 +431,9 @@ class GoodsReceiveForm
                                 $exceptGoodsReceiveId = $record?->goods_receive_id;
 
                                 return implode(' | ', array_filter([
-                                    __('purchase-order.purchase_order_item.source_item.context_value', [
-                                        'request_qty' => number_format((float) $purchaseOrderItem->qty, 2),
-                                        'ordered_qty' => number_format((float) $purchaseOrderItem->getReceivedQty($exceptGoodsReceiveId), 2),
+                                    __('goods-receive.purchase_order_item.source_item.context_value', [
+                                        'ordered_qty' => number_format((float) $purchaseOrderItem->qty, 2),
+                                        'received_qty' => number_format((float) $purchaseOrderItem->getReceivedQty($exceptGoodsReceiveId), 2),
                                         'remaining_qty' => number_format((float) $purchaseOrderItem->getRemainingReceiveQty($exceptGoodsReceiveId), 2),
                                     ]),
                                 ]));
@@ -442,9 +468,10 @@ class GoodsReceiveForm
                                 $set('description', $source->description);
                             })
                             ->visible(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                        ,
                         Select::make('item_id')
-                            ->label(__('item.related.code.label') . ' | ' . __('item.related.name.label'))
+                            ->label(__('item.code.label') . ' | ' . __('item.name.label'))
                             ->options(fn(): array => static::getItemOptions())
                             ->getOptionLabelUsing(function ($value): ?string {
                                 $item = static::getItemRecord((int) $value);
@@ -454,19 +481,18 @@ class GoodsReceiveForm
                             ->searchable()
                             ->getSearchResultsUsing(fn(string $search): array => static::getItemOptions($search))
                             ->required()
-                            ->live()
                             ->disabled(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)
+                            ->live()
                             ->dehydrated()
                             ->columnSpan([
                                 'default' => 1,
-                                'md' => 2,
-                                'xl' => 6,
-                            ]),
+                                'lg' => 8,
+                            ])
+                        ,
                         TextInput::make('qty')
-                            ->label(__('goods-receive.qty.label'))
                             ->numeric()
                             ->minValue(0.01)
-                            ->placeholder(__('goods-receive.qty.placeholder'))
+                            ->placeholder(0.01)
                             ->required()
                             ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
                             ->live(debounce: 500)
@@ -502,15 +528,16 @@ class GoodsReceiveForm
                             })
                             ->columnSpan([
                                 'default' => 1,
-                                'md' => 2,
-                                'xl' => 2,
-                            ]),
+                                'lg' => 4,
+                            ])
+                        ,
                         Textarea::make('description')
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
                             ->helperText(__('purchase-order.purchase_order_item.description.helper'))
                             ->autosize()
-                            ->columnSpanFull(),
+                            ->columnSpanFull()
+                        ,
                     ])
                     ->collapsible()
                     ->reorderable()
@@ -521,8 +548,10 @@ class GoodsReceiveForm
                     ->defaultItems(0)
                     ->minItems(1)
                     ->live()
-                    ->partiallyRenderAfterActionsCalled(false),
-            ]);
+                    ->partiallyRenderAfterActionsCalled(false)
+                ,
+            ])
+        ;
     }
 
     protected static function infoSection(): Section|string
@@ -534,27 +563,30 @@ class GoodsReceiveForm
             ->compact()
             ->schema([
                 Textarea::make('notes')
-                    ->label(__('goods-receive.notes.label'))
+                    ->label(__('common.notes.label'))
                     ->placeholder(__('goods-receive.notes.placeholder'))
                     ->helperText(__('goods-receive.notes.helper'))
                     ->autosize()
-                    ->columnSpanFull(),
+                ,
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
                     ->color('gray')
-                    ->visibleOn('edit'),
+                    ->visibleOn('edit')
+                ,
                 TextEntry::make('updated_at')
                     ->date()
                     ->label(__('common.updated_at.label'))
                     ->size(TextSize::Small)
                     ->color('gray')
-                    ->visibleOn('edit'),
+                    ->visibleOn('edit')
+                ,
                 TextEntry::make('deleted_at')
                     ->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
                     ->color('gray')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn($state) => $state != null)
+                ,
                 Textarea::make('info')
                     ->label(__('goods-receive.info.label'))
                     ->placeholder(__('goods-receive.info.placeholder'))
@@ -563,20 +595,22 @@ class GoodsReceiveForm
                     ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
                     ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
                     ->afterStateHydrated(fn($component) => $component->state(null))
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED)),
+                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED))
+                ,
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
                     ->formatStateUsing(fn($state) => collect(explode("\n", (string) $state))->map(fn($line) => '• ' . e($line))->implode('<br>'))
                     ->html()
-                    ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED)),
-            ]);
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED))
+                ,
+            ])
+        ;
     }
 
     protected static function purchaseOrderInfoSection(): Section|string
     {
-        return Section::make(__('goods-receive.purchase_order.label'))
+        return Section::make(__('purchase-order.section.main_info.label'))
             ->icon(Heroicon::ShoppingCart)
             ->iconColor('primary')
             ->collapsible()
@@ -595,19 +629,124 @@ class GoodsReceiveForm
                         ->hiddenLabel()
                         ->icon(Heroicon::Hashtag)
                         ->iconColor('primary')
+                        ->state($purchaseOrder->number)
                         ->fontFamily(FontFamily::Mono)
                         ->weight(FontWeight::Bold)
-                        ->state($purchaseOrder->number)
-                        ->url(fn(): string => PurchaseOrderResource::getUrl('view', ['record' => $purchaseOrder->id])),
-                    TextEntry::make('purchase_order_description')
+                    ,
+                    Grid::make()
+                        ->schema([
+                            TextEntry::make('purchase_order_status')
+                                ->hiddenLabel()
+                                ->icon($purchaseOrder->status->icon())
+                                ->state($purchaseOrder->status->label())
+                                ->color($purchaseOrder->status->color())
+                                ->badge()
+                            ,
+                            TextEntry::make("purchase_order_created_at")
+                                ->hiddenLabel()
+                                ->icon(Heroicon::CalendarDays)
+                                ->iconColor('primary')
+                                ->state($purchaseOrder->created_at)
+                                ->date()
+                            ,
+                        ])
+                    ,
+                    TextEntry::make("purchase_order_description")
                         ->hiddenLabel()
                         ->state(nl2br(e((string) $purchaseOrder->description)))
                         ->html()
-                        ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => filled($state)),
+                        ->visible(fn($state) => filled($state))
+                    ,
+                    UserEntry::make("purchaseOrder.user")
+                        ->hiddenLabel()
+                        ->state($purchaseOrder->user)
+                        ->color('gray')
+                    ,
                 ];
-            });
+            })
+        ;
+    }
+
+    protected static function vendorInfoSection(): Section|string
+    {
+        return Section::make(__('vendor.section.main_info.label'))
+            ->icon(Heroicon::BuildingStorefront)
+            ->iconColor('primary')
+            ->collapsible()
+            ->compact()
+            ->visible(fn($get) => filled($get('purchase_order_id')))
+            ->schema(function ($get) {
+                $purchaseOrderId = (int) ($get('purchase_order_id') ?? 0);
+                $purchaseOrder = static::getPurchaseOrderRecord($purchaseOrderId);
+                $vendor = static::getVendorRecord($purchaseOrder?->vendor_id);
+
+                if (!$vendor) {
+                    return [];
+                }
+
+                return [
+                    TextEntry::make('vendor_name')
+                        ->hiddenLabel()
+                        ->icon(Heroicon::BuildingStorefront)
+                        ->iconColor('primary')
+                        ->state($vendor->name)
+                        ->weight(FontWeight::Bold)
+                    ,
+                    TextEntry::make('vendor_address')
+                        ->hiddenLabel()
+                        ->icon(Heroicon::MapPin)
+                        ->iconColor('primary')
+                        ->state(collect([$vendor->address, $vendor->city])->filter()->join(' - '))
+                        ->color('gray')
+                    ,
+                    Grid::make()
+                        ->schema([
+                            TextEntry::make('vendor_phone')
+                                ->hiddenLabel()
+                                ->icon(Heroicon::Phone)
+                                ->iconColor('primary')
+                                ->state($vendor->phone)
+                                ->color('gray')
+                                ->visible(fn($state) => $state != null)
+                            ,
+                            TextEntry::make('vendor_fax')
+                                ->hiddenLabel()
+                                ->icon(Heroicon::DocumentText)
+                                ->iconColor('primary')
+                                ->state($vendor->fax)
+                                ->color('gray')
+                                ->visible(fn($state) => $state != null)
+                            ,
+                        ])
+                    ,
+                    TextEntry::make('vendor_contact_person')
+                        ->hiddenLabel()
+                        ->icon(Heroicon::UserCircle)
+                        ->iconColor('primary')
+                        ->state($vendor->contact_person)
+                        ->color('gray')
+                        ->visible(fn($state) => $state != null)
+                    ,
+                    TextEntry::make('vendor_email')
+                        ->hiddenLabel()
+                        ->icon(Heroicon::Envelope)
+                        ->iconColor('primary')
+                        ->state($vendor->email)
+                        ->color('gray')
+                        ->visible(fn($state) => $state != null)
+                    ,
+                    TextEntry::make('vendor_website')
+                        ->hiddenLabel()
+                        ->icon(Heroicon::GlobeAlt)
+                        ->iconColor('primary')
+                        ->state($vendor->website)
+                        ->color('gray')
+                        ->visible(fn($state) => $state != null)
+                    ,
+                ];
+            })
+        ;
     }
 
     protected static function normalizeTypeState(mixed $state): ?GoodsReceiveType
@@ -644,6 +783,21 @@ class GoodsReceiveForm
         }
 
         return $cache[$purchaseOrderId];
+    }
+
+    protected static function getVendorRecord(?int $vendorId): ?Vendor
+    {
+        if (!$vendorId) {
+            return null;
+        }
+
+        static $cache = [];
+
+        if (!array_key_exists($vendorId, $cache)) {
+            $cache[$vendorId] = Vendor::query()->find($vendorId);
+        }
+
+        return $cache[$vendorId];
     }
 
     protected static function fillHeaderFieldsFromPurchaseOrder(callable $set, ?PurchaseOrder $purchaseOrder): void
@@ -716,10 +870,10 @@ class GoodsReceiveForm
                 ->get()
                 ->mapWithKeys(function (PurchaseOrderItem $record): array {
                     $purchaseRequestNumber = $record->purchaseRequestItem?->purchaseRequest?->number;
-                    $prefix = $purchaseRequestNumber ? "PR: {$purchaseRequestNumber} | " : '';
+                    $suffix = $purchaseRequestNumber ? " | # {$purchaseRequestNumber}" : '';
 
                     return [
-                        $record->id => $prefix . "{$record->item?->code} | {$record->item?->name}",
+                        $record->id => "{$record->item?->code} | {$record->item?->name}" . $suffix,
                     ];
                 })
                 ->toArray();
