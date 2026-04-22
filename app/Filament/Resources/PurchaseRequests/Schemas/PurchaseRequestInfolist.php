@@ -114,8 +114,8 @@ class PurchaseRequestInfolist
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
+                            ->size(TextSize::Large)
                             ->badge()
                         ,
                         TextEntry::make('created_at')
@@ -123,6 +123,7 @@ class PurchaseRequestInfolist
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                     ])
                 ,
@@ -155,17 +156,12 @@ class PurchaseRequestInfolist
                             ->icon(Heroicon::Square3Stack3d)
                             ->iconColor('primary')
                         ,
-
                         TextEntry::make('warehouseAddress.address')
                             ->label(__('purchase-request.warehouse_address.label'))
                             ->icon(Heroicon::MapPin)
                             ->iconColor('primary')
                             ->formatStateUsing(
-                                fn($state, $record) =>
-                                // $state . "</br>" . $record->warehouseAddress?->city
-                                collect([$state, $record->warehouseAddress?->city])
-                                    ->filter()
-                                    ->join(' - ') ?: '-'
+                                fn($state, $record) => collect([$state, $record->warehouseAddress?->city])->filter()->join(' - ') ?: '-'
                             )
                             ->html()
                             ->placeholder('-')
@@ -188,24 +184,143 @@ class PurchaseRequestInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                         ,
-
                         TextEntry::make('memo')
                             ->color('gray')
                             ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                         ,
                         TextEntry::make('boq')
                             ->label(__('purchase-request.boq.label'))
                             ->color('gray')
                             ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                         ,
                     ])
+                ,
+            ])
+        ;
+    }
+
+    protected static function tabSection(): Tabs|string
+    {
+        return Tabs::make()
+            ->tabs([
+                Tab::make(__('purchase-request.section.purchase_request_items.label'))
+                    ->icon(Heroicon::Cube)
+                    ->badge(fn($record) => $record->purchaseRequestItems?->count() ?: null)
+                    ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
+                    ->schema([
+                        // Callout::make()
+                        //     ->description(__('purchase-request.section.purchase_request_items.description'))
+                        //     ->info()
+                        //     ->color(null)
+                        // ,
+
+                        Livewire::make(PurchaseRequestItemsTable::class),
+                    ])
+                ,
+
+                Tab::make(__('purchase-order.model.plural_label'))
+                    ->icon(Heroicon::ShoppingCart)
+                    ->badge(fn($record) => $record->purchaseOrders()->count() ?: null)
+                    ->schema([
+                        // Callout::make()
+                        //     ->description(__('purchase-request.section.purchase_orders.description'))
+                        //     ->info()
+                        //     ->color(null)
+                        // ,
+
+                        Livewire::make(PurchaseRequestPurchaseOrdersTable::class),
+                    ])
+                    ->visible(fn($record) => $record && $record->purchaseOrders()->exists())
+                ,
+
+                ActivityLogTab::make(__('common.log_activity.label')),
+            ])
+        ;
+    }
+
+    protected static function infoSection(): Section|string
+    {
+        return Section::make(__('purchase-request.section.other_info.label'))
+            ->icon(Heroicon::InformationCircle)
+            ->iconColor('primary')
+            ->collapsible()
+            ->compact()
+            ->schema([
+                TextEntry::make('notes')
+                    ->label(__('purchase-request.notes.label'))
+                    ->formatStateUsing(fn($state) => nl2br($state))
+                    ->html()
+                    ->placeholder('-')
+                    ->color('gray')
+                ,
+                UserEntry::make('user')
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->color('gray')
+                ,
+                TextEntry::make('updated_at')->date()
+                    ->label(__('common.updated_at.label'))
+                    ->size(TextSize::Small)
+                    ->color('gray')
+                ,
+                TextEntry::make('deleted_at')->date()
+                    ->label(__('common.deleted_at.label'))
+                    ->size(TextSize::Small)
+                    ->color('gray')
+                    ->visible(fn($state) => $state != null)
+                ,
+                TextEntry::make('info')
+                    ->label(__('purchase-order.revision_history.label'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . $line)->implode('<br>'))
+                    ->html()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
+                ,
+            ])
+        ;
+    }
+
+    protected static function statusTimelineSection(): Section|string
+    {
+        return Section::make('Status Timeline')
+            ->icon(Heroicon::Clock)
+            ->iconColor('primary')
+            ->collapsible()
+            ->compact()
+            ->columnSpanFull()
+            ->schema([
+                RepeatableEntry::make('statusLogs')
+                    ->hiddenLabel()
+                    ->schema([
+                        TextEntry::make('to_status')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->iconColor(fn($state) => $state?->color())
+                            ->formatStateUsing(function ($state, $record) {
+                                $status = $state?->label();
+                                $user = $record->user?->name ?? 'System';
+                                $date = $record->created_at->format('M d, Y');
+
+                                $note = $record->note ? '<br>Note: ' . $record->note : '';
+
+                                return __('common.log_format_with_date', [
+                                    'date' => $date,
+                                    'status' => $status,
+                                    'user' => $user,
+                                ]) . $note;
+                            })
+                            ->html()
+                            ->color('gray')
+                        ,
+                    ])
+                    ->contained(false)
                 ,
             ])
         ;
@@ -265,117 +380,5 @@ class PurchaseRequestInfolist
         return $record->purchaseRequestItems->contains(
             fn($item): bool => $item->getRemainingQty() > 0
         );
-    }
-
-    protected static function tabSection(): Tabs|string
-    {
-        return Tabs::make()
-            ->tabs([
-                Tab::make(__('purchase-request.section.purchase_request_items.label'))
-                    ->icon(Heroicon::Cube)
-                    ->badge(fn($record) => $record->purchaseRequestItems?->count() ?: null)
-                    ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
-                    ->schema([
-                        // Callout::make()
-                        //     ->description(__('purchase-request.section.purchase_request_items.description'))
-                        //     ->info()
-                        //     ->color(null)
-                        // ,
-
-                        Livewire::make(PurchaseRequestItemsTable::class),
-                    ])
-                ,
-
-                Tab::make(__('purchase-order.model.plural_label'))
-                    ->icon(Heroicon::ShoppingCart)
-                    ->badge(fn($record) => $record->purchaseOrders()->count() ?: null)
-                    ->schema([
-                        Livewire::make(PurchaseRequestPurchaseOrdersTable::class),
-                    ])
-                ,
-
-                ActivityLogTab::make(__('common.log_activity.label')),
-            ])
-        ;
-    }
-
-    protected static function infoSection(): Section|string
-    {
-        return Section::make(__('purchase-request.section.other_info.label'))
-            ->icon(Heroicon::InformationCircle)
-            ->iconColor('primary')
-            ->collapsible()
-            ->compact()
-            ->schema([
-                TextEntry::make('notes')
-                    ->label(__('purchase-request.notes.label'))
-                    ->formatStateUsing(fn($state) => nl2br(e($state)))
-                    ->html()
-                    ->placeholder('-')
-                    ->color('gray')
-                ,
-                UserEntry::make('user')
-                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
-                    ->color('gray')
-                ,
-                TextEntry::make('updated_at')->date()
-                    ->label(__('common.updated_at.label'))
-                    ->size(TextSize::Small)
-                    ->color('gray')
-                ,
-                TextEntry::make('deleted_at')->date()
-                    ->label(__('common.deleted_at.label'))
-                    ->size(TextSize::Small)
-                    ->color('gray')
-                    ->visible(fn($state) => $state != null)
-                ,
-                TextEntry::make('info')
-                    ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
-                    ->html()
-                    ->placeholder('-')
-                    ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                ,
-            ])
-        ;
-    }
-
-    protected static function statusTimelineSection(): Section|string
-    {
-        return Section::make('Status Timeline')
-            ->icon(Heroicon::Clock)
-            ->iconColor('primary')
-            ->collapsible()
-            ->compact()
-            ->columnSpanFull()
-            ->schema([
-                RepeatableEntry::make('statusLogs')
-                    ->hiddenLabel()
-                    ->schema([
-                        TextEntry::make('to_status')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->iconColor(fn($state) => $state?->color())
-                            ->formatStateUsing(function ($state, $record) {
-                                $status = $state?->label();
-                                $user = $record->user?->name ?? 'System';
-                                $date = $record->created_at->format('M d, Y');
-                                $note = $record->note ? '<br>Note: ' . $record->note : '';
-
-                                return __('common.log_format_with_date', [
-                                    'date' => $date,
-                                    'status' => $status,
-                                    'user' => $user,
-                                ]) . $note;
-                            })
-                            ->html()
-                            ->color('gray')
-                        ,
-                    ])
-                    ->contained(false)
-                ,
-            ])
-        ;
     }
 }

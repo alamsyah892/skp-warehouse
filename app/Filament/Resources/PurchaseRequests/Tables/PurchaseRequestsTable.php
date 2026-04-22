@@ -12,6 +12,7 @@ use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 use Zvizvi\UserFields\Components\UserColumn;
 
 class PurchaseRequestsTable
@@ -22,29 +23,34 @@ class PurchaseRequestsTable
             ->columns([
                 TextColumn::make('number')
                     ->label(__('purchase-request.number.label'))
-                    ->description(fn($record): string => $record->description)
+                    ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->searchable()
                     ->sortable()
                     ->fontFamily(FontFamily::Mono)
                     ->size(TextSize::Large)
                     ->weight(FontWeight::Bold)
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('warehouse.name')
                     ->label(__('warehouse.model.label'))
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('company.alias')
                     ->label(__('purchase-request.company.label'))
                     ->wrapHeader()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('division.name')
                     ->label(__('division.model.label'))
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('project.name')
                     ->label(__('project.model.label'))
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('warehouseAddress.address')
@@ -53,6 +59,7 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->placeholder('-')
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
@@ -61,33 +68,44 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->date()
                     ->sortable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 UserColumn::make('user')
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->wrapped()
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => $state?->label())
                     ->icon(fn($state) => $state?->icon())
-                    ->badge()
                     ->color(fn($state) => $state?->color())
+                    ->badge()
                     ->grow(false)
                     ->sortable()
+                    ->verticallyAlignStart()
                 ,
 
                 TextColumn::make('memo')
+                    ->formatStateUsing(fn($state) => nl2br($state))
+                    ->html()
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('boq')
                     ->label(__('purchase-request.boq.label'))
+                    ->formatStateUsing(fn($state) => nl2br($state))
+                    ->html()
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
@@ -96,6 +114,7 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->sortable()
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
@@ -106,6 +125,7 @@ class PurchaseRequestsTable
                     ->date()
                     ->sortable()
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
@@ -116,6 +136,7 @@ class PurchaseRequestsTable
                     ->sortable()
                     ->placeholder('-')
                     ->color('gray')
+                    ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,

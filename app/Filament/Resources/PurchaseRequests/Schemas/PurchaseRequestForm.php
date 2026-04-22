@@ -123,8 +123,8 @@ class PurchaseRequestForm
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
+                            ->size(TextSize::Large)
                             ->badge()
                         ,
                         TextEntry::make('created_at')
@@ -132,6 +132,7 @@ class PurchaseRequestForm
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                     ])
                     ->visibleOn('edit')
@@ -325,56 +326,132 @@ class PurchaseRequestForm
                         'lg' => 12
                     ])
                     ->schema([
-                        Select::make('item_id')
-                            ->label(__('item.code.label') . ' | ' . __('item.name.label'))
-                            ->relationship('item', 'name')
-                            // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
-                            ->searchable(['code', 'name'])
-                            ->required()
+                        Grid::make()
                             ->columnSpan([
-                                'lg' => 7,
+                                'default' => 1,
+                                'lg' => 8,
+                            ])
+                            ->columns(1)
+                            ->schema([
+                                Select::make('item_id')
+                                    ->label(__('item.code.label') . ' | ' . __('item.name.label'))
+                                    ->relationship('item', 'name')
+                                    // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
+                                    ->searchable(['code', 'name'])
+                                    ->required()
+                                ,
+                                Textarea::make('description')
+                                    ->label(__('common.description.label'))
+                                    ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
+                                    ->helperText(__('purchase-request.purchase_request_item.description.helper'))
+                                    ->autosize()
+                                ,
                             ])
                         ,
-                        TextInput::make('qty')
-                            ->numeric()
-                            ->minValue(function ($record, $operation) {
-                                if ($operation === 'edit' && $record) {
-                                    return (float) $record->getOrderedQty();
-                                }
-
-                                return 0.01;
-                            })
-                            ->placeholder(0.01)
-                            ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
-                            ->required()
+                        Grid::make()
                             ->columnSpan([
-                                'lg' => 3,
+                                'default' => 1,
+                                'lg' => 4,
                             ])
-                        ,
-                        TextEntry::make('ordered_qty')
-                            ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
-                            ->state(function ($get, $record) {
-                                if ($record) {
-                                    return number_format($record->getOrderedQty(), 2);
-                                }
-
-                                $itemId = $get('id');
-                                if (!$itemId) {
-                                    return '0.00';
-                                }
-
-                                $source = PurchaseRequestItem::query()->find($itemId);
-
-                                return number_format($source?->getOrderedQty() ?? 0, 2);
-                            })
-                            ->numeric()
-                            ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
-                            ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
-                            ->columnSpan([
+                            ->columns([
+                                'default' => 2,
                                 'lg' => 2,
                             ])
+                            ->schema([
+                                TextInput::make('qty')
+                                    ->numeric()
+                                    ->minValue(function ($record, $operation) {
+                                        if ($operation === 'edit' && $record) {
+                                            return (float) $record->getOrderedQty();
+                                        }
+
+                                        return 0.01;
+                                    })
+                                    ->placeholder(0.01)
+                                    ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
+                                    ->required()
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'lg' => 2,
+                                    ])
+                                ,
+                                TextEntry::make('ordered_qty')
+                                    ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
+                                    ->state(function ($get, $record) {
+                                        if ($record) {
+                                            return number_format($record->getOrderedQty(), 2);
+                                        }
+
+                                        $itemId = $get('id');
+                                        if (!$itemId) {
+                                            return '0.00';
+                                        }
+
+                                        $source = PurchaseRequestItem::query()->find($itemId);
+
+                                        return number_format($source?->getOrderedQty() ?? 0, 2);
+                                    })
+                                    ->numeric()
+                                    ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
+                                    ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'lg' => 2,
+                                    ])
+                                ,
+                            ])
                         ,
+                        // Select::make('item_id')
+                        //     ->label(__('item.code.label') . ' | ' . __('item.name.label'))
+                        //     ->relationship('item', 'name')
+                        //     // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                        //     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
+                        //     ->searchable(['code', 'name'])
+                        //     ->required()
+                        //     ->columnSpan([
+                        //         'lg' => 7,
+                        //     ])
+                        // ,
+                        // TextInput::make('qty')
+                        //     ->numeric()
+                        //     ->minValue(function ($record, $operation) {
+                        //         if ($operation === 'edit' && $record) {
+                        //             return (float) $record->getOrderedQty();
+                        //         }
+
+                        //         return 0.01;
+                        //     })
+                        //     ->placeholder(0.01)
+                        //     ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
+                        //     ->required()
+                        //     ->columnSpan([
+                        //         'lg' => 3,
+                        //     ])
+                        // ,
+                        // TextEntry::make('ordered_qty')
+                        //     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
+                        //     ->state(function ($get, $record) {
+                        //         if ($record) {
+                        //             return number_format($record->getOrderedQty(), 2);
+                        //         }
+
+                        //         $itemId = $get('id');
+                        //         if (!$itemId) {
+                        //             return '0.00';
+                        //         }
+
+                        //         $source = PurchaseRequestItem::query()->find($itemId);
+
+                        //         return number_format($source?->getOrderedQty() ?? 0, 2);
+                        //     })
+                        //     ->numeric()
+                        //     ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
+                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                        //     ->columnSpan([
+                        //         'lg' => 2,
+                        //     ])
+                        // ,
                         // TextEntry::make('remaining_qty')
                         //     ->label(__('purchase-order.purchase_order_item.remaining_qty.label'))
                         //     ->state(function ($get, $record) {
@@ -398,13 +475,13 @@ class PurchaseRequestForm
                         //         'lg' => 1,
                         //     ])
                         // ,
-                        Textarea::make('description')
-                            ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
-                            ->helperText(__('purchase-request.purchase_request_item.description.helper'))
-                            ->autosize()
-                            ->columnSpanFull()
-                        ,
+                        // Textarea::make('description')
+                        //     ->label(__('common.description.label'))
+                        //     ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
+                        //     ->helperText(__('purchase-request.purchase_request_item.description.helper'))
+                        //     ->autosize()
+                        //     ->columnSpanFull()
+                        // ,
                     ])
                     ->collapsible()
                     ->reorderable()
@@ -472,7 +549,7 @@ class PurchaseRequestForm
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-request.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . $line)->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')

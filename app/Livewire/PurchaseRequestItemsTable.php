@@ -2,7 +2,6 @@
 
 namespace App\Livewire;
 
-use App\Enums\PurchaseRequestStatus;
 use App\Models\PurchaseRequestItem;
 use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
@@ -22,8 +21,8 @@ class PurchaseRequestItemsTable extends TableWidget
         $requestedQty = (float) $purchaseRequestItem->qty;
 
         return match (true) {
-            $orderedQty == 0 => 'danger',
-            $orderedQty < $requestedQty => 'info',
+            ($orderedQty == 0) => 'danger',
+            ($orderedQty < $requestedQty) => 'info',
             default => 'success',
         };
     }
@@ -60,6 +59,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->wrapHeader()
                     ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->searchable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('item.unit')
@@ -82,12 +82,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
                     ->weight(FontWeight::Bold)
                     ->alignment(Alignment::End)
-                    ->visible(
-                        fn() =>
-                        $this->record->status === PurchaseRequestStatus::APPROVED ||
-                        $this->record->status === PurchaseRequestStatus::ORDERED ||
-                        $this->record->status === PurchaseRequestStatus::FINISHED
-                    )
+                    ->visible(fn() => $this->record && $this->record->purchaseOrders()->exists())
                     ->verticallyAlignStart()
                     ->grow(false)
                 ,
@@ -97,11 +92,7 @@ class PurchaseRequestItemsTable extends TableWidget
                 //     ->state(fn($record) => $record->getRemainingQty())
                 //     ->numeric()
                 //     ->alignment(Alignment::End)
-                //     ->visible(
-                //         fn() =>
-                //         $this->record->status === PurchaseRequestStatus::ORDERED ||
-                //         $this->record->status === PurchaseRequestStatus::FINISHED
-                //     )
+                //     ->visible(fn() => $this->record && $this->record->purchaseOrders()->exists())
                 // ->verticallyAlignStart()
                 //     ->grow(false)
                 // ,

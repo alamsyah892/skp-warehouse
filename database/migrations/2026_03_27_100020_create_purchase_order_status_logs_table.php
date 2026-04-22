@@ -19,7 +19,7 @@ return new class extends Migration {
             $table->unsignedTinyInteger('from_status')->nullable();
             $table->unsignedTinyInteger('to_status');
 
-            $table->text('note')->nullable();
+            $table->text('note');
 
             $table->timestamps();
         });

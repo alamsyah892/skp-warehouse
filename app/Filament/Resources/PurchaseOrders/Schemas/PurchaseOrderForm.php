@@ -37,8 +37,12 @@ class PurchaseOrderForm
 {
     public $record;
 
-    public static function getReceivedQtyColumnColor(PurchaseOrderItem $purchaseOrderItem): string
+    public static function getReceivedQtyColumnColor(?PurchaseOrderItem $purchaseOrderItem): string
     {
+        if (!$purchaseOrderItem) {
+            return 'gray';
+        }
+
         $receivedQty = $purchaseOrderItem->getReceivedQty();
         $orderedQty = (float) $purchaseOrderItem->qty;
 
@@ -186,6 +190,7 @@ class PurchaseOrderForm
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                             ->visibleOn('edit')
                         ,
                     ])
@@ -716,7 +721,7 @@ class PurchaseOrderForm
 
                                         return number_format($item?->getReceivedQty() ?? 0, 2);
                                     })
-                                    ->color(fn(PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
+                                    ->color(fn(?PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
                                 // ->columnSpan([
                                 //     'default' => 1,
                                 //     'md' => 2,
@@ -1108,6 +1113,7 @@ class PurchaseOrderForm
                                             ->iconColor('primary')
                                             ->state($purchaseRequest->created_at)
                                             ->date()
+                                            ->alignEnd()
                                         ,
                                     ])
                                 ,

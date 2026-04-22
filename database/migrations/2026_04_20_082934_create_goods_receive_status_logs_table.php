@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -20,7 +19,7 @@ return new class extends Migration
             $table->unsignedTinyInteger('from_status')->nullable();
             $table->unsignedTinyInteger('to_status');
 
-            $table->text('note')->nullable();
+            $table->text('note');
 
             $table->timestamps();
         });

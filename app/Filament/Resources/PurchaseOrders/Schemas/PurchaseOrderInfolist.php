@@ -4,7 +4,6 @@ namespace App\Filament\Resources\PurchaseOrders\Schemas;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
-use App\Enums\PurchaseOrderType;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Livewire\PurchaseOrderGoodsReceivesTable;
@@ -14,7 +13,6 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
-use Filament\Infolists\Components\RepeatableEntry\TableColumn;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Callout;
@@ -26,7 +24,6 @@ use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
@@ -161,6 +158,7 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                     ])
                 ,
@@ -216,7 +214,7 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                         ,
                     ])
@@ -259,14 +257,14 @@ class PurchaseOrderInfolist
                         ,
                         TextEntry::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                             ->placeholder('-')
                             ->color('gray')
                             ->columnSpanFull()
                         ,
                         TextEntry::make('terms')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                             ->placeholder('-')
                             ->color('gray')
@@ -454,7 +452,7 @@ class PurchaseOrderInfolist
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
-                    ->formatStateUsing(fn($state) => nl2br(e($state)))
+                    ->formatStateUsing(fn($state) => nl2br($state))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
@@ -476,7 +474,7 @@ class PurchaseOrderInfolist
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . $line)->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
@@ -553,7 +551,7 @@ class PurchaseOrderInfolist
 
     protected static function purchaseRequestInfoSection(): Section|string
     {
-        return Section::make('Detail ' . __('purchase-request.model.plural_label'))
+        return Section::make(__('purchase-request.section.main_info.label'))
             ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
             ->collapsible()
@@ -608,6 +606,7 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                         TextEntry::make("purchase_request_{$purchaseRequest->id}_warehouse_address")
                             ->hiddenLabel()
@@ -627,7 +626,7 @@ class PurchaseOrderInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
-                            ->state(nl2br(e($purchaseRequest->description)))
+                            ->state(nl2br($purchaseRequest->description))
                             ->html()
                             ->visible(fn($state) => filled($state))
                         ,

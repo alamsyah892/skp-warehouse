@@ -7,7 +7,6 @@ use App\Models\PurchaseOrder;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
@@ -45,20 +44,25 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
                     ->verticallyAlignStart()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('vendor.name')
                     ->label(__('vendor.model.label'))
                     ->searchable()
                     ->verticallyAlignStart()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('created_at')
                     ->label(__('common.created_at.label'))
+                    ->wrapHeader()
                     ->date()
                     ->sortable()
                     ->verticallyAlignStart()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 UserColumn::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->wrapHeader()
                     ->wrap()
                     ->wrapped()
                     ->verticallyAlignStart()
@@ -66,14 +70,13 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => $state?->label())
                     ->icon(fn($state) => $state?->icon())
-                    ->badge()
                     ->color(fn($state) => $state?->color())
+                    ->badge()
                     ->sortable()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('purchase_order_items_count')
                     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
-                    ->wrapHeader()
                     ->sortable()
                     ->color('gray')
                     ->verticallyAlignStart()
@@ -86,11 +89,13 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
                         fn($record) => PurchaseOrderResource::getUrl('view', [
                             'record' => $record->id,
                         ])
-                    ),
+                    )
+                ,
             ], position: RecordActionsPosition::BeforeColumns)
             ->defaultSort('id', 'asc')
             ->striped()
-            ->stackedOnMobile()
-            ->paginated(false);
+            ->stackedOnMobile(false)
+            ->paginated(false)
+        ;
     }
 }
