@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\PurchaseRequestStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -65,7 +66,7 @@ class PurchaseRequest extends Model
     /**
      * Constants
      */
-    public const MODEL_ALIAS = 'BPPB';
+    public const MODEL_ALIAS = 'PR';
     public const TYPE_PURCHASE_REQUEST = 1;
 
 
@@ -100,7 +101,7 @@ class PurchaseRequest extends Model
         });
 
         static::created(function ($record) {
-            $record->setStatusLog(PurchaseRequestStatus::DRAFT);
+            $record->setStatusLog(PurchaseRequestStatus::DRAFT, note: (string) $record->number);
         });
     }
 
@@ -169,18 +170,6 @@ class PurchaseRequest extends Model
 
     protected function canUserTransition($newStatus, $user, array $flow): bool
     {
-        // owner rule
-        if (
-            $this->hasStatus(PurchaseRequestStatus::DRAFT) &&
-            in_array($newStatus, [
-                PurchaseRequestStatus::CANCELED,
-                PurchaseRequestStatus::REQUESTED,
-            ], true) &&
-            $this->user_id === $user->id
-        ) {
-            return true;
-        }
-
         return $user->hasAnyRole($flow[$newStatus->value] ?? []);
     }
 
@@ -208,6 +197,30 @@ class PurchaseRequest extends Model
     public function hasStatus(PurchaseRequestStatus $status): bool
     {
         return $this->status === $status;
+    }
+
+    // public function hasPurchaseOrdersAllNotCanceled(): bool
+    // {
+    //     return $this->purchaseOrders()->exists()
+    //         && $this->purchaseOrders()->where('status', PurchaseOrderStatus::CANCELED)->doesntExist();
+    // }
+
+    // public function shouldShowOrderedQty(): bool
+    // {
+    //     return static::shouldShowOrderedQtyForStatus($this->status)
+    //         && $this->hasPurchaseOrdersAllNotCanceled();
+    // }
+
+    public static function shouldShowOrderedQtyForStatus(PurchaseRequestStatus|int|string|null $status): bool
+    {
+        if (is_int($status) || is_string($status)) {
+            $status = PurchaseRequestStatus::tryFrom((int) $status);
+        }
+
+        return
+            $status === PurchaseRequestStatus::APPROVED ||
+            $status === PurchaseRequestStatus::ORDERED ||
+            $status === PurchaseRequestStatus::FINISHED;
     }
 
 

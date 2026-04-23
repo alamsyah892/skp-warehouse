@@ -22,17 +22,47 @@ class PurchaseOrdersTable
             ->columns([
                 TextColumn::make('number')
                     ->label(__('purchase-order.number.label'))
+                    ->wrapHeader()
                     ->description(fn($record): string => $record->description)
-                    ->searchable()
+                    ->searchable(['number', 'description'])
                     ->sortable()
+                    ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
                     ->size(TextSize::Large)
-                    ->weight(FontWeight::Bold)
-                    ->wrap(),
+                    ->wrap(false)
+                ,
+                TextColumn::make('type')
+                    ->label(__('purchase-order.type.label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->color(fn($state) => $state?->color())
+                    ->badge()
+                    ->sortable()
+                    ->wrap()
+                ,
+                TextColumn::make('status')
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->color(fn($state) => $state?->color())
+                    ->badge()
+                    ->sortable()
+                    ->wrap()
+                ,
+                TextColumn::make('created_at')
+                    ->label(__('common.created_at.label'))
+                    ->wrapHeader()
+                    ->date()
+                    ->sortable()
+                    ->wrap()
+                ,
+
                 TextColumn::make('vendor.name')
                     ->label(__('vendor.model.label'))
+                    ->wrapHeader()
                     ->searchable()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('warehouse.name')->label(__('warehouse.model.label'))->wrap(),
                 TextColumn::make('company.alias')->label(__('purchase-order.company.label'))->wrap()->wrapHeader(),
                 TextColumn::make('division.name')->label(__('division.model.label'))->wrap(),
@@ -42,17 +72,11 @@ class PurchaseOrdersTable
                     ->searchable()
                     ->listWithLineBreaks()
                     ->fontFamily(FontFamily::Mono)
+                    ->size(TextSize::Large)
+                    ->badge()
                     ->wrap()
                 ,
-                TextColumn::make('created_at')->label(__('common.created_at.label'))->date()->sortable()->wrap(),
                 UserColumn::make('user')->wrap()->wrapped(),
-                TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => $state?->label())
-                    ->icon(fn($state) => $state?->icon())
-                    ->badge()
-                    ->color(fn($state) => $state?->color())
-                    ->grow(false)
-                    ->sortable(),
                 TextColumn::make('purchase_order_items_count')
                     ->label(__('purchase-order.purchase_order_items.count_label'))
                     ->sortable()

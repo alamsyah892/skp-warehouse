@@ -2,8 +2,10 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
+use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -178,7 +180,17 @@ class PurchaseRequestForm
                             ->relationship(
                                 'company',
                                 'alias',
-                                fn($query) => $query->orderBy('alias')->orderBy('code'),
+                                function ($query, $get) {
+                                    $warehouseId = $get('warehouse_id');
+
+                                    $query
+                                        ->when($warehouseId, fn($q) => $q->whereHas(
+                                            'warehouses',
+                                            fn($qq) => $qq->where('warehouses.id', $warehouseId),
+                                        ))
+                                        ->orderBy('alias')
+                                        ->orderBy('code');
+                                },
                             )
                             ->searchable()
                             ->preload()
@@ -196,12 +208,13 @@ class PurchaseRequestForm
                                 function ($query, $get) {
                                     $companyId = $get('company_id');
 
-                                    $query->when($companyId, function ($q) use ($companyId) {
-                                        $q->whereHas(
+                                    $query
+                                        ->when($companyId, fn($q) => $q->whereHas(
                                             'companies',
-                                            fn($qq) => $qq->where('companies.id', $companyId)
-                                        )->orWhereDoesntHave('companies');
-                                    })->orderBy('name')->orderBy('code');
+                                            fn($qq) => $qq->where('companies.id', $companyId),
+                                        ))
+                                        ->orderBy('name')
+                                        ->orderBy('code');
                                 }
                             )
                             ->searchable()
@@ -220,22 +233,22 @@ class PurchaseRequestForm
                                     $companyId = $get('company_id');
 
                                     $query
-                                        ->when($companyId, function ($q) use ($companyId) {
-                                            $q->where(function ($qq) use ($companyId) {
-                                                $qq->whereHas(
-                                                    'companies',
-                                                    fn($q) => $q->where('companies.id', $companyId)
-                                                )->orWhereDoesntHave('companies');
-                                            });
-                                        })
-                                        ->when($warehouseId, function ($q) use ($warehouseId) {
-                                            $q->where(function ($qq) use ($warehouseId) {
-                                                $qq->whereHas(
-                                                    'warehouses',
-                                                    fn($q) => $q->where('warehouses.id', $warehouseId)
-                                                )->orWhereDoesntHave('warehouses');
-                                            });
-                                        })
+                                        ->when(
+                                            $companyId && $warehouseId,
+                                            fn($q) => $q->where(function ($qq) use ($companyId, $warehouseId) {
+                                                $qq
+                                                    ->whereHas('companies', fn($q2) => $q2->where('companies.id', $companyId))
+                                                    ->orWhereHas('warehouses', fn($q2) => $q2->where('warehouses.id', $warehouseId));
+                                            }),
+                                        )
+                                        ->when(
+                                            $companyId && blank($warehouseId),
+                                            fn($q) => $q->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId)),
+                                        )
+                                        ->when(
+                                            $warehouseId && blank($companyId),
+                                            fn($q) => $q->whereHas('warehouses', fn($qq) => $qq->where('warehouses.id', $warehouseId)),
+                                        )
                                         ->where('allow_po', true)
                                         ->orderBy('name')->orderBy('code')
                                     ;
@@ -340,6 +353,13 @@ class PurchaseRequestForm
                                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
                                     ->searchable(['code', 'name'])
                                     ->required()
+                                    ->disabled(function ($record, string $operation): bool {
+                                        if ($operation !== 'edit' || !$record) {
+                                            return false;
+                                        }
+
+                                        return $record->getOrderedQty() > 0;
+                                    })
                                 ,
                                 Textarea::make('description')
                                     ->label(__('common.description.label'))
@@ -394,7 +414,16 @@ class PurchaseRequestForm
                                     })
                                     ->numeric()
                                     ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
-                                    ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
+                                    // ->visible(function ($record, $get): bool {
+                                    //     if (!$record) {
+                                    //         return false;
+                                    //     }
+
+                                    //     return
+                                    //         // PurchaseRequest::shouldShowOrderedQtyForStatus($get('../../status'))
+                                    //         //     && $record->purchaseRequest?->hasPurchaseOrdersAllNotCanceled() === true;
+                                    //         $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::CANCELED)->exists();
+                                    // })
                                     ->columnSpan([
                                         'default' => 1,
                                         'lg' => 2,
@@ -542,8 +571,12 @@ class PurchaseRequestForm
                     ->placeholder(__('purchase-request.info.placeholder'))
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
-                    ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
-                    ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
+                    ->required(function ($get, $record): bool {
+                        return static::hasRevisionTriggerChanges($get, $record);
+                    })
+                    ->disabled(function ($get, $record): bool {
+                        return !static::hasRevisionTriggerChanges($get, $record);
+                    })
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                 ,
@@ -578,14 +611,42 @@ class PurchaseRequestForm
 
     public static function showOrderedQty(PurchaseRequestStatus|int|string|null $status): bool
     {
-        if (is_int($status) || is_string($status)) {
-            $status = PurchaseRequestStatus::tryFrom((int) $status);
+        return PurchaseRequest::shouldShowOrderedQtyForStatus($status);
+    }
+
+    protected static function hasRevisionTriggerChanges(callable $get, ?PurchaseRequest $record): bool
+    {
+        if (!$record) {
+            return false;
         }
 
-        return
-            $status === PurchaseRequestStatus::APPROVED ||
-            $status === PurchaseRequestStatus::ORDERED ||
-            $status === PurchaseRequestStatus::FINISHED
-        ;
+        $purchaseRequestItems = $get('purchaseRequestItems');
+        if (!is_array($purchaseRequestItems)) {
+            $purchaseRequestItems = $get('../../purchaseRequestItems');
+        }
+
+        // On initial edit-page load, repeater state may not be hydrated yet.
+        // Use existing related items so this is treated as "no change".
+        if (!is_array($purchaseRequestItems)) {
+            $purchaseRequestItems = $record->purchaseRequestItems
+                ->map(fn(PurchaseRequestItem $item): array => [
+                    'id' => $item->id,
+                    'item_id' => $item->item_id,
+                    'qty' => $item->qty,
+                    'description' => $item->description,
+                ])
+                ->values()
+                ->toArray();
+        }
+
+        $data = [
+            'warehouse_address_id' => $get('warehouse_address_id') ?? $get('../../warehouse_address_id'),
+            'description' => $get('description') ?? $get('../../description'),
+            'memo' => $get('memo') ?? $get('../../memo'),
+            'boq' => $get('boq') ?? $get('../../boq'),
+            'purchaseRequestItems' => array_values($purchaseRequestItems),
+        ];
+
+        return $record->hasWatchedFieldChanges($data);
     }
 }

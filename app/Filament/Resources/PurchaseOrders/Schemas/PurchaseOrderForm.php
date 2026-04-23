@@ -668,7 +668,7 @@ class PurchaseOrderForm
 
                                     //     return number_format($item?->getReceivedQty() ?? 0, 2);
                                     // })
-                                    ->hint(fn($get) => '(' . static::getItemUnit((int) ($get('item_id') ?? 0)) . ')')
+                                    ->hint(fn($get) => filled($get('item_id')) ? '(' . static::getItemUnit((int) ($get('item_id') ?? 0)) . ')' : '')
                                     // ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
                                     ->live(debounce: 500)
                                     ->rule(function ($get, $record) {
@@ -1202,9 +1202,15 @@ class PurchaseOrderForm
             $cache[$cacheKey] = $query
                 ->limit(50)
                 ->get()
-                ->mapWithKeys(fn(PurchaseRequestItem $record) => [
-                    $record->id => "{$record->item?->code} | {$record->item?->name} | {$record->purchaseRequest?->number}",
-                ])
+                // ->mapWithKeys(fn(PurchaseRequestItem $record) => [
+                //     $record->id => "{$record->item?->code} | {$record->item?->name} | {$record->purchaseRequest?->number}",
+                // ])
+                ->groupBy(fn(PurchaseRequestItem $record) => $record->purchaseRequest?->number ?? '-')
+                ->map(function (Collection $items) {
+                    return $items->mapWithKeys(fn(PurchaseRequestItem $record) => [
+                        $record->id => "{$record->item?->code} | {$record->item?->name} | {$record->purchaseRequest?->number}",
+                    ]);
+                })
                 ->toArray();
         }
 

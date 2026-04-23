@@ -26,10 +26,12 @@ class ListPurchaseRequests extends ListRecords
 
     public function getTabs(): array
     {
-        $getStatusBadge = function ($status) {
-            $count = PurchaseRequest::where('status', $status)->count();
-            return $count > 0 ? $count : null;
-        };
+        $counts = PurchaseRequest::query()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $getStatusBadge = fn (PurchaseRequestStatus $status) => (int) ($counts[$status->value] ?? 0) ?: null;
 
         return [
             __('purchase-request.status.all') => Tab::make()
@@ -44,8 +46,6 @@ class ListPurchaseRequests extends ListRecords
             PurchaseRequestStatus::CANCELED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::CANCELED))
                 ->icon(PurchaseRequestStatus::CANCELED->icon())
-            // ->badge($getStatusBadge(PurchaseRequestStatus::CANCELED))
-            // ->badgeColor(PurchaseRequestStatus::CANCELED->color())
             ,
             PurchaseRequestStatus::REQUESTED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::REQUESTED))
@@ -68,8 +68,6 @@ class ListPurchaseRequests extends ListRecords
             PurchaseRequestStatus::FINISHED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::FINISHED))
                 ->icon(PurchaseRequestStatus::FINISHED->icon())
-            // ->badge($getStatusBadge(PurchaseRequestStatus::FINISHED))
-            // ->badgeColor(PurchaseRequestStatus::FINISHED->color())
             ,
         ];
     }

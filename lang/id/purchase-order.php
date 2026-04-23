@@ -113,7 +113,7 @@ return [
         ],
         'source_item' => [
             'context' => 'Konteks Sumber Item Pengajuan',
-            'context_value' => 'Diajukan: :request_qty | Dipesan: :ordered_qty | Sisa: :remaining_qty',
+            'context_value' => 'Diajukan: :request_qty | Dipesan: :ordered_qty | Kuota: :remaining_qty',
         ],
         'description' => [
             'placeholder' => 'Deskripsi item PO',
@@ -183,7 +183,7 @@ return [
         'incompatible_purchase_requests' => 'Pengajuan yang dipilih harus memiliki Gudang, Perusahaan (Gudang Kecil), Divisi, dan Proyek yang sama.',
         'purchase_request_item_changed' => 'Data item pengajuan sudah berubah. Muat ulang form lalu periksa kembali qty pengajuan dan qty teralokasi.',
         'purchase_request_status_changed' => 'Status pengajuan sudah berubah. Muat ulang form lalu periksa kembali pengajuan yang dipilih.',
-        'qty_exceeded' => 'Qty alokasi melebihi sisa kuota. Sisa: :remaining.',
+        'qty_exceeded' => 'Qty melebihi kuota yang bisa dipesan (:remaining).',
         'source_item_not_found' => 'Item sumber Pengajuan tidak ditemukan.',
         'source_item_not_selected_pr' => 'Item sumber harus berasal dari Pengajuan yang sudah dipilih.',
         'source_purchase_request_not_found' => 'Pengajuan sumber tidak ditemukan.',

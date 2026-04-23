@@ -97,6 +97,10 @@ return [
         ],
     ],
 
+    'purchase_orders' => [
+        'count_label' => 'Jumlah PO',
+    ],
+
     'section' => [
         'main_info' => [
             'label' => 'Informasi Pengajuan Pembelian',

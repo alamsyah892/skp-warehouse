@@ -109,8 +109,19 @@ class PurchaseRequestsTable
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
+
                 TextColumn::make('purchase_request_items_count')
                     ->label(__('purchase-request.purchase_request_items.count_label'))
+                    ->wrapHeader()
+                    ->sortable()
+                    ->color('gray')
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_orders_count')
+                    ->counts('purchaseOrders')
+                    ->label(__('purchase-request.purchase_orders.count_label'))
                     ->wrapHeader()
                     ->sortable()
                     ->color('gray')

@@ -2,10 +2,12 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Livewire\PurchaseRequestItemsTable;
+use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -363,16 +365,15 @@ class PurchaseRequestInfolist
         }
 
         if ($status === PurchaseRequestStatus::FINISHED) {
-            return static::hasRemainingPurchaseRequestItems($record);
+            return static::hasRemainingPurchaseRequestItems($record) ||
+                $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::FINISHED)->exists();
         }
 
         if ($status !== PurchaseRequestStatus::CANCELED) {
             return false;
         }
 
-        return $record->purchaseRequestItems->contains(
-            fn($item): bool => $item->getOrderedQty() > 0
-        );
+        return $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::CANCELED)->exists();
     }
 
     protected static function hasRemainingPurchaseRequestItems($record): bool
