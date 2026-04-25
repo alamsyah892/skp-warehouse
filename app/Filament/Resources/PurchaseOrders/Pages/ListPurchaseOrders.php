@@ -4,7 +4,6 @@ namespace App\Filament\Resources\PurchaseOrders\Pages;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
-use App\Models\PurchaseOrder;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -25,8 +24,11 @@ class ListPurchaseOrders extends ListRecords
 
     public function getTabs(): array
     {
-        $getStatusBadge = function ($status) {
-            $count = PurchaseOrder::where('status', $status)->count();
+        $getStatusBadge = function (PurchaseOrderStatus $status): ?int {
+            $count = PurchaseOrderResource::getEloquentQuery()
+                ->where('status', $status)
+                ->count();
+
             return $count > 0 ? $count : null;
         };
 

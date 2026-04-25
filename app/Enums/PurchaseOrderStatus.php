@@ -87,8 +87,6 @@ enum PurchaseOrderStatus: int
                 self::FINISHED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
-                    Role::LOGISTIC,
-                    Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],

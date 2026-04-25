@@ -31,17 +31,7 @@ class EditPurchaseRequest extends EditRecord
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $record = $this->record;
-
-
-        // if ($data['status'] !== $record->status->value) {
-        //     $this->pendingStatus = PurchaseRequestStatus::from($data['status']);
-
-        //     // biar gak di-overwrite Filament
-        //     $data['status'] = $record->status->value;
-        // }
-
         $record->applyRevision($data);
-
         $record->hasWatchedFieldChanges($data);
 
         return $data;

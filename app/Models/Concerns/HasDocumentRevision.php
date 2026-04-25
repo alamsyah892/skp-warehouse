@@ -3,6 +3,7 @@
 namespace App\Models\Concerns;
 
 use BackedEnum;
+use Illuminate\Support\Carbon;
 
 trait HasDocumentRevision
 {
@@ -37,12 +38,49 @@ trait HasDocumentRevision
             $old = $this->getOriginal($field);
             $new = $data[$field] ?? null;
 
-            if ($this->normalizeWatchedFieldValue($old) !== $this->normalizeWatchedFieldValue($new)) {
+            if ($this->normalizeWatchedFieldValue($old, $field) !== $this->normalizeWatchedFieldValue($new, $field)) {
                 return true;
             }
         }
 
         return $this->hasWatchedItemsChanges($data);
+    }
+
+    public function hasWatchedFieldChangesFromState(array $state): bool
+    {
+        return $this->hasWatchedFieldChanges($this->prepareWatchedDataFromState($state));
+    }
+
+    protected function prepareWatchedDataFromState(array $state): array
+    {
+        $data = [];
+
+        foreach ($this->getWatchedFields() as $field) {
+            $data[$field] = array_key_exists($field, $state)
+                ? $state[$field]
+                : $this->getAttribute($field);
+        }
+
+        $relation = $this->getRevisionItemsRelation();
+
+        if ($relation) {
+            $incomingItems = $state[$relation] ?? null;
+
+            if (!is_array($incomingItems)) {
+                $items = $this->relationLoaded($relation)
+                    ? $this->{$relation}
+                    : $this->{$relation}()->get();
+
+                $incomingItems = $items
+                    ->map(fn($item): array => $this->mapRevisionItem($item))
+                    ->values()
+                    ->toArray();
+            }
+
+            $data[$relation] = $incomingItems;
+        }
+
+        return $data;
     }
 
     protected function hasWatchedItemsChanges(array $data): bool
@@ -97,8 +135,20 @@ trait HasDocumentRevision
         return $item;
     }
 
-    protected function normalizeWatchedFieldValue(mixed $value): mixed
+    protected function normalizeWatchedFieldValue(mixed $value, ?string $field = null): mixed
     {
+        if (
+            is_string($field) &&
+            str_ends_with($field, '_date') &&
+            filled($value)
+        ) {
+            try {
+                return Carbon::parse((string) $value)->format('Y-m-d');
+            } catch (\Throwable) {
+                return (string) $value;
+            }
+        }
+
         if ($value instanceof BackedEnum) {
             return $value->value;
         }

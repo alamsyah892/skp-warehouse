@@ -11,6 +11,7 @@ use Filament\Actions\RestoreAction;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 
@@ -78,15 +79,33 @@ class EditPurchaseOrder extends EditRecord
             $data['purchaseOrderItems'] ?? [],
             $this->selectedPurchaseRequestIds,
         );
+        PurchaseOrder::validateDuplicatePurchaseRequestItemSources($data['purchaseOrderItems'] ?? []);
         PurchaseOrder::validateManualItems($data['purchaseOrderItems'] ?? []);
         PurchaseOrder::validateAllocationQuantities($data['purchaseOrderItems'] ?? [], $record->id);
+        $hasWatchedChanges = $record->hasWatchedFieldChanges($data);
+        $newInfo = trim((string) ($data['info'] ?? ''));
 
-        $record->applyRevision($data);
-
-        $record->hasWatchedFieldChanges($data);
+        if (!$record->hasStatus(PurchaseOrderStatus::DRAFT) && $hasWatchedChanges && $newInfo !== '') {
+            $nextRevision = str_pad($record->getCurrentRevision() + 1, 2, '0', STR_PAD_LEFT);
+            $newLine = "Rev.{$nextRevision} - {$newInfo}";
+            $oldInfo = trim((string) ($record->info ?? ''));
+            $data['info'] = trim($newLine . ($oldInfo !== '' ? "\n{$oldInfo}" : ''));
+            $record->number = $record->incrementRevision();
+        } else {
+            $data['info'] = $record->info;
+        }
 
         // return Arr::except($data, ['purchaseRequestStatusSnapshot']);
         return $data;
+    }
+
+    protected function beforeSave(): void
+    {
+        if ($this->record->hasStatus(PurchaseOrderStatus::CANCELED)) {
+            throw ValidationException::withMessages([
+                'status' => 'Purchase Order dengan status CANCELED tidak dapat diubah.',
+            ]);
+        }
     }
 
     protected function handleRecordUpdate(Model $record, array $data): Model

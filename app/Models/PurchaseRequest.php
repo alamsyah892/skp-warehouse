@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\PurchaseRequestStatus;
-use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -211,17 +210,17 @@ class PurchaseRequest extends Model
     //         && $this->hasPurchaseOrdersAllNotCanceled();
     // }
 
-    public static function shouldShowOrderedQtyForStatus(PurchaseRequestStatus|int|string|null $status): bool
-    {
-        if (is_int($status) || is_string($status)) {
-            $status = PurchaseRequestStatus::tryFrom((int) $status);
-        }
+    // public static function shouldShowOrderedQtyForStatus(PurchaseRequestStatus|int|string|null $status): bool
+    // {
+    //     if (is_int($status) || is_string($status)) {
+    //         $status = PurchaseRequestStatus::tryFrom((int) $status);
+    //     }
 
-        return
-            $status === PurchaseRequestStatus::APPROVED ||
-            $status === PurchaseRequestStatus::ORDERED ||
-            $status === PurchaseRequestStatus::FINISHED;
-    }
+    //     return
+    //         $status === PurchaseRequestStatus::APPROVED ||
+    //         $status === PurchaseRequestStatus::ORDERED ||
+    //         $status === PurchaseRequestStatus::FINISHED;
+    // }
 
 
     /**
@@ -249,6 +248,7 @@ class PurchaseRequest extends Model
             'item_id' => (int) $item->item_id,
             'qty' => (float) $item->qty,
             'description' => trim((string) $item->description),
+            'sort' => (int) $item->sort,
         ];
     }
 
@@ -258,6 +258,7 @@ class PurchaseRequest extends Model
             'item_id' => (int) ($item['item_id'] ?? 0),
             'qty' => (float) ($item['qty'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
+            'sort' => (int) ($item['sort'] ?? 0),
         ];
     }
 }

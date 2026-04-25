@@ -5,6 +5,7 @@ namespace App\Filament\Resources\PurchaseOrders\Schemas;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Filament\Components\Infolists\StatusTimelineSection;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Livewire\PurchaseOrderGoodsReceivesTable;
 use App\Livewire\PurchaseOrderItemsTable;
@@ -79,7 +80,7 @@ class PurchaseOrderInfolist
 
                             static::purchaseRequestInfoSection(), // 2.3
 
-                            static::statusTimelineSection(), // 2.4
+                            StatusTimelineSection::make(), // 2.4
                         ])
                     ,
                 ])
@@ -278,30 +279,47 @@ class PurchaseOrderInfolist
 
     protected static function dataSectionFooter($record): array
     {
-        return collect($record->getNextStatuses())->map(function ($status) use ($record) {
-            return Action::make('changeStatus' . $status->value)
-                ->label(__($status->actionLabel()))
-                ->color($status->color())
-                ->icon($status->icon())
-                ->requiresConfirmation()
-                ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-order.model.label'))
-                ->modalDescription(__('purchase-order.status.action.note', ['status' => __($status->label())]))
-                ->action(function () use ($status, $record) {
-                    if ($status === PurchaseOrderStatus::ORDERED) {
-                        $record->markAsOrdered();
-                    } else {
-                        $record->changeStatus($status);
-                    }
+        return collect($record->getNextStatuses())
+            ->reject(fn(PurchaseOrderStatus $status): bool => static::shouldHideStatusAction($record, $status))
+            ->map(function ($status) use ($record) {
+                return Action::make('changeStatus' . $status->value)
+                    ->label(__($status->actionLabel()))
+                    ->color($status->color())
+                    ->icon($status->icon())
+                    ->requiresConfirmation()
+                    ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-order.model.label'))
+                    ->modalDescription(__('purchase-order.status.action.note', ['status' => __($status->label())]))
+                    ->action(function () use ($status, $record) {
+                        if ($status === PurchaseOrderStatus::ORDERED) {
+                            $record->markAsOrdered($record->number);
+                        } else {
+                            $record->changeStatus($status, $record->number);
+                        }
 
-                    Notification::make()
-                        ->success()
-                        ->title(__('purchase-order.status.action.changed'))
-                        ->send();
+                        Notification::make()
+                            ->success()
+                            ->title(__('purchase-order.status.action.changed'))
+                            ->send();
 
-                    return redirect(request()->header('Referer'));
-                })
-            ;
-        })->values()->all();
+                        return redirect(request()->header('Referer'));
+                    })
+                ;
+            })
+            ->values()
+            ->all();
+    }
+
+    protected static function shouldHideStatusAction(PurchaseOrder $record, PurchaseOrderStatus $status): bool
+    {
+        if ($status === PurchaseOrderStatus::CANCELED) {
+            return $record->hasGoodsReceivesAllNotCanceled();
+        }
+
+        if ($status === PurchaseOrderStatus::FINISHED) {
+            return $record->hasRemainingGoodsReceiveQty();
+        }
+
+        return false;
     }
 
     protected static function tabSection(): Tabs
@@ -320,13 +338,18 @@ class PurchaseOrderInfolist
                         //     ->color(null),
 
                         Livewire::make(PurchaseOrderItemsTable::class),
-                    ]),
+                    ])
+                ,
+
                 Tab::make(__('goods-receive.model.plural_label'))
                     ->icon(Heroicon::InboxArrowDown)
                     ->badge(fn($record) => $record->goodsReceives?->count() ?: null)
                     ->schema([
                         Livewire::make(PurchaseOrderGoodsReceivesTable::class),
-                    ]),
+                    ])
+                    ->visible(fn($record) => $record && $record->goodsReceives()->exists())
+                ,
+
                 ActivityLogTab::make(__('common.log_activity.label')),
             ])
         ;
@@ -641,45 +664,6 @@ class PurchaseOrderInfolist
             ->all()
         ;
     }
-
-    protected static function statusTimelineSection(): Section|string
-    {
-        return Section::make('Status Timeline')
-            ->icon(Heroicon::Clock)
-            ->iconColor('primary')
-            ->collapsible()
-            ->compact()
-            ->columnSpanFull()
-            ->schema([
-                RepeatableEntry::make('statusLogs')
-                    ->hiddenLabel()
-                    ->schema([
-                        TextEntry::make('to_status')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->iconColor(fn($state) => $state?->color())
-                            ->formatStateUsing(function ($state, $record) {
-                                $status = $state?->label();
-                                $user = $record->user?->name ?? 'System';
-                                $date = $record->created_at->format('M d, Y');
-                                $note = $record->note ? '<br>Note: ' . $record->note : '';
-
-                                return __('common.log_format_with_date', [
-                                    'date' => $date,
-                                    'status' => $status,
-                                    'user' => $user,
-                                ]) . $note;
-                            })
-                            ->html()
-                            ->color('gray')
-                        ,
-                    ])
-                    ->contained(false)
-                ,
-            ])
-        ;
-    }
-
 
     protected static function getBreakdown($record): array
     {

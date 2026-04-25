@@ -66,17 +66,58 @@ class PurchaseOrderItem extends Model
         return $this->hasMany(GoodsReceiveItem::class);
     }
 
+
     public function getReceivedQty(?int $exceptGoodsReceiveId = null): float
     {
         return (float) $this->goodsReceiveItems()
             ->whereHas('goodsReceive', function ($query) use ($exceptGoodsReceiveId) {
-                $query->where('status', GoodsReceiveStatus::RECEIVED->value);
+                $query->where('status', GoodsReceiveStatus::RECEIVED);
 
                 if ($exceptGoodsReceiveId) {
                     $query->where('id', '!=', $exceptGoodsReceiveId);
                 }
             })
             ->sum('qty');
+    }
+
+    public function getReceivedQtyColor(): string
+    {
+        $receivedQty = $this->getReceivedQty();
+        $orderedQty = (float) $this->qty;
+
+        return match (true) {
+            $receivedQty == 0.0 => 'danger',
+            $receivedQty < $orderedQty => 'warning',
+            default => 'success',
+        };
+    }
+
+    public function getRemainingQty(?int $exceptGoodsReceiveId = null): float
+    {
+        $remaining = (float) $this->qty - $this->getReceivedQty($exceptGoodsReceiveId);
+
+        return max($remaining, 0.0);
+    }
+
+
+    public function getNonCanceledGoodsReceiveQty(?int $exceptGoodsReceiveId = null): float
+    {
+        return (float) $this->goodsReceiveItems()
+            ->whereHas('goodsReceive', function ($query) use ($exceptGoodsReceiveId) {
+                $query->where('status', '!=', GoodsReceiveStatus::CANCELED->value);
+
+                if ($exceptGoodsReceiveId) {
+                    $query->where('id', '!=', $exceptGoodsReceiveId);
+                }
+            })
+            ->sum('qty');
+    }
+
+    public function hasNonCanceledGoodsReceives(): bool
+    {
+        return $this->goodsReceiveItems()
+            ->whereHas('goodsReceive', fn($query) => $query->where('status', '!=', GoodsReceiveStatus::CANCELED->value))
+            ->exists();
     }
 
     public function getRemainingReceiveQty(?int $exceptGoodsReceiveId = null): float

@@ -592,8 +592,8 @@ class GoodsReceiveForm
                     ->placeholder(__('goods-receive.info.placeholder'))
                     ->helperText(__('goods-receive.info.helper'))
                     ->autosize()
-                    ->required(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === true)
-                    ->disabled(fn($get, $record) => $record?->hasWatchedFieldChanges($get()) === false)
+                    ->required(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
+                    ->disabled(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED))
                 ,

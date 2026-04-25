@@ -5,14 +5,13 @@ namespace App\Filament\Resources\PurchaseRequests\Tables;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\HtmlString;
+use Illuminate\Support\Str;
 use Zvizvi\UserFields\Components\UserColumn;
 
 class PurchaseRequestsTable
@@ -23,45 +22,26 @@ class PurchaseRequestsTable
             ->columns([
                 TextColumn::make('number')
                     ->label(__('purchase-request.number.label'))
-                    ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
-                    ->searchable()
+                    ->wrapHeader()
+                    ->description(fn($record): ?string => Str::limit($record->description, 20))
+                    ->tooltip(fn($record): string => $record->description)
+                    ->searchable(['number', 'description'])
                     ->sortable()
-                    ->fontFamily(FontFamily::Mono)
-                    ->size(TextSize::Large)
                     ->weight(FontWeight::Bold)
+                    // ->size(TextSize::Large)
+                    ->fontFamily(FontFamily::Mono)
                     ->verticallyAlignStart()
-                    ->wrap()
+                    ->wrap(false)
                 ,
-                TextColumn::make('warehouse.name')
-                    ->label(__('warehouse.model.label'))
+                TextColumn::make('status')
+                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->icon(fn($state) => $state?->icon())
+                    ->color(fn($state) => $state?->color())
+                    ->alignCenter()
+                    ->badge()
+                    ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
-                ,
-                TextColumn::make('company.alias')
-                    ->label(__('purchase-request.company.label'))
-                    ->wrapHeader()
-                    ->verticallyAlignStart()
-                    ->wrap()
-                ,
-                TextColumn::make('division.name')
-                    ->label(__('division.model.label'))
-                    ->verticallyAlignStart()
-                    ->wrap()
-                ,
-                TextColumn::make('project.name')
-                    ->label(__('project.model.label'))
-                    ->verticallyAlignStart()
-                    ->wrap()
-                ,
-                TextColumn::make('warehouseAddress.address')
-                    ->label(__('purchase-request.warehouse_address.label'))
-                    ->searchable()
-                    ->wrapHeader()
-                    ->placeholder('-')
-                    ->color('gray')
-                    ->verticallyAlignStart()
-                    ->wrap()
-                    ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('created_at')
                     ->label(__('common.created_at.label'))
@@ -71,26 +51,54 @@ class PurchaseRequestsTable
                     ->verticallyAlignStart()
                     ->wrap()
                 ,
-                UserColumn::make('user')
-                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+
+                TextColumn::make('warehouse.name')
+                    ->label(__('warehouse.model.label'))
                     ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap()
-                    ->wrapped()
                 ,
-                TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => $state?->label())
-                    ->icon(fn($state) => $state?->icon())
-                    ->color(fn($state) => $state?->color())
-                    ->badge()
-                    ->grow(false)
-                    ->sortable()
+                TextColumn::make('company.alias')
+                    ->label(__('purchase-order.company.label'))
+                    ->wrapHeader()
                     ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('division.name')
+                    ->label(__('division.model.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('project.name')
+                    ->label(__('project.model.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('warehouseAddress.address')
+                    ->label(__('purchase-request.warehouse_address.label'))
+                    ->wrapHeader()
+                    ->limit(20)
+                    ->tooltip(fn($state) => $state)
+                    ->searchable()
+                    ->placeholder('-')
+                    ->color('gray')
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
+                UserColumn::make('user')
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->verticallyAlignStart()
+                    ->wrap(false)
+                    ->wrapped(false)
                 ,
 
                 TextColumn::make('memo')
-                    ->formatStateUsing(fn($state) => nl2br($state))
-                    ->html()
+                    ->limit(20)
+                    ->tooltip(fn($state) => $state)
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
@@ -100,8 +108,9 @@ class PurchaseRequestsTable
                 ,
                 TextColumn::make('boq')
                     ->label(__('purchase-request.boq.label'))
-                    ->formatStateUsing(fn($state) => nl2br($state))
-                    ->html()
+                    ->wrapHeader()
+                    ->limit(20)
+                    ->tooltip(fn($state) => $state)
                     ->searchable()
                     ->placeholder('-')
                     ->color('gray')
@@ -120,7 +129,6 @@ class PurchaseRequestsTable
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('purchase_orders_count')
-                    ->counts('purchaseOrders')
                     ->label(__('purchase-request.purchase_orders.count_label'))
                     ->wrapHeader()
                     ->sortable()
@@ -134,8 +142,8 @@ class PurchaseRequestsTable
                     ->label(__('common.updated_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->sortable()
                     ->color('gray')
+                    ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -144,9 +152,9 @@ class PurchaseRequestsTable
                     ->label(__('common.deleted_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->sortable()
-                    ->placeholder('-')
                     ->color('gray')
+                    ->placeholder('-')
+                    ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)
@@ -169,7 +177,6 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->preload()
                 ,
-
                 SelectFilter::make('company')
                     ->label(__('purchase-request.company.label'))
                     ->relationship(
@@ -181,7 +188,6 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->preload()
                 ,
-
                 SelectFilter::make('division')
                     ->label(__('division.model.label'))
                     ->relationship(
@@ -193,7 +199,6 @@ class PurchaseRequestsTable
                     ->searchable()
                     ->preload()
                 ,
-
                 SelectFilter::make('project')
                     ->label(__('project.model.label'))
                     ->relationship(

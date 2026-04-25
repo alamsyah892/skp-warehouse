@@ -4,11 +4,11 @@ namespace App\Filament\Resources\GoodsReceives\Schemas;
 
 use App\Enums\GoodsReceiveStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Filament\Components\Infolists\StatusTimelineSection;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Livewire\GoodsReceiveItemsTable;
 use App\Models\GoodsReceive;
 use Filament\Actions\Action;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Grid;
@@ -57,7 +57,7 @@ class GoodsReceiveInfolist
                             static::infoSection(),
                             static::purchaseOrderInfoSection(),
                             static::vendorInfoSection(),
-                            static::statusTimelineSection(),
+                            StatusTimelineSection::make(),
                         ])
                     ,
                 ])
@@ -423,42 +423,6 @@ class GoodsReceiveInfolist
         ;
     }
 
-    protected static function statusTimelineSection(): Section|string
-    {
-        return Section::make('Status Timeline')
-            ->icon(Heroicon::Clock)
-            ->iconColor('primary')
-            ->collapsible()
-            ->compact()
-            ->columnSpanFull()
-            ->schema([
-                RepeatableEntry::make('statusLogs')
-                    ->hiddenLabel()
-                    ->schema([
-                        TextEntry::make('to_status')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->iconColor(fn($state) => $state?->color())
-                            ->formatStateUsing(function ($state, $record) {
-                                $status = $state?->label();
-                                $user = $record->user?->name ?? 'System';
-                                $date = $record->created_at->format('M d, Y');
-                                $note = $record->note ? '<br>Note: ' . $record->note : '';
-
-                                return __('common.log_format_with_date', [
-                                    'date' => $date,
-                                    'status' => $status,
-                                    'user' => $user,
-                                ]) . $note;
-                            })
-                            ->html()
-                            ->color('gray')
-                        ,
-                    ])
-                    ->contained(false)
-                ,
-            ])
-        ;
-    }
+    // status timeline moved to reusable component: StatusTimelineSection
 }
 

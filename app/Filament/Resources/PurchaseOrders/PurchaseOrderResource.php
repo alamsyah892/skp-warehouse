@@ -68,7 +68,7 @@ class PurchaseOrderResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withCount(['purchaseOrderItems'])
+            ->withCount(['purchaseOrderItems', 'goodsReceives'])
             ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 

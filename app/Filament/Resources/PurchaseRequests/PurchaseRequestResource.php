@@ -79,6 +79,7 @@ class PurchaseRequestResource extends Resource
         $query
             ->withCount([
                 'purchaseRequestItems',
+                'purchaseOrders',
             ])
         ;
 

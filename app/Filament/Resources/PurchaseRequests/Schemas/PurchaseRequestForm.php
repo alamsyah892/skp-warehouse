@@ -2,10 +2,8 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Schemas;
 
-use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Item;
-use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
@@ -25,18 +23,6 @@ use Zvizvi\UserFields\Components\UserEntry;
 class PurchaseRequestForm
 {
     public $record;
-
-    public static function getOrderedQtyColumnColor(PurchaseRequestItem $purchaseRequestItem): string
-    {
-        $orderedQty = $purchaseRequestItem->getOrderedQty();
-        $requestedQty = (float) $purchaseRequestItem->qty;
-
-        return match (true) {
-            $orderedQty == 0 => 'danger',
-            $orderedQty < $requestedQty => 'info',
-            default => 'success',
-        };
-    }
 
     public static function configure(Schema $schema): Schema
     {
@@ -104,9 +90,9 @@ class PurchaseRequestForm
                             ->hiddenLabel()
                             ->icon(Heroicon::Hashtag)
                             ->iconColor('primary')
-                            ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
+                            ->fontFamily(FontFamily::Mono)
                             ->columnSpanFull()
                         ,
                     ])
@@ -125,8 +111,8 @@ class PurchaseRequestForm
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->color(fn($state) => $state?->color())
                             ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
                             ->badge()
                         ,
                         TextEntry::make('created_at')
@@ -189,7 +175,8 @@ class PurchaseRequestForm
                                             fn($qq) => $qq->where('warehouses.id', $warehouseId),
                                         ))
                                         ->orderBy('alias')
-                                        ->orderBy('code');
+                                        ->orderBy('code')
+                                    ;
                                 },
                             )
                             ->searchable()
@@ -214,7 +201,8 @@ class PurchaseRequestForm
                                             fn($qq) => $qq->where('companies.id', $companyId),
                                         ))
                                         ->orderBy('name')
-                                        ->orderBy('code');
+                                        ->orderBy('code')
+                                    ;
                                 }
                             )
                             ->searchable()
@@ -349,17 +337,10 @@ class PurchaseRequestForm
                                 Select::make('item_id')
                                     ->label(__('item.code.label') . ' | ' . __('item.name.label'))
                                     ->relationship('item', 'name')
-                                    // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
+                                    ->getOptionLabelFromRecordUsing(fn($record): string => "{$record->code} | {$record->name}")
                                     ->searchable(['code', 'name'])
                                     ->required()
-                                    ->disabled(function ($record, string $operation): bool {
-                                        if ($operation !== 'edit' || !$record) {
-                                            return false;
-                                        }
-
-                                        return $record->getOrderedQty() > 0;
-                                    })
+                                    ->disabled(fn($record): bool => $record?->getOrderedQty() ?? 0 > 0)
                                 ,
                                 Textarea::make('description')
                                     ->label(__('common.description.label'))
@@ -381,15 +362,9 @@ class PurchaseRequestForm
                             ->schema([
                                 TextInput::make('qty')
                                     ->numeric()
-                                    ->minValue(function ($record, $operation) {
-                                        if ($operation === 'edit' && $record) {
-                                            return (float) $record->getOrderedQty();
-                                        }
-
-                                        return 0.01;
-                                    })
                                     ->placeholder(0.01)
-                                    ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
+                                    ->suffix(fn($get): string|null => Item::query()->whereKey($get('item_id'))->value('unit'))
+                                    ->minValue(fn($record): float => $record?->getOrderedQty() > 0 ? (float) $record?->getOrderedQty() : 0.01)
                                     ->required()
                                     ->columnSpan([
                                         'default' => 1,
@@ -398,32 +373,10 @@ class PurchaseRequestForm
                                 ,
                                 TextEntry::make('ordered_qty')
                                     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
-                                    ->state(function ($get, $record) {
-                                        if ($record) {
-                                            return number_format($record->getOrderedQty(), 2);
-                                        }
-
-                                        $itemId = $get('id');
-                                        if (!$itemId) {
-                                            return '0.00';
-                                        }
-
-                                        $source = PurchaseRequestItem::query()->find($itemId);
-
-                                        return number_format($source?->getOrderedQty() ?? 0, 2);
-                                    })
+                                    ->state(fn($record): float => $record?->getOrderedQty() ?? 0)
                                     ->numeric()
-                                    ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
-                                    // ->visible(function ($record, $get): bool {
-                                    //     if (!$record) {
-                                    //         return false;
-                                    //     }
-
-                                    //     return
-                                    //         // PurchaseRequest::shouldShowOrderedQtyForStatus($get('../../status'))
-                                    //         //     && $record->purchaseRequest?->hasPurchaseOrdersAllNotCanceled() === true;
-                                    //         $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::CANCELED)->exists();
-                                    // })
+                                    ->color(fn($record): string => $record?->getOrderedQtyColor() ?? 'danger')
+                                    ->visible(fn($record): bool => $record?->getOrderedQty() ?? 0 > 0)
                                     ->columnSpan([
                                         'default' => 1,
                                         'lg' => 2,
@@ -431,86 +384,6 @@ class PurchaseRequestForm
                                 ,
                             ])
                         ,
-                        // Select::make('item_id')
-                        //     ->label(__('item.code.label') . ' | ' . __('item.name.label'))
-                        //     ->relationship('item', 'name')
-                        //     // ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                        //     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} | {$record->name}")
-                        //     ->searchable(['code', 'name'])
-                        //     ->required()
-                        //     ->columnSpan([
-                        //         'lg' => 7,
-                        //     ])
-                        // ,
-                        // TextInput::make('qty')
-                        //     ->numeric()
-                        //     ->minValue(function ($record, $operation) {
-                        //         if ($operation === 'edit' && $record) {
-                        //             return (float) $record->getOrderedQty();
-                        //         }
-
-                        //         return 0.01;
-                        //     })
-                        //     ->placeholder(0.01)
-                        //     ->suffix(fn($get) => Item::query()->whereKey($get('item_id'))->value('unit'))
-                        //     ->required()
-                        //     ->columnSpan([
-                        //         'lg' => 3,
-                        //     ])
-                        // ,
-                        // TextEntry::make('ordered_qty')
-                        //     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
-                        //     ->state(function ($get, $record) {
-                        //         if ($record) {
-                        //             return number_format($record->getOrderedQty(), 2);
-                        //         }
-
-                        //         $itemId = $get('id');
-                        //         if (!$itemId) {
-                        //             return '0.00';
-                        //         }
-
-                        //         $source = PurchaseRequestItem::query()->find($itemId);
-
-                        //         return number_format($source?->getOrderedQty() ?? 0, 2);
-                        //     })
-                        //     ->numeric()
-                        //     ->color(fn(PurchaseRequestItem $record): string => self::getOrderedQtyColumnColor($record))
-                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
-                        //     ->columnSpan([
-                        //         'lg' => 2,
-                        //     ])
-                        // ,
-                        // TextEntry::make('remaining_qty')
-                        //     ->label(__('purchase-order.purchase_order_item.remaining_qty.label'))
-                        //     ->state(function ($get, $record) {
-                        //         if ($record) {
-                        //             return number_format($record->getRemainingQty(), 2);
-                        //         }
-
-                        //         $itemId = $get('id');
-                        //         if (!$itemId) {
-                        //             return '0.00';
-                        //         }
-
-                        //         $source = PurchaseRequestItem::query()->find($itemId);
-
-                        //         return number_format($source?->getRemainingQty() ?? 0, 2);
-                        //     })
-                        //     ->numeric()
-                        //     ->color('gray')
-                        //     ->visible(fn($get): bool => static::showOrderedQty($get('../../status')))
-                        //     ->columnSpan([
-                        //         'lg' => 1,
-                        //     ])
-                        // ,
-                        // Textarea::make('description')
-                        //     ->label(__('common.description.label'))
-                        //     ->placeholder(__('purchase-request.purchase_request_item.description.placeholder'))
-                        //     ->helperText(__('purchase-request.purchase_request_item.description.helper'))
-                        //     ->autosize()
-                        //     ->columnSpanFull()
-                        // ,
                     ])
                     ->collapsible()
                     ->reorderable()
@@ -523,7 +396,7 @@ class PurchaseRequestForm
                             ->visible(function (array $arguments, Repeater $component): bool {
                                 $itemState = $component->getRawState()[$arguments['item']] ?? [];
 
-                                return static::isPurchaseRequestItemDeletable(
+                                return static::isItemDeletable(
                                     itemState: is_array($itemState) ? $itemState : [],
                                 );
                             }),
@@ -571,12 +444,8 @@ class PurchaseRequestForm
                     ->placeholder(__('purchase-request.info.placeholder'))
                     ->helperText(__('purchase-request.info.helper'))
                     ->autosize()
-                    ->required(function ($get, $record): bool {
-                        return static::hasRevisionTriggerChanges($get, $record);
-                    })
-                    ->disabled(function ($get, $record): bool {
-                        return !static::hasRevisionTriggerChanges($get, $record);
-                    })
+                    ->required(fn($record, $livewire): bool => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
+                    ->disabled(fn($record, $livewire): bool => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
                     ->afterStateHydrated(fn($component) => $component->state(null))
                     ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
                 ,
@@ -592,7 +461,7 @@ class PurchaseRequestForm
         ;
     }
 
-    public static function isPurchaseRequestItemDeletable(array $itemState = []): bool
+    protected static function isItemDeletable(array $itemState = []): bool
     {
         $itemId = $itemState['id'] ?? null;
 
@@ -600,53 +469,12 @@ class PurchaseRequestForm
             return true;
         }
 
-        $purchaseRequestItem = PurchaseRequestItem::query()->find($itemId);
+        $item = PurchaseRequestItem::query()->find($itemId);
 
-        if (!$purchaseRequestItem) {
+        if (!$item) {
             return true;
         }
 
-        return $purchaseRequestItem->getOrderedQty() <= 0;
-    }
-
-    public static function showOrderedQty(PurchaseRequestStatus|int|string|null $status): bool
-    {
-        return PurchaseRequest::shouldShowOrderedQtyForStatus($status);
-    }
-
-    protected static function hasRevisionTriggerChanges(callable $get, ?PurchaseRequest $record): bool
-    {
-        if (!$record) {
-            return false;
-        }
-
-        $purchaseRequestItems = $get('purchaseRequestItems');
-        if (!is_array($purchaseRequestItems)) {
-            $purchaseRequestItems = $get('../../purchaseRequestItems');
-        }
-
-        // On initial edit-page load, repeater state may not be hydrated yet.
-        // Use existing related items so this is treated as "no change".
-        if (!is_array($purchaseRequestItems)) {
-            $purchaseRequestItems = $record->purchaseRequestItems
-                ->map(fn(PurchaseRequestItem $item): array => [
-                    'id' => $item->id,
-                    'item_id' => $item->item_id,
-                    'qty' => $item->qty,
-                    'description' => $item->description,
-                ])
-                ->values()
-                ->toArray();
-        }
-
-        $data = [
-            'warehouse_address_id' => $get('warehouse_address_id') ?? $get('../../warehouse_address_id'),
-            'description' => $get('description') ?? $get('../../description'),
-            'memo' => $get('memo') ?? $get('../../memo'),
-            'boq' => $get('boq') ?? $get('../../boq'),
-            'purchaseRequestItems' => array_values($purchaseRequestItems),
-        ];
-
-        return $record->hasWatchedFieldChanges($data);
+        return $item->getOrderedQty() == 0;
     }
 }

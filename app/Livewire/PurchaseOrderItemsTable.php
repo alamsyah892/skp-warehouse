@@ -110,6 +110,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->color(fn(PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()
+                    ->visible(fn(): bool => $this->record?->hasGoodsReceivesAllNotCanceled() === true)
                 ,
             ])
             ->defaultSort('id', 'asc')

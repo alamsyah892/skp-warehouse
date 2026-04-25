@@ -6,6 +6,7 @@ use App\Enums\PurchaseOrderType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
 use App\Enums\PurchaseRequestStatus;
+use App\Enums\GoodsReceiveStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
+use RuntimeException;
 
 class PurchaseOrder extends Model
 {
@@ -121,7 +123,7 @@ class PurchaseOrder extends Model
 
         static::creating(function (self $record) {
             $record->user_id = auth()->id();
-            $record->type = PurchaseOrderType::RED;
+            $record->type ??= PurchaseOrderType::RED;
 
             $record->loadMissing([
                 'division',
@@ -133,7 +135,7 @@ class PurchaseOrder extends Model
         });
 
         static::created(function (self $record) {
-            $record->setStatusLog(PurchaseOrderStatus::DRAFT);
+            $record->setStatusLog(PurchaseOrderStatus::DRAFT, note: (string) $record->number);
         });
     }
 
@@ -348,6 +350,25 @@ class PurchaseOrder extends Model
         });
     }
 
+    public function hasGoodsReceivesAllNotCanceled(): bool
+    {
+        $this->loadMissing('goodsReceives:id,purchase_order_id,status');
+
+        return $this->goodsReceives->isNotEmpty()
+            && $this->goodsReceives->every(
+                fn(GoodsReceive $goodsReceive): bool => $goodsReceive->status !== GoodsReceiveStatus::CANCELED
+            );
+    }
+
+    public function hasRemainingGoodsReceiveQty(): bool
+    {
+        $this->loadMissing('purchaseOrderItems');
+
+        return $this->purchaseOrderItems->contains(
+            fn(PurchaseOrderItem $item): bool => round($item->getReceivedQty(), 2) < round((float) $item->qty, 2)
+        );
+    }
+
 
     public static function getCompatiblePurchaseRequestsQuery(?array $header = null): Builder
     {
@@ -536,6 +557,23 @@ class PurchaseOrder extends Model
                     ]),
                 ]);
             }
+        }
+    }
+
+    public static function validateDuplicatePurchaseRequestItemSources(array $items): void
+    {
+        $duplicates = collect($items)
+            ->pluck('purchase_request_item_id')
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->filter(fn(int $id): bool => $id > 0)
+            ->countBy()
+            ->filter(fn(int $count): bool => $count > 1);
+
+        if ($duplicates->isNotEmpty()) {
+            throw ValidationException::withMessages([
+                'purchaseOrderItems' => 'Purchase request item tidak boleh dipilih lebih dari satu kali.',
+            ]);
         }
     }
 
@@ -1243,5 +1281,47 @@ class PurchaseOrder extends Model
             'price' => (float) ($item['price'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
         ];
+    }
+
+    protected static function generateNumber($record): string
+    {
+        return DB::transaction(function () use ($record): string {
+            $year = now()->format('y');
+            $month = now()->format('m');
+            $project = $record->project ?? $record->project()->first();
+            $division = $record->division ?? $record->division()->first();
+            $type = $record->type instanceof PurchaseOrderType
+                ? $record->type
+                : PurchaseOrderType::tryFrom((int) $record->type);
+
+            if (!$project || !$division || !$type) {
+                throw new RuntimeException('Document number cannot be generated without type, project, and division.');
+            }
+
+            $prefix = sprintf(
+                '%s/%s/%s/%s/%s',
+                $type->initial(),
+                $year,
+                $month,
+                $project->po_code,
+                $division->code,
+            );
+
+            $last = static::withTrashed()
+                ->where('number', 'like', "{$prefix}/%")
+                ->lockForUpdate()
+                ->orderByDesc('number')
+                ->value('number');
+
+            $lastSequence = 0;
+
+            if ($last && preg_match('/\/(\d{3})(?:-Rev\.\d+)?$/', $last, $match)) {
+                $lastSequence = (int) $match[1];
+            }
+
+            $sequence = str_pad($lastSequence + 1, 3, '0', STR_PAD_LEFT);
+
+            return "{$prefix}/{$sequence}";
+        });
     }
 }

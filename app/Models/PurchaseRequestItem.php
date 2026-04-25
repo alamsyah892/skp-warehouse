@@ -68,12 +68,25 @@ class PurchaseRequestItem extends Model
             ->sum('qty');
     }
 
+    public function getOrderedQtyColor(): string
+    {
+        $orderedQty = $this->getOrderedQty();
+        $requestedQty = (float) $this->qty;
+
+        return match (true) {
+            $orderedQty == 0.0 => 'danger',
+            $orderedQty < $requestedQty => 'warning',
+            default => 'success',
+        };
+    }
+
     public function getRemainingQty(?int $exceptPurchaseOrderId = null): float
     {
         $remaining = (float) $this->qty - $this->getOrderedQty($exceptPurchaseOrderId);
 
         return max($remaining, 0.0);
     }
+
 
     public function scopeForUserWarehouses($query, $user)
     {

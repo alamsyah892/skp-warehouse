@@ -6,6 +6,7 @@ use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
+use Illuminate\Support\Str;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
@@ -23,12 +24,14 @@ class PurchaseOrdersTable
                 TextColumn::make('number')
                     ->label(__('purchase-order.number.label'))
                     ->wrapHeader()
-                    ->description(fn($record): string => $record->description)
+                    ->description(fn($record): ?string => Str::limit($record->description, 20))
+                    ->tooltip(fn($record): string => $record->description)
                     ->searchable(['number', 'description'])
                     ->sortable()
                     ->weight(FontWeight::Bold)
+                    // ->size(TextSize::Large)
                     ->fontFamily(FontFamily::Mono)
-                    ->size(TextSize::Large)
+                    ->verticallyAlignStart()
                     ->wrap(false)
                 ,
                 TextColumn::make('type')
@@ -37,16 +40,20 @@ class PurchaseOrdersTable
                     ->formatStateUsing(fn($state) => $state?->label())
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->alignCenter()
                     ->badge()
                     ->sortable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('status')
                     ->formatStateUsing(fn($state) => $state?->label())
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->alignCenter()
                     ->badge()
                     ->sortable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('created_at')
@@ -54,47 +61,116 @@ class PurchaseOrdersTable
                     ->wrapHeader()
                     ->date()
                     ->sortable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
 
                 TextColumn::make('vendor.name')
                     ->label(__('vendor.model.label'))
                     ->wrapHeader()
+                    ->formatStateUsing(fn($state): ?string => Str::limit($state, 20))
+                    ->tooltip(fn($state): string => $state)
                     ->searchable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
-                TextColumn::make('warehouse.name')->label(__('warehouse.model.label'))->wrap(),
-                TextColumn::make('company.alias')->label(__('purchase-order.company.label'))->wrap()->wrapHeader(),
-                TextColumn::make('division.name')->label(__('division.model.label'))->wrap(),
-                TextColumn::make('project.name')->label(__('project.model.label'))->wrap(),
-                TextColumn::make('purchaseRequests.number')
-                    ->label(__('purchase-request.model.plural_label'))
-                    ->searchable()
-                    ->listWithLineBreaks()
-                    ->fontFamily(FontFamily::Mono)
-                    ->size(TextSize::Large)
-                    ->badge()
+
+                TextColumn::make('warehouse.name')
+                    ->label(__('warehouse.model.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
-                UserColumn::make('user')->wrap()->wrapped(),
-                TextColumn::make('purchase_order_items_count')
-                    ->label(__('purchase-order.purchase_order_items.count_label'))
-                    ->sortable()
-                    ->color('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('updated_at')
-                    ->label(__('common.updated_at.label'))
-                    ->date()
-                    ->sortable()
-                    ->color('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
-                TextColumn::make('deleted_at')
-                    ->label(__('common.deleted_at.label'))
-                    ->date()
-                    ->sortable()
+                TextColumn::make('company.alias')
+                    ->label(__('purchase-order.company.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('division.name')
+                    ->label(__('division.model.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('project.name')
+                    ->label(__('project.model.label'))
+                    ->wrapHeader()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+                TextColumn::make('warehouseAddress.address')
+                    ->label(__('purchase-request.warehouse_address.label'))
+                    ->wrapHeader()
+                    ->searchable()
                     ->placeholder('-')
                     ->color('gray')
-                    ->toggleable(isToggledHiddenByDefault: true),
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
+                TextColumn::make('purchaseRequests.number')
+                    ->label(__('purchase-request.model.plural_label'))
+                    ->wrapHeader()
+                    ->searchable()
+                    // ->size(TextSize::Large)
+                    ->fontFamily(FontFamily::Mono)
+                    ->listWithLineBreaks()
+                    ->badge()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                ,
+
+                UserColumn::make('user')
+                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->verticallyAlignStart()
+                    ->wrap(false)
+                    ->wrapped(false)
+                ,
+
+                TextColumn::make('purchase_order_items_count')
+                    ->label(__('purchase-order.purchase_order_items.count_label'))
+                    ->wrapHeader()
+                    ->color('gray')
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('goods_receives_count')
+                    ->label(__('goods-receive.model.plural_label'))
+                    ->wrapHeader()
+                    ->color('gray')
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
+                TextColumn::make('updated_at')
+                    ->label(__('common.updated_at.label'))
+                    ->wrapHeader()
+                    ->date()
+                    ->color('gray')
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('deleted_at')
+                    ->label(__('common.deleted_at.label'))
+                    ->wrapHeader()
+                    ->date()
+                    ->color('gray')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
             ])
             ->filters([
                 SelectFilter::make('vendor')

@@ -5,11 +5,10 @@ namespace App\Filament\Resources\PurchaseRequests\Schemas;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
+use App\Filament\Components\Infolists\StatusTimelineSection;
 use App\Livewire\PurchaseRequestPurchaseOrdersTable;
 use App\Livewire\PurchaseRequestItemsTable;
-use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Callout;
@@ -66,7 +65,7 @@ class PurchaseRequestInfolist
                         ->schema([
                             static::infoSection(), // 2.1
 
-                            static::statusTimelineSection(), // 2.2
+                            StatusTimelineSection::make(), // 2.2
                         ])
                     ,
                 ])
@@ -96,9 +95,9 @@ class PurchaseRequestInfolist
                             ->hiddenLabel()
                             ->icon(Heroicon::Hashtag)
                             ->iconColor('primary')
-                            ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
+                            ->fontFamily(FontFamily::Mono)
                             ->columnSpanFull()
                         ,
                     ])
@@ -116,8 +115,8 @@ class PurchaseRequestInfolist
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
-                            ->color(fn($state) => $state?->color())
                             ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
                             ->badge()
                         ,
                         TextEntry::make('created_at')
@@ -183,24 +182,24 @@ class PurchaseRequestInfolist
                     ->schema([
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
-                            ->columnSpanFull()
-                            ->color('gray')
-                            ->placeholder('-')
                             ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
+                            ->placeholder('-')
+                            ->color('gray')
+                            ->columnSpanFull()
                         ,
                         TextEntry::make('memo')
-                            ->color('gray')
-                            ->placeholder('-')
                             ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
+                            ->placeholder('-')
+                            ->color('gray')
                         ,
                         TextEntry::make('boq')
                             ->label(__('purchase-request.boq.label'))
-                            ->color('gray')
-                            ->placeholder('-')
                             ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
+                            ->placeholder('-')
+                            ->color('gray')
                         ,
                     ])
                 ,
@@ -214,7 +213,7 @@ class PurchaseRequestInfolist
             ->tabs([
                 Tab::make(__('purchase-request.section.purchase_request_items.label'))
                     ->icon(Heroicon::Cube)
-                    ->badge(fn($record) => $record->purchaseRequestItems?->count() ?: null)
+                    ->badge(fn($record) => $record->purchaseRequestItems()->count() ?: null)
                     ->badgeTooltip(__('purchase-request.purchase_request_items.count_label'))
                     ->schema([
                         // Callout::make()
@@ -230,6 +229,7 @@ class PurchaseRequestInfolist
                 Tab::make(__('purchase-order.model.plural_label'))
                     ->icon(Heroicon::ShoppingCart)
                     ->badge(fn($record) => $record->purchaseOrders()->count() ?: null)
+                    ->badgeTooltip(__('purchase-request.purchase_orders.count_label'))
                     ->schema([
                         // Callout::make()
                         //     ->description(__('purchase-request.section.purchase_orders.description'))
@@ -239,7 +239,7 @@ class PurchaseRequestInfolist
 
                         Livewire::make(PurchaseRequestPurchaseOrdersTable::class),
                     ])
-                    ->visible(fn($record) => $record && $record->purchaseOrders()->exists())
+                    ->visible(fn($record) => $record->purchaseOrders()->exists())
                 ,
 
                 ActivityLogTab::make(__('common.log_activity.label')),
@@ -268,12 +268,10 @@ class PurchaseRequestInfolist
                 ,
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
-                    ->size(TextSize::Small)
                     ->color('gray')
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->size(TextSize::Small)
                     ->color('gray')
                     ->visible(fn($state) => $state != null)
                 ,
@@ -283,46 +281,7 @@ class PurchaseRequestInfolist
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseRequestStatus::DRAFT))
-                ,
-            ])
-        ;
-    }
-
-    protected static function statusTimelineSection(): Section|string
-    {
-        return Section::make('Status Timeline')
-            ->icon(Heroicon::Clock)
-            ->iconColor('primary')
-            ->collapsible()
-            ->compact()
-            ->columnSpanFull()
-            ->schema([
-                RepeatableEntry::make('statusLogs')
-                    ->hiddenLabel()
-                    ->schema([
-                        TextEntry::make('to_status')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->iconColor(fn($state) => $state?->color())
-                            ->formatStateUsing(function ($state, $record) {
-                                $status = $state?->label();
-                                $user = $record->user?->name ?? 'System';
-                                $date = $record->created_at->format('M d, Y');
-
-                                $note = $record->note ? '<br>Note: ' . $record->note : '';
-
-                                return __('common.log_format_with_date', [
-                                    'date' => $date,
-                                    'status' => $status,
-                                    'user' => $user,
-                                ]) . $note;
-                            })
-                            ->html()
-                            ->color('gray')
-                        ,
-                    ])
-                    ->contained(false)
+                    ->visible(fn($state) => filled($state))
                 ,
             ])
         ;
@@ -358,7 +317,7 @@ class PurchaseRequestInfolist
         ; // return array action
     }
 
-    public static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
+    protected static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
     {
         if ($status === PurchaseRequestStatus::ORDERED) {
             return true;
