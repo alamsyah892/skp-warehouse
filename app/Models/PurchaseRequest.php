@@ -15,6 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property PurchaseRequestStatus $status
+ */
+
 class PurchaseRequest extends Model
 {
     /** @use HasFactory<\Database\Factories\PurchaseRequestFactory> */
@@ -143,50 +147,14 @@ class PurchaseRequest extends Model
         return $this->hasMany(PurchaseRequestItem::class)->orderBy('sort');
     }
 
-    public function statusLogs(): HasMany
-    {
-        return $this->hasMany(PurchaseRequestStatusLog::class);
-    }
-
     public function purchaseOrders(): BelongsToMany
     {
         return $this->belongsToMany(PurchaseOrder::class);
     }
 
-
-    /**
-     * Core Logic (State Machine)
-     */
-    protected function getStatusField(): string
+    public function statusLogs(): HasMany
     {
-        return 'status';
-    }
-
-    protected function getStatusEnumClass(): string
-    {
-        return PurchaseRequestStatus::class;
-    }
-
-    protected function canUserTransition($newStatus, $user, array $flow): bool
-    {
-        return $user->hasAnyRole($flow[$newStatus->value] ?? []);
-    }
-
-
-    /** 
-     * Side Effects
-     */
-    public function setStatusLog($newStatus, $oldStatus = null, string $note = '')
-    {
-        $newStatus = $this->normalizeStatus($newStatus);
-        $oldStatus = $this->normalizeStatus($oldStatus);
-
-        $this->statusLogs()->create([
-            'user_id' => auth()->id(),
-            'from_status' => $oldStatus?->value,
-            'to_status' => $newStatus->value,
-            'note' => $note,
-        ]);
+        return $this->hasMany(PurchaseRequestStatusLog::class);
     }
 
 
@@ -198,33 +166,34 @@ class PurchaseRequest extends Model
         return $this->status === $status;
     }
 
-    // public function hasPurchaseOrdersAllNotCanceled(): bool
-    // {
-    //     return $this->purchaseOrders()->exists()
-    //         && $this->purchaseOrders()->where('status', PurchaseOrderStatus::CANCELED)->doesntExist();
-    // }
 
-    // public function shouldShowOrderedQty(): bool
-    // {
-    //     return static::shouldShowOrderedQtyForStatus($this->status)
-    //         && $this->hasPurchaseOrdersAllNotCanceled();
-    // }
+    /**
+     * for HasStateMachine
+     */
+    protected function getStatusEnumClass(): string
+    {
+        return PurchaseRequestStatus::class;
+    }
 
-    // public static function shouldShowOrderedQtyForStatus(PurchaseRequestStatus|int|string|null $status): bool
-    // {
-    //     if (is_int($status) || is_string($status)) {
-    //         $status = PurchaseRequestStatus::tryFrom((int) $status);
-    //     }
+    protected function canUserTransition($newStatus, $user, array $flow): bool
+    {
+        if (
+            $this->hasStatus(PurchaseRequestStatus::DRAFT) &&
+            in_array($newStatus, [
+                PurchaseRequestStatus::CANCELED,
+                PurchaseRequestStatus::REQUESTED
+            ], true) &&
+            $this->user_id === $user->id
+        ) {
+            return true;
+        }
 
-    //     return
-    //         $status === PurchaseRequestStatus::APPROVED ||
-    //         $status === PurchaseRequestStatus::ORDERED ||
-    //         $status === PurchaseRequestStatus::FINISHED;
-    // }
+        return $user->hasAnyRole($flow[$newStatus->value] ?? []);
+    }
 
 
     /**
-     * Revision Hooks (for HasDocumentRevision)
+     * for HasDocumentRevision
      */
     protected function getWatchedFields(): array
     {

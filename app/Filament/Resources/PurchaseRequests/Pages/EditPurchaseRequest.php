@@ -14,6 +14,8 @@ class EditPurchaseRequest extends EditRecord
 {
     protected static string $resource = PurchaseRequestResource::class;
 
+    protected ?PurchaseRequestStatus $pendingStatus = null;
+
     protected function getHeaderActions(): array
     {
         return [
@@ -25,8 +27,6 @@ class EditPurchaseRequest extends EditRecord
             RestoreAction::make(),
         ];
     }
-
-    protected ?PurchaseRequestStatus $pendingStatus = null;
 
     protected function mutateFormDataBeforeSave(array $data): array
     {

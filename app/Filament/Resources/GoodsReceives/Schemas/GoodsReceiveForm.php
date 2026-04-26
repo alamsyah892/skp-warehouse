@@ -4,7 +4,9 @@ namespace App\Filament\Resources\GoodsReceives\Schemas;
 
 use App\Enums\GoodsReceiveStatus;
 use App\Enums\GoodsReceiveType;
+use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
+use App\Models\GoodsReceive;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
@@ -93,9 +95,9 @@ class GoodsReceiveForm
                             ->hiddenLabel()
                             ->icon(Heroicon::Hashtag)
                             ->iconColor('primary')
-                            ->fontFamily(FontFamily::Mono)
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
+                            ->fontFamily(FontFamily::Mono)
                             ->columnSpan([
                                 'default' => 2,
                                 'lg' => 2,
@@ -111,12 +113,13 @@ class GoodsReceiveForm
                         //     ->badge()
                         //     ->visibleOn('edit')
                         // ,
+
                         Select::make('type')
                             ->label(__('goods-receive.type.label'))
                             ->options(GoodsReceiveType::options())
                             ->native(false)
-                            ->required()
                             ->live()
+                            ->required()
                             ->columnSpanFull()
                             ->visibleOn('create')
                         ,
@@ -150,6 +153,7 @@ class GoodsReceiveForm
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                             ->visibleOn('edit')
                         ,
                     ]),
@@ -176,18 +180,16 @@ class GoodsReceiveForm
                             ->schema([
                                 Select::make('warehouse_id')
                                     ->label(__('warehouse.model.label'))
-                                    ->disabled(fn($get, $operation) => $operation === 'edit' || static::shouldLockHeader($get))
                                     ->relationship(
-                                        name: 'warehouse',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn($query) => $query->when(
+                                        'warehouse',
+                                        'name',
+                                        fn($query) => $query->when(
                                             auth()->user()->warehouses()->exists(),
                                             fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id')),
                                         )->orderBy('name')->orderBy('code'),
                                     )
                                     ->searchable(['name', 'code'])
                                     ->preload()
-                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(function ($set) {
                                         $set('company_id', null);
@@ -195,132 +197,189 @@ class GoodsReceiveForm
                                         $set('project_id', null);
                                         $set('warehouse_address_id', null);
                                     })
+                                    ->required()
+                                    ->disabled(fn($get, $operation) => $operation === 'edit' || filled($get('purchase_order_id')))
                                     ->dehydrated()
                                 ,
                                 Select::make('company_id')
-                                    ->label(__('goods-receive.company.label'))
-                                    ->disabled(fn($get, $operation) => $operation === 'edit' || blank($get('warehouse_id')) || static::shouldLockHeader($get))
+                                    ->label(__('purchase-request.company.label'))
                                     ->relationship(
-                                        name: 'company',
-                                        titleAttribute: 'alias',
-                                        modifyQueryUsing: fn($query) => $query->orderBy('alias')->orderBy('code'),
+                                        'company',
+                                        'alias',
+                                        function ($query, $get) {
+                                            $warehouseId = $get('warehouse_id');
+
+                                            $query
+                                                ->when($warehouseId, fn($q) => $q->whereHas(
+                                                    'warehouses',
+                                                    fn($qq) => $qq->where('warehouses.id', $warehouseId),
+                                                ))
+                                                ->orderBy('alias')
+                                                ->orderBy('code')
+                                            ;
+                                        },
                                     )
-                                    ->searchable(['name', 'alias', 'code'])
+                                    ->searchable(['alias', 'code'])
                                     ->preload()
-                                    ->required()
                                     ->live()
                                     ->afterStateUpdated(fn($set) => $set('project_id', null))
+                                    ->required()
+                                    ->disabled(
+                                        fn($get, string $operation) =>
+                                        $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchase_order_id'))
+                                    )
                                     ->dehydrated()
                                 ,
                                 Select::make('division_id')
                                     ->label(__('division.model.label'))
-                                    ->disabled(fn($get, $operation) => $operation === 'edit' || blank($get('company_id')) || static::shouldLockHeader($get))
                                     ->relationship(
-                                        name: 'division',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: function ($query, $get) {
+                                        'division',
+                                        'name',
+                                        function ($query, $get) {
                                             $companyId = $get('company_id');
 
                                             $query
-                                                ->when($companyId, function ($q) use ($companyId) {
-                                                    $q
-                                                        ->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId))
-                                                        ->orWhereDoesntHave('companies')
-                                                    ;
-                                                })
-                                                ->orderBy('name')->orderBy('code')
+                                                ->when($companyId, fn($q) => $q->whereHas(
+                                                    'companies',
+                                                    fn($qq) => $qq->where('companies.id', $companyId),
+                                                ))
+                                                ->orderBy('name')
+                                                ->orderBy('code')
                                             ;
-                                        },
+                                        }
                                     )
-                                    ->searchable()
+                                    ->searchable(['name', 'code'])
                                     ->preload()
                                     ->required()
-                                    ->live()
+                                    ->disabled(
+                                        fn($get, string $operation) =>
+                                        $operation === 'edit' || blank($get('company_id')) || filled($get('purchase_order_id'))
+                                    )
                                     ->dehydrated()
                                 ,
                                 Select::make('project_id')
                                     ->label(__('project.model.label'))
-                                    ->disabled(fn($get, $operation) => $operation === 'edit'
-                                        || blank($get('warehouse_id'))
-                                        || blank($get('company_id'))
-                                        || static::shouldLockHeader($get))
                                     ->relationship(
-                                        name: 'project',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: function ($query, $get) {
+                                        'project',
+                                        'name',
+                                        function ($query, $get) {
                                             $warehouseId = $get('warehouse_id');
                                             $companyId = $get('company_id');
 
                                             $query
-                                                ->when($companyId, function ($q) use ($companyId) {
-                                                    $q->where(function ($qq) use ($companyId) {
+                                                ->when(
+                                                    $companyId && $warehouseId,
+                                                    fn($q) => $q->where(function ($qq) use ($companyId, $warehouseId) {
                                                         $qq
-                                                            ->whereHas('companies', fn($q) => $q->where('companies.id', $companyId))
-                                                            ->orWhereDoesntHave('companies')
+                                                            ->whereHas('companies', fn($q2) => $q2->where('companies.id', $companyId))
+                                                            ->orWhereHas('warehouses', fn($q2) => $q2->where('warehouses.id', $warehouseId))
                                                         ;
-                                                    });
-                                                })
-                                                ->when($warehouseId, function ($q) use ($warehouseId) {
-                                                    $q->where(function ($qq) use ($warehouseId) {
-                                                        $qq
-                                                            ->whereHas('warehouses', fn($q) => $q->where('warehouses.id', $warehouseId))
-                                                            ->orWhereDoesntHave('warehouses')
-                                                        ;
-                                                    });
-                                                })
+                                                    }),
+                                                )
+                                                ->when(
+                                                    $companyId && blank($warehouseId),
+                                                    fn($q) => $q->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId)),
+                                                )
+                                                ->when(
+                                                    $warehouseId && blank($companyId),
+                                                    fn($q) => $q->whereHas('warehouses', fn($qq) => $qq->where('warehouses.id', $warehouseId)),
+                                                )
                                                 ->where('allow_po', true)
                                                 ->orderBy('name')->orderBy('code')
                                             ;
-                                        },
+                                        }
                                     )
                                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                                     ->searchable(['name', 'code', 'po_code'])
                                     ->preload()
                                     ->required()
-                                    ->live()
+                                    ->disabled(
+                                        fn($get, string $operation) =>
+                                        $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id')) || filled($get('purchase_order_id'))
+                                    )
                                     ->dehydrated()
                                 ,
+
                                 Select::make('warehouse_address_id')
                                     ->label(__('goods-receive.warehouse_address.label'))
-                                    ->disabled(fn($get) => blank($get('warehouse_id')))
                                     ->relationship(
-                                        name: 'warehouseAddress',
-                                        titleAttribute: 'address',
-                                        modifyQueryUsing: fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id')),
+                                        'warehouseAddress',
+                                        'address',
+                                        fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
                                     )
                                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
-                                    ->searchable(['address', 'city'])
+                                    ->searchable()
                                     ->preload()
                                     ->default(null)
+                                    ->disabled(fn($get) => blank($get('warehouse_id')))
                                     ->live()
                                     ->columnSpanFull()
                                 ,
                             ])
                         ,
+
                         Select::make('purchase_order_id')
                             ->label(__('purchase-order.model.label'))
                             ->relationship(
-                                name: 'purchaseOrder',
-                                titleAttribute: 'number',
-                                modifyQueryUsing: fn(Builder $query) => $query->orderByDesc('id'),
+                                'purchaseOrder',
+                                'number',
+                                function (Builder $query, $get, ?GoodsReceive $record): Builder {
+                                    $header = array_filter([
+                                        'warehouse_id' => $get('warehouse_id'),
+                                        'company_id' => $get('company_id'),
+                                        'division_id' => $get('division_id'),
+                                        'project_id' => $get('project_id'),
+                                    ]);
+
+                                    foreach ($header as $field => $value) {
+                                        $query->where("purchase_orders.{$field}", $value);
+                                    }
+
+                                    $query->when(
+                                        auth()->user()->warehouses()->exists(),
+                                        fn(Builder $builder) => $builder->whereIn(
+                                            'purchase_orders.warehouse_id',
+                                            auth()->user()->warehouses->pluck('id'),
+                                        ),
+                                    );
+
+                                    $selectableStatuses = GoodsReceive::SELECTABLE_PURCHASE_ORDER_STATUSES;
+
+                                    $selectedIds = [];
+                                    if ($record) {
+                                        $selectedIds = $record->purchaseOrder()->pluck('purchase_orders.id')->all();
+                                    }
+
+                                    $query->where(function (Builder $scopedQuery) use ($selectableStatuses, $selectedIds): void {
+                                        $scopedQuery->whereIn('status', $selectableStatuses);
+
+                                        if ($selectedIds !== []) {
+                                            $scopedQuery->orWhereIn('purchase_orders.id', $selectedIds);
+                                        }
+                                    });
+
+                                    return $query->orderByDesc('purchase_orders.id');
+                                }
                             )
                             ->searchable(['number', 'description'])
                             ->preload()
-                            ->required(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
-                            ->visible(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
                             ->live()
                             ->afterStateUpdated(function ($state, $set): void {
-                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
-                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
-                            })
-                            ->afterStateHydrated(function ($state, $set, $get): void {
-                                if (static::normalizeTypeState($get('type')) !== GoodsReceiveType::PURCHASE_ORDER) {
-                                    return;
-                                }
+                                $purchaseOrder = PurchaseOrder::query()
+                                    ->with(['warehouse', 'company', 'division', 'project', 'warehouseAddress'])
+                                    ->find((int) $state)
+                                ;
 
-                                $purchaseOrder = static::getPurchaseOrderRecord((int) $state);
-                                static::fillHeaderFieldsFromPurchaseOrder($set, $purchaseOrder);
+                                $set('warehouse_id', $purchaseOrder?->warehouse_id ?? null);
+                                $set('company_id', $purchaseOrder?->company_id ?? null);
+                                $set('division_id', $purchaseOrder?->division_id ?? null);
+                                $set('project_id', $purchaseOrder?->project_id ?? null);
+                                $set('warehouse_address_id', $purchaseOrder?->warehouse_address_id ?? null);
                             })
+                            ->dehydrated()
+                            ->required(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
+                            ->visible(fn($get) => static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER)
+                            ->disabledOn('edit')
                             ->columnSpanFull()
                         ,
                     ])
@@ -341,12 +400,15 @@ class GoodsReceiveForm
                             ->placeholder(__('goods-receive.description.placeholder'))
                             ->helperText(__('goods-receive.description.helper'))
                             ->autosize()
+                            ->live(debounce: 500)
                             ->columnSpanFull()
                         ,
+
                         TextInput::make('delivery_order')
                             ->label(__('goods-receive.delivery_order.label'))
                             ->placeholder(__('goods-receive.delivery_order.placeholder'))
                             ->helperText(__('goods-receive.delivery_order.helper'))
+                            ->live(debounce: 500)
                             ->columnSpanFull()
                         ,
                     ])
@@ -366,17 +428,10 @@ class GoodsReceiveForm
                     ->label(__('goods-receive.goods_receive_items.label'))
                     ->hiddenLabel()
                     ->relationship()
-                    ->mutateRelationshipDataBeforeCreateUsing(fn(array $data): array => Arr::except($data, ['line_key']))
-                    ->mutateRelationshipDataBeforeSaveUsing(fn(array $data): array => Arr::except($data, ['line_key']))
-                    ->columnSpanFull()
                     ->columns([
                         'lg' => 12,
                     ])
                     ->schema([
-                        Hidden::make('line_key')
-                            ->default(fn(): string => (string) str()->uuid())
-                            ->dehydrated()
-                        ,
                         Select::make('purchase_order_item_id')
                             ->label(__('purchase-order.purchase_order_items.label'))
                             ->options(function ($get): array {
@@ -434,7 +489,7 @@ class GoodsReceiveForm
                                     __('goods-receive.purchase_order_item.source_item.context_value', [
                                         'ordered_qty' => number_format((float) $purchaseOrderItem->qty, 2),
                                         'received_qty' => number_format((float) $purchaseOrderItem->getReceivedQty($exceptGoodsReceiveId), 2),
-                                        'remaining_qty' => number_format((float) $purchaseOrderItem->getRemainingReceiveQty($exceptGoodsReceiveId), 2),
+                                        'remaining_qty' => number_format((float) $purchaseOrderItem->getRemainingQty($exceptGoodsReceiveId), 2),
                                     ]),
                                 ]));
                             })
@@ -464,7 +519,7 @@ class GoodsReceiveForm
                                 $exceptGoodsReceiveId = $record?->goods_receive_id;
 
                                 $set('item_id', $source->item_id);
-                                $set('qty', $source->getRemainingReceiveQty($exceptGoodsReceiveId));
+                                $set('qty', $source->getRemainingQty($exceptGoodsReceiveId));
                                 $set('description', $source->description);
                             })
                             ->visible(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)
@@ -517,7 +572,7 @@ class GoodsReceiveForm
                                     }
 
                                     $goodsReceiveId = $record?->goods_receive_id;
-                                    $remaining = $source->getRemainingReceiveQty($goodsReceiveId);
+                                    $remaining = $source->getRemainingQty($goodsReceiveId);
 
                                     if ((float) $value > $remaining) {
                                         $fail(__('goods-receive.validation.qty_exceeded', [
@@ -595,7 +650,13 @@ class GoodsReceiveForm
                     ->required(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
                     ->disabled(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
                     ->afterStateHydrated(fn($component) => $component->state(null))
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED))
+                    ->afterStateUpdated(function ($set, $record, $livewire): void {
+                        if ($record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true) {
+                            $set('info', null);
+                        }
+                    })
+                    ->dehydrated(fn($record, $livewire): bool => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
+                    ->visible(fn($record, $operation) => $operation === 'edit')
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
@@ -762,11 +823,11 @@ class GoodsReceiveForm
         return GoodsReceiveType::tryFrom((int) $state);
     }
 
-    protected static function shouldLockHeader(callable $get): bool
-    {
-        return static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER
-            && filled($get('purchase_order_id'));
-    }
+    // protected static function shouldLockHeader(callable $get): bool
+    // {
+    //     return static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER
+    //         && filled($get('purchase_order_id'));
+    // }
 
     protected static function getPurchaseOrderRecord(?int $purchaseOrderId): ?PurchaseOrder
     {
@@ -800,18 +861,18 @@ class GoodsReceiveForm
         return $cache[$vendorId];
     }
 
-    protected static function fillHeaderFieldsFromPurchaseOrder(callable $set, ?PurchaseOrder $purchaseOrder): void
-    {
-        if (!$purchaseOrder) {
-            return;
-        }
+    // protected static function fillHeaderFieldsFromPurchaseOrder(callable $set, ?PurchaseOrder $purchaseOrder): void
+    // {
+    //     if (!$purchaseOrder) {
+    //         return;
+    //     }
 
-        $set('warehouse_id', $purchaseOrder->warehouse_id);
-        $set('company_id', $purchaseOrder->company_id);
-        $set('division_id', $purchaseOrder->division_id);
-        $set('project_id', $purchaseOrder->project_id);
-        $set('warehouse_address_id', $purchaseOrder->warehouse_address_id);
-    }
+    //     $set('warehouse_id', $purchaseOrder->warehouse_id);
+    //     $set('company_id', $purchaseOrder->company_id);
+    //     $set('division_id', $purchaseOrder->division_id);
+    //     $set('project_id', $purchaseOrder->project_id);
+    //     $set('warehouse_address_id', $purchaseOrder->warehouse_address_id);
+    // }
 
     protected static function getPurchaseOrderItemRecord(?int $purchaseOrderItemId): ?PurchaseOrderItem
     {

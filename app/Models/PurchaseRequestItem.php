@@ -5,10 +5,12 @@ namespace App\Models;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class PurchaseRequestItem extends Model
 {
@@ -65,7 +67,8 @@ class PurchaseRequestItem extends Model
                     $query->where('id', '!=', $exceptPurchaseOrderId);
                 }
             })
-            ->sum('qty');
+            ->sum('qty')
+        ;
     }
 
     public function getOrderedQtyColor(): string
@@ -88,16 +91,81 @@ class PurchaseRequestItem extends Model
     }
 
 
-    public function scopeForUserWarehouses($query, $user)
+    public static function getOptions(array $purchaseRequestIds, ?string $search = null): array
     {
-        $warehouseIds = $user->warehouses()->pluck('warehouses.id');
+        $purchaseRequestIds = PurchaseRequest::normalizeIds($purchaseRequestIds);
 
-        if ($warehouseIds->isEmpty()) {
-            return $query; // tampilkan semua
+        if (blank($purchaseRequestIds)) {
+            return [];
         }
 
-        return $query->whereHas('purchaseRequest', function ($q) use ($warehouseIds) {
-            $q->whereIn('warehouse_id', $warehouseIds);
-        });
+        static $cache = [];
+
+        $cacheKey = md5(json_encode([
+            'purchase_request_ids' => $purchaseRequestIds,
+            'search' => filled($search) ? trim($search) : null,
+        ], JSON_THROW_ON_ERROR));
+
+        if (!array_key_exists($cacheKey, $cache)) {
+            $query = self::getCompatibleForPurchaseOrderQuery($purchaseRequestIds);
+
+            if (filled($search)) {
+                $query->where(function (Builder $builder) use ($search): void {
+                    $builder->whereHas('item', function (Builder $itemQuery) use ($search): void {
+                        $itemQuery
+                            ->where('name', 'like', "%{$search}%")
+                            ->orWhere('code', 'like', "%{$search}%");
+                    })->orWhereHas('purchaseRequest', function (Builder $purchaseRequestQuery) use ($search): void {
+                        $purchaseRequestQuery->where('number', 'like', "%{$search}%");
+                    });
+                });
+            }
+
+            $cache[$cacheKey] = $query
+                ->limit(50)
+                ->get()
+                ->groupBy(fn(self $record) => $record->purchaseRequest?->number ?? '-')
+                ->map(function (Collection $items): Collection {
+                    return $items->mapWithKeys(fn(self $record): array => [
+                        $record->id => "{$record->purchaseRequest?->number} | {$record->item?->code} | {$record->item?->name}",
+                    ]);
+                })
+                ->toArray();
+        }
+
+        return $cache[$cacheKey];
+    }
+
+    public static function getCompatibleForPurchaseOrderQuery(array $purchaseRequestIds = []): Builder
+    {
+        return self::query()
+            ->with([
+                'item:id,code,name,unit',
+                'purchaseRequest:id,number,warehouse_id,company_id,division_id,project_id,status',
+            ])
+            ->whereHas('purchaseRequest', function (Builder $query) use ($purchaseRequestIds): void {
+                if (blank($purchaseRequestIds)) {
+                    return;
+                }
+
+                $query->whereIn('id', $purchaseRequestIds);
+            });
+    }
+
+    public static function findWithDetail(?int $id): ?self
+    {
+        if (!$id) {
+            return null;
+        }
+
+        static $cache = [];
+
+        if (!array_key_exists($id, $cache)) {
+            $cache[$id] = self::query()
+                ->with(['item', 'purchaseRequest'])
+                ->find($id);
+        }
+
+        return $cache[$id];
     }
 }

@@ -67,12 +67,6 @@ class ItemResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        $query
-            ->withCount([
-                'purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user()),
-            ])
-        ;
-
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,
         ]);
@@ -81,12 +75,6 @@ class ItemResource extends Resource
     public static function getRecordRouteBindingEloquentQuery(): Builder
     {
         $query = parent::getRecordRouteBindingEloquentQuery();
-
-        $query
-            ->with([
-                'purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user())->orderByDesc('purchase_request_id'),
-            ])
-        ;
 
         return $query->withoutGlobalScopes([
             SoftDeletingScope::class,

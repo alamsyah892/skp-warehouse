@@ -12,16 +12,16 @@ trait HasStateMachine
     /**
      * Abstract
      */
-    abstract protected function getStatusField(): string;
-
     abstract protected function getStatusEnumClass(): string;
-
-    abstract protected function setStatusLog($newStatus, $oldStatus = null, string $note = '');
-
 
     /**
      * Core
      */
+    public function getStatusField(): string
+    {
+        return 'status';
+    }
+
     public function changeStatus($newStatus, ?string $note = ''): void
     {
         $newStatus = $this->normalizeStatus($newStatus);
@@ -145,5 +145,31 @@ trait HasStateMachine
     protected function getStatusTransitions(): array
     {
         return $this->getStatus()->transitions();
+    }
+
+    public function setStatusLog($newStatus, $oldStatus = null, string $note = '')
+    {
+        $newStatus = $this->normalizeStatus($newStatus);
+        $oldStatus = $this->normalizeStatus($oldStatus);
+
+        $this->statusLogs()->create([
+            'user_id' => auth()->id(),
+            'from_status' => $oldStatus?->value,
+            'to_status' => $newStatus->value,
+            'note' => $note,
+        ]);
+    }
+
+
+    public static function normalizeIds(array $ids): array
+    {
+        return collect($ids)
+            ->flatten()
+            ->filter()
+            ->map(fn($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all()
+        ;
     }
 }

@@ -148,7 +148,7 @@ class PurchaseRequestForm
                                     fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id')),
                                 )->orderBy('name')->orderBy('code'),
                             )
-                            ->searchable()
+                            ->searchable(['name', 'code'])
                             ->preload()
                             ->live()
                             ->afterStateUpdated(function ($set) {
@@ -179,7 +179,7 @@ class PurchaseRequestForm
                                     ;
                                 },
                             )
-                            ->searchable()
+                            ->searchable(['alias', 'code'])
                             ->preload()
                             ->live()
                             ->afterStateUpdated(fn($set) => $set('project_id', null))
@@ -205,7 +205,7 @@ class PurchaseRequestForm
                                     ;
                                 }
                             )
-                            ->searchable()
+                            ->searchable(['name', 'code'])
                             ->preload()
                             ->required()
                             ->disabled(fn($get, string $operation) => $operation === 'edit' || blank($get('company_id')))
@@ -287,21 +287,21 @@ class PurchaseRequestForm
                             ->label(__('common.description.label'))
                             ->placeholder(__('purchase-request.description.placeholder'))
                             ->helperText(__('purchase-request.description.helper'))
-                            ->live()
+                            ->live(debounce: 500)
                             ->autosize()
                             ->columnSpanFull()
                         ,
                         Textarea::make('memo')
                             ->placeholder(__('purchase-request.memo.placeholder'))
                             ->helperText(__('purchase-request.memo.helper'))
-                            ->live()
+                            ->live(debounce: 500)
                             ->autosize()
                         ,
                         Textarea::make('boq')
                             ->label(__('purchase-request.boq.label'))
                             ->placeholder(__('purchase-request.boq.placeholder'))
                             ->helperText(__('purchase-request.boq.helper'))
-                            ->live()
+                            ->live(debounce: 500)
                             ->autosize()
                         ,
                     ])
@@ -341,6 +341,8 @@ class PurchaseRequestForm
                                     ->searchable(['code', 'name'])
                                     ->required()
                                     ->disabled(fn($record): bool => $record?->getOrderedQty() ?? 0 > 0)
+                                    ->live()
+                                    ->dehydrated()
                                 ,
                                 Textarea::make('description')
                                     ->label(__('common.description.label'))

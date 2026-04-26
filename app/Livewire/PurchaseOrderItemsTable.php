@@ -90,27 +90,21 @@ class PurchaseOrderItemsTable extends TableWidget
                 ,
                 TextColumn::make('subtotal')
                     ->label(__('purchase-order.subtotal.label'))
-                    ->state(fn(PurchaseOrderItem $record): float => $record->getLineTotalAmount())
-                    ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
+                    ->state(fn(PurchaseOrderItem $record): float => $record->getSubtotalAmount())
+                    ->numeric()
+                    // ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
+                    // ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('received_qty')
                     ->label(__('purchase-order.purchase_order_item.received_qty.label'))
-                    ->state(function (PurchaseOrderItem $record): float {
-                        if ($record->relationLoaded('goodsReceiveItems')) {
-                            return (float) $record->goodsReceiveItems
-                                ->filter(fn($item) => $item->goodsReceive?->status?->value === \App\Enums\GoodsReceiveStatus::RECEIVED->value)
-                                ->sum('qty');
-                        }
-
-                        return $record->getReceivedQty();
-                    })
+                    ->state(fn(PurchaseOrderItem $record): float|null => $record->getReceivedQty() > 0 ? $record->getReceivedQty() : null)
                     ->numeric()
                     ->color(fn(PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
                     ->alignment(Alignment::End)
                     ->verticallyAlignStart()
-                    ->visible(fn(): bool => $this->record?->hasGoodsReceivesAllNotCanceled() === true)
+                    ->visible(fn() => $this->record && $this->record->goodsReceives()->exists())
                 ,
             ])
             ->defaultSort('id', 'asc')

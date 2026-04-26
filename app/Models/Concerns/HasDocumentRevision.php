@@ -149,6 +149,20 @@ trait HasDocumentRevision
             }
         }
 
+        if (
+            is_string($field) &&
+            method_exists($this, 'hasCast') &&
+            $this->hasCast($field, ['int', 'integer', 'real', 'float', 'double', 'decimal'])
+        ) {
+            if (blank($value)) {
+                return 0.0;
+            }
+
+            if (is_numeric($value)) {
+                return (float) $value;
+            }
+        }
+
         if ($value instanceof BackedEnum) {
             return $value->value;
         }

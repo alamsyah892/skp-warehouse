@@ -79,9 +79,14 @@ return new class extends Migration {
             /** 
              * Delivery
              */
-            $table->date('delivery_date')->nullable()->default(null);
+            $table->date('delivery_date')
+                ->nullable()
+                ->default(null)
+            ;
             $table->string('delivery_notes');
-            $table->decimal('shipping_cost', 15, 2)->default(0);
+            $table->decimal('shipping_cost', 15, 2)
+                ->default(0)
+            ;
             $table->string('shipping_method');
 
             /** 
@@ -96,9 +101,13 @@ return new class extends Migration {
              */
             $table->decimal('discount', 15, 2)->default(0);
             $table->string('tax_type');
-            $table->decimal('tax_percentage', 5, 2)->nullable()->default(null);
+            $table->unsignedTinyInteger('tax_percentage')
+                ->default(1)
+            ;
             $table->string('tax_description');
-            $table->decimal('rounding', 15, 2)->default(0);
+            $table->decimal('rounding', 15, 2)
+                ->default(0)
+            ;
 
             $table->timestamps();
             $table->softDeletes();

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\GoodsReceiveStatus;
 use App\Enums\GoodsReceiveType;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
@@ -14,8 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Support\Collection;
-use Illuminate\Validation\ValidationException;
 
 class GoodsReceive extends Model
 {
@@ -63,6 +62,10 @@ class GoodsReceive extends Model
      * Constants
      */
     public const MODEL_ALIAS = 'GR';
+    public const SELECTABLE_PURCHASE_ORDER_STATUSES = [
+        PurchaseOrderStatus::ORDERED,
+        PurchaseOrderStatus::FINISHED,
+    ];
 
     /**
      * Booted / Events
@@ -207,7 +210,6 @@ class GoodsReceive extends Model
             'warehouse_address_id',
             'description',
             'delivery_order',
-            'notes',
             'type',
         ];
     }
@@ -235,209 +237,5 @@ class GoodsReceive extends Model
             'qty' => (float) ($item['qty'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
         ];
-    }
-
-    /**
-     * Data sync & validation helpers
-     */
-    public static function syncHeaderFromPurchaseOrder(array &$data): void
-    {
-        $purchaseOrderId = (int) ($data['purchase_order_id'] ?? 0);
-
-        if ($purchaseOrderId <= 0) {
-            return;
-        }
-
-        $purchaseOrder = PurchaseOrder::query()->find($purchaseOrderId);
-
-        if (!$purchaseOrder) {
-            return;
-        }
-
-        $data['warehouse_id'] = $purchaseOrder->warehouse_id;
-        $data['company_id'] = $purchaseOrder->company_id;
-        $data['division_id'] = $purchaseOrder->division_id;
-        $data['project_id'] = $purchaseOrder->project_id;
-        $data['warehouse_address_id'] = $purchaseOrder->warehouse_address_id;
-    }
-
-    public static function syncGoodsReceiveItemsFromPurchaseOrderItems(array &$data): void
-    {
-        $rawItems = collect($data['goodsReceiveItems'] ?? []);
-
-        $purchaseOrderItemIds = $rawItems
-            ->pluck('purchase_order_item_id')
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values();
-
-        /** @var Collection<int, PurchaseOrderItem> $purchaseOrderItems */
-        $purchaseOrderItems = $purchaseOrderItemIds->isEmpty()
-            ? collect()
-            : PurchaseOrderItem::query()
-                ->select(['id', 'item_id'])
-                ->whereIn('id', $purchaseOrderItemIds->all())
-                ->get()
-                ->keyBy('id');
-
-        $data['goodsReceiveItems'] = $rawItems
-            ->map(function (array $item) use ($purchaseOrderItems): array {
-                $purchaseOrderItemId = (int) ($item['purchase_order_item_id'] ?? 0);
-
-                if ($purchaseOrderItemId <= 0) {
-                    return $item;
-                }
-
-                /** @var PurchaseOrderItem|null $purchaseOrderItem */
-                $purchaseOrderItem = $purchaseOrderItems->get($purchaseOrderItemId);
-
-                if (!$purchaseOrderItem) {
-                    return $item;
-                }
-
-                $item['item_id'] = $purchaseOrderItem->item_id;
-
-                return $item;
-            })
-            ->values()
-            ->all();
-    }
-
-    public static function validatePurchaseOrderItemsBelongToPurchaseOrder(array $items, ?int $purchaseOrderId): void
-    {
-        $purchaseOrderId = (int) $purchaseOrderId;
-
-        if ($purchaseOrderId <= 0) {
-            return;
-        }
-
-        $ids = collect($items)
-            ->pluck('purchase_order_item_id')
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values();
-
-        if ($ids->isEmpty()) {
-            return;
-        }
-
-        /** @var Collection<int, PurchaseOrderItem> $purchaseOrderItems */
-        $purchaseOrderItems = PurchaseOrderItem::query()
-            ->select(['id', 'purchase_order_id'])
-            ->whereIn('id', $ids->all())
-            ->get()
-            ->keyBy('id');
-
-        foreach ($items as $index => $item) {
-            $purchaseOrderItemId = (int) ($item['purchase_order_item_id'] ?? 0);
-
-            if ($purchaseOrderItemId <= 0) {
-                continue;
-            }
-
-            /** @var PurchaseOrderItem|null $purchaseOrderItem */
-            $purchaseOrderItem = $purchaseOrderItems->get($purchaseOrderItemId);
-
-            if (!$purchaseOrderItem) {
-                throw ValidationException::withMessages([
-                    "goodsReceiveItems.{$index}.purchase_order_item_id" => __('goods-receive.validation.source_item_not_found'),
-                ]);
-            }
-
-            if ((int) $purchaseOrderItem->purchase_order_id !== $purchaseOrderId) {
-                throw ValidationException::withMessages([
-                    "goodsReceiveItems.{$index}.purchase_order_item_id" => __('goods-receive.validation.source_item_not_found'),
-                ]);
-            }
-        }
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array<int, float>
-     */
-    public static function buildReceivedQtyByPurchaseOrderItemSnapshot(array $purchaseOrderItemIds, ?int $exceptGoodsReceiveId = null): array
-    {
-        $ids = collect($purchaseOrderItemIds)
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values();
-
-        if ($ids->isEmpty()) {
-            return [];
-        }
-
-        $query = GoodsReceiveItem::query()
-            ->selectRaw('purchase_order_item_id, SUM(qty) AS received_qty')
-            ->whereIn('purchase_order_item_id', $ids->all())
-            ->whereHas('goodsReceive', function ($query) use ($exceptGoodsReceiveId) {
-                $query->where('status', GoodsReceiveStatus::RECEIVED->value);
-
-                if ($exceptGoodsReceiveId) {
-                    $query->where('id', '!=', $exceptGoodsReceiveId);
-                }
-            })
-            ->groupBy('purchase_order_item_id');
-
-        return $query
-            ->get()
-            ->mapWithKeys(fn ($row): array => [(int) $row->purchase_order_item_id => (float) $row->received_qty])
-            ->all();
-    }
-
-    public static function validateAllocationQuantities(array $items, ?int $currentGoodsReceiveId = null): void
-    {
-        $ids = collect($items)
-            ->pluck('purchase_order_item_id')
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->filter(fn (int $id): bool => $id > 0)
-            ->unique()
-            ->values();
-
-        /** @var Collection<int, PurchaseOrderItem> $purchaseOrderItems */
-        $purchaseOrderItems = $ids->isEmpty()
-            ? collect()
-            : PurchaseOrderItem::query()
-                ->whereIn('id', $ids->all())
-                ->get(['id', 'qty'])
-                ->keyBy('id');
-
-        $receivedSnapshot = self::buildReceivedQtyByPurchaseOrderItemSnapshot($ids->all(), $currentGoodsReceiveId);
-
-        foreach ($items as $index => $item) {
-            $purchaseOrderItemId = (int) ($item['purchase_order_item_id'] ?? 0);
-            $qty = (float) ($item['qty'] ?? 0);
-
-            if ($purchaseOrderItemId <= 0) {
-                continue;
-            }
-
-            /** @var PurchaseOrderItem|null $purchaseOrderItem */
-            $purchaseOrderItem = $purchaseOrderItems->get($purchaseOrderItemId);
-
-            if (!$purchaseOrderItem) {
-                throw ValidationException::withMessages([
-                    "goodsReceiveItems.{$index}.purchase_order_item_id" => __('goods-receive.validation.source_item_not_found'),
-                ]);
-            }
-
-            $alreadyReceived = (float) ($receivedSnapshot[$purchaseOrderItemId] ?? 0);
-            $remaining = max((float) $purchaseOrderItem->qty - $alreadyReceived, 0.0);
-
-            if ($qty > $remaining) {
-                throw ValidationException::withMessages([
-                    "goodsReceiveItems.{$index}.qty" => __('goods-receive.validation.qty_exceeded', [
-                        'remaining' => number_format($remaining, 2),
-                    ]),
-                ]);
-            }
-        }
     }
 }

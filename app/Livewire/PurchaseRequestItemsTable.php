@@ -63,6 +63,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
                     ->wrapHeader()
                     ->state(fn(PurchaseRequestItem $record): float|null => $record->getOrderedQty() > 0 ? $record->getOrderedQty() : null)
+                    ->placeholder('-')
                     ->numeric()
                     ->color(fn(PurchaseRequestItem $record): string => $record->getOrderedQtyColor())
                     ->weight(FontWeight::Bold)
