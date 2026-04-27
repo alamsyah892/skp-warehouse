@@ -88,6 +88,9 @@ return [
     'purchase_request_items' => [
         'label' => 'Item Pengajuan Pembelian',
         'count_label' => 'Jumlah Item',
+        'total_qty_label' => 'Total Qty',
+        'ordered_qty_label' => 'Total Qty Dipesan',
+        'ordered_percentage_label' => 'Persentase Dipesan',
     ],
 
     'purchase_request_item' => [

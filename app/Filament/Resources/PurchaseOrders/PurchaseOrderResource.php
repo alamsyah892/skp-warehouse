@@ -68,6 +68,7 @@ class PurchaseOrderResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->withQuantitySummary()
             ->withCount(['purchaseOrderItems', 'goodsReceives'])
             ->withoutGlobalScopes([SoftDeletingScope::class]);
     }

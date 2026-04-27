@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseRequests\Tables;
 
+use App\Models\PurchaseRequest;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
@@ -124,6 +125,43 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->sortable()
                     ->color('gray')
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_request_items_sum_qty')
+                    ->label(__('purchase-request.purchase_request_items.total_qty_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2))
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_request_items_ordered_qty_sum')
+                    ->label(__('purchase-request.purchase_request_items.ordered_qty_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2))
+                    ->color('gray')
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_request_items_ordered_percentage')
+                    ->label(__('purchase-request.purchase_request_items.ordered_percentage_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2) . '%')
+                    ->color(fn(PurchaseRequest $record): string => match (true) {
+                        $record->getOrderedPercentage() <= 0.0 => 'danger',
+                        $record->getOrderedPercentage() < 100.0 => 'warning',
+                        default => 'success',
+                    })
+                    ->badge()
+                    ->alignCenter()
+                    ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                     ->toggleable(isToggledHiddenByDefault: true)

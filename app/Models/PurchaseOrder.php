@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GoodsReceiveStatus;
 use App\Enums\PurchaseOrderType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
@@ -11,6 +12,7 @@ use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
 use App\Models\Concerns\HasStateMachine;
 use App\Models\Concerns\LogsAllFillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -205,6 +207,74 @@ class PurchaseOrder extends Model
     public function hasStatus(PurchaseOrderStatus $status): bool
     {
         return $this->status === $status;
+    }
+
+    public function getTotalOrderedQty(): float
+    {
+        return (float) ($this->getAttribute('purchase_order_items_sum_qty') ?? 0);
+    }
+
+    public function getTotalReceivedQty(): float
+    {
+        return (float) ($this->getAttribute('purchase_order_items_received_qty_sum') ?? 0);
+    }
+
+    public function getReceivedPercentage(): float
+    {
+        $receivedPercentage = $this->getAttribute('purchase_order_items_received_percentage');
+
+        if ($receivedPercentage !== null) {
+            return (float) $receivedPercentage;
+        }
+
+        $totalOrderedQty = $this->getTotalOrderedQty();
+
+        if ($totalOrderedQty <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->getTotalReceivedQty() / $totalOrderedQty) * 100, 2);
+    }
+
+    public function scopeWithQuantitySummary(Builder $query): Builder
+    {
+        return $query
+            ->withSum('purchaseOrderItems', 'qty')
+            ->selectSub(
+                GoodsReceiveItem::query()
+                    ->selectRaw('coalesce(sum(goods_receive_items.qty), 0)')
+                    ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
+                    ->join('purchase_order_items', 'purchase_order_items.id', '=', 'goods_receive_items.purchase_order_item_id')
+                    ->whereColumn('purchase_order_items.purchase_order_id', 'purchase_orders.id')
+                    ->where('goods_receives.status', GoodsReceiveStatus::RECEIVED->value),
+                'purchase_order_items_received_qty_sum',
+            )
+            ->selectSub(
+                PurchaseOrderItem::query()
+                    ->selectRaw(
+                        'case
+                            when coalesce(sum(purchase_order_items.qty), 0) <= 0 then 0
+                            else round(
+                                (
+                                    coalesce((
+                                        select sum(goods_receive_items.qty)
+                                        from goods_receive_items
+                                        inner join goods_receives
+                                            on goods_receives.id = goods_receive_items.goods_receive_id
+                                        inner join purchase_order_items as received_purchase_order_items
+                                            on received_purchase_order_items.id = goods_receive_items.purchase_order_item_id
+                                        where received_purchase_order_items.purchase_order_id = purchase_orders.id
+                                            and goods_receives.status = ?
+                                    ), 0) / coalesce(sum(purchase_order_items.qty), 0)
+                                ) * 100,
+                                2
+                            )
+                        end',
+                        [GoodsReceiveStatus::RECEIVED->value]
+                    )
+                    ->whereColumn('purchase_order_items.purchase_order_id', 'purchase_orders.id'),
+                'purchase_order_items_received_percentage',
+            );
     }
 
 

@@ -93,6 +93,9 @@ return [
     'purchase_order_items' => [
         'label' => 'Item Purchase Order',
         'count_label' => 'Jumlah Item',
+        'total_qty_label' => 'Total Qty',
+        'received_qty_label' => 'Total Qty Diterima',
+        'received_percentage_label' => 'Persentase Diterima',
     ],
 
     'purchase_requests' => [

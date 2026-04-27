@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\PurchaseOrders\Tables;
 
+use App\Models\PurchaseOrder;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
@@ -73,6 +74,7 @@ class PurchaseOrdersTable
                     ->searchable()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 TextColumn::make('warehouse.name')
@@ -80,24 +82,28 @@ class PurchaseOrdersTable
                     ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('company.alias')
                     ->label(__('purchase-order.company.label'))
                     ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('division.name')
                     ->label(__('division.model.label'))
                     ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('project.name')
                     ->label(__('project.model.label'))
                     ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('warehouseAddress.address')
                     ->label(__('purchase-request.warehouse_address.label'))
@@ -120,6 +126,7 @@ class PurchaseOrdersTable
                     ->badge()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 UserColumn::make('user')
@@ -127,6 +134,7 @@ class PurchaseOrdersTable
                     ->verticallyAlignStart()
                     ->wrap(false)
                     ->wrapped(false)
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 TextColumn::make('purchase_order_items_count')
@@ -134,6 +142,44 @@ class PurchaseOrdersTable
                     ->wrapHeader()
                     ->color('gray')
                     ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+
+                TextColumn::make('purchase_order_items_sum_qty')
+                    ->label(__('purchase-order.purchase_order_items.total_qty_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2))
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_order_items_received_qty_sum')
+                    ->label(__('purchase-order.purchase_order_items.received_qty_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2))
+                    ->color('gray')
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                ,
+                TextColumn::make('purchase_order_items_received_percentage')
+                    ->label(__('purchase-order.purchase_order_items.received_percentage_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => number_format((float) $state, 2) . '%')
+                    ->color(fn(PurchaseOrder $record): string => match (true) {
+                        $record->getReceivedPercentage() <= 0.0 => 'danger',
+                        $record->getReceivedPercentage() < 100.0 => 'warning',
+                        default => 'success',
+                    })
+                    ->badge()
+                    ->alignCenter()
                     ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()

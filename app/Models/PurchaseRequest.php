@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
 use App\Models\Concerns\HasStateMachine;
 use App\Models\Concerns\LogsAllFillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -164,6 +166,74 @@ class PurchaseRequest extends Model
     public function hasStatus(PurchaseRequestStatus $status): bool
     {
         return $this->status === $status;
+    }
+
+    public function getTotalRequestedQty(): float
+    {
+        return (float) ($this->getAttribute('purchase_request_items_sum_qty') ?? 0);
+    }
+
+    public function getTotalOrderedQty(): float
+    {
+        return (float) ($this->getAttribute('purchase_request_items_ordered_qty_sum') ?? 0);
+    }
+
+    public function getOrderedPercentage(): float
+    {
+        $orderedPercentage = $this->getAttribute('purchase_request_items_ordered_percentage');
+
+        if ($orderedPercentage !== null) {
+            return (float) $orderedPercentage;
+        }
+
+        $totalRequestedQty = $this->getTotalRequestedQty();
+
+        if ($totalRequestedQty <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->getTotalOrderedQty() / $totalRequestedQty) * 100, 2);
+    }
+
+    public function scopeWithQuantitySummary(Builder $query): Builder
+    {
+        return $query
+            ->withSum('purchaseRequestItems', 'qty')
+            ->selectSub(
+                PurchaseOrderItem::query()
+                    ->selectRaw('coalesce(sum(purchase_order_items.qty), 0)')
+                    ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')
+                    ->join('purchase_request_items', 'purchase_request_items.id', '=', 'purchase_order_items.purchase_request_item_id')
+                    ->whereColumn('purchase_request_items.purchase_request_id', 'purchase_requests.id')
+                    ->where('purchase_orders.status', '!=', PurchaseOrderStatus::CANCELED->value),
+                'purchase_request_items_ordered_qty_sum',
+            )
+            ->selectSub(
+                PurchaseRequestItem::query()
+                    ->selectRaw(
+                        'case
+                            when coalesce(sum(purchase_request_items.qty), 0) <= 0 then 0
+                            else round(
+                                (
+                                    coalesce((
+                                        select sum(purchase_order_items.qty)
+                                        from purchase_order_items
+                                        inner join purchase_orders
+                                            on purchase_orders.id = purchase_order_items.purchase_order_id
+                                        inner join purchase_request_items as ordered_purchase_request_items
+                                            on ordered_purchase_request_items.id = purchase_order_items.purchase_request_item_id
+                                        where ordered_purchase_request_items.purchase_request_id = purchase_requests.id
+                                            and purchase_orders.status != ?
+                                    ), 0) / coalesce(sum(purchase_request_items.qty), 0)
+                                ) * 100,
+                                2
+                            )
+                        end',
+                        [PurchaseOrderStatus::CANCELED->value]
+                    )
+                    ->whereColumn('purchase_request_items.purchase_request_id', 'purchase_requests.id'),
+                'purchase_request_items_ordered_percentage',
+            );
     }
 
 
