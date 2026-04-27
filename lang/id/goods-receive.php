@@ -99,6 +99,7 @@ return [
 
     'goods_receive_items' => [
         'label' => 'Item Penerimaan',
+        'count_label' => 'Jumlah Item',
     ],
 
     'goods_receive_item' => [

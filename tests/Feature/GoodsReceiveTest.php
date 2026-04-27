@@ -156,6 +156,7 @@ it('does not count canceled goods receive items as received quantity', function 
         ->and($purchaseOrderItem->getRemainingReceiveQty())->toBe(10.0);
 });
 
+
 function createPurchaseOrderContext(): array
 {
     $user = User::factory()->create();
@@ -315,4 +316,3 @@ function createPurchaseOrderContext(): array
         'purchaseOrder' => $purchaseOrder->fresh(['purchaseOrderItems']),
     ];
 }
-

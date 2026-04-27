@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\GoodsReceives\Schemas;
 
 use App\Enums\GoodsReceiveStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Components\Infolists\StatusTimelineSection;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
@@ -136,6 +137,7 @@ class GoodsReceiveInfolist
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                     ])
                 ,
@@ -227,6 +229,7 @@ class GoodsReceiveInfolist
     protected static function dataSectionFooter(GoodsReceive $record): array
     {
         return collect($record->getNextStatuses())
+            ->reject(fn(GoodsReceiveStatus $status): bool => static::shouldHideStatusAction($record, $status))
             ->map(function (GoodsReceiveStatus $status) use ($record): Action {
                 return Action::make('changeStatus' . $status->value)
                     ->label(__($status->actionLabel()))
@@ -251,6 +254,18 @@ class GoodsReceiveInfolist
             ->values()
             ->all()
         ;
+    }
+
+    protected static function shouldHideStatusAction(GoodsReceive $record, GoodsReceiveStatus $status): bool
+    {
+        if (
+            in_array($status, [GoodsReceiveStatus::RETURNED, GoodsReceiveStatus::CANCELED], true)
+            && $record->purchaseOrder?->hasStatus(PurchaseOrderStatus::FINISHED)
+        ) {
+            return true;
+        }
+
+        return false;
     }
 
     protected static function tabSection(): Tabs
@@ -341,6 +356,7 @@ class GoodsReceiveInfolist
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
+                            ->alignEnd()
                         ,
                     ])
                 ,

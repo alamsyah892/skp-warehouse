@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Enums\GoodsReceiveStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Models\GoodsReceive;
 use App\Models\User;
 
@@ -37,7 +38,9 @@ class GoodsReceivePolicy
      */
     public function update(User $user, GoodsReceive $goodsReceive): bool
     {
-        return $user->can('Update Goods Receipt') && $goodsReceive->status !== GoodsReceiveStatus::CANCELED;
+        return $user->can('Update Goods Receipt')
+            && $goodsReceive->status !== GoodsReceiveStatus::CANCELED
+            && $goodsReceive->purchaseOrder?->status !== PurchaseOrderStatus::FINISHED;
     }
 
     /**
@@ -45,7 +48,9 @@ class GoodsReceivePolicy
      */
     public function delete(User $user, GoodsReceive $goodsReceive): bool
     {
-        return $user->can('Delete Goods Receipt') && $goodsReceive->status !== GoodsReceiveStatus::CANCELED;
+        return $user->can('Delete Goods Receipt')
+            && $goodsReceive->status !== GoodsReceiveStatus::CANCELED
+            && $goodsReceive->purchaseOrder?->status !== PurchaseOrderStatus::FINISHED;
     }
 
     /**

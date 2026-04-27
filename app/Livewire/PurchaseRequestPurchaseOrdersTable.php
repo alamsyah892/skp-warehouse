@@ -122,11 +122,7 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
             ->recordActions([
                 ViewAction::make()
                     ->hiddenLabel()
-                    ->url(
-                        fn($record) => PurchaseOrderResource::getUrl('view', [
-                            'record' => $record->id,
-                        ])
-                    )
+                    ->url(fn($record) => PurchaseOrderResource::getUrl('view', ['record' => $record->id]))
                 ,
             ], position: RecordActionsPosition::BeforeColumns)
             ->defaultSort('id', 'asc')
