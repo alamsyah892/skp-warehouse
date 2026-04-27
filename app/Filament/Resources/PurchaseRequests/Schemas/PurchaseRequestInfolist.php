@@ -324,8 +324,10 @@ class PurchaseRequestInfolist
         }
 
         if ($status === PurchaseRequestStatus::FINISHED) {
-            return static::hasRemainingPurchaseRequestItems($record) ||
-                $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::FINISHED)->exists();
+            return
+                static::hasRemainingPurchaseRequestItems($record) ||
+                $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::FINISHED)->exists()
+            ;
         }
 
         if ($status !== PurchaseRequestStatus::CANCELED) {

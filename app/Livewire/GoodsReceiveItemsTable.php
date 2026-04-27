@@ -30,11 +30,13 @@ class GoodsReceiveItemsTable extends TableWidget
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
+                    ->color('gray')
                     ->alignEnd()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
+                    ->wrapHeader()
                     ->searchable()
                     ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
@@ -42,6 +44,7 @@ class GoodsReceiveItemsTable extends TableWidget
                 ,
                 TextColumn::make('item.name')
                     ->label(__('item.name.label') . ' | ' . __('common.description.label'))
+                    ->wrapHeader()
                     ->description(function (GoodsReceiveItem $record): HtmlString {
                         $purchaseRequestNumber = $record->purchaseOrderItem?->purchaseRequestItem?->purchaseRequest?->number;
 
@@ -55,10 +58,12 @@ class GoodsReceiveItemsTable extends TableWidget
                         );
                     })
                     ->searchable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('item.unit')
                     ->label(__('item.unit.label'))
+                    ->wrapHeader()
                     ->color('gray')
                     ->verticallyAlignStart()
                 ,
@@ -68,11 +73,10 @@ class GoodsReceiveItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
             ])
-            ->defaultSort('id', 'asc')
+            ->defaultSort('sort', 'asc')
             ->striped()
             ->stackedOnMobile(false)
             ->paginated(false)
         ;
     }
 }
-

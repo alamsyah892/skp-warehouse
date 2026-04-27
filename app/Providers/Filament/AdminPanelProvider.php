@@ -110,6 +110,9 @@ class AdminPanelProvider extends PanelProvider
                     ->label('Purchasing')
                 ,
                 NavigationGroup::make()
+                    ->label('Warehouse')
+                ,
+                NavigationGroup::make()
                     ->label('Settings')
                 ,
             ])

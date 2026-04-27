@@ -356,6 +356,7 @@ class GoodsReceiveInfolist
                     ->color('gray')
                 ,
             ])
+            ->visible(fn($record) => $record->purchaseOrder)
         ;
     }
 
@@ -420,6 +421,7 @@ class GoodsReceiveInfolist
                     ->visible(fn($state) => $state != null)
                 ,
             ])
+            ->visible(fn($record) => $record->purchaseOrder?->vendor)
         ;
     }
 

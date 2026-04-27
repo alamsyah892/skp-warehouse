@@ -25,8 +25,8 @@ class GoodsReceiveResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxArrowDown;
     protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::InboxArrowDown;
-    public static ?int $navigationSort = 3;
-    protected static string|UnitEnum|null $navigationGroup = 'Purchasing';
+    public static ?int $navigationSort = 1;
+    protected static string|UnitEnum|null $navigationGroup = 'Warehouse';
 
     protected static ?string $recordTitleAttribute = 'number';
 
@@ -86,7 +86,7 @@ class GoodsReceiveResource extends Resource
                 'purchaseOrder',
                 'goodsReceiveItems.purchaseOrderItem.purchaseRequestItem.purchaseRequest',
                 'goodsReceiveItems.item',
-                'statusLogs' => fn ($query) => $query->orderBy('id'),
+                'statusLogs' => fn($query) => $query->orderBy('id'),
                 'statusLogs.user',
             ])
             ->withoutGlobalScopes([SoftDeletingScope::class]);

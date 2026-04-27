@@ -3,7 +3,6 @@
 namespace App\Livewire;
 
 use App\Models\PurchaseOrderItem;
-use Filament\Support\Enums\Alignment;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;
@@ -14,18 +13,6 @@ use Illuminate\Support\HtmlString;
 class PurchaseOrderItemsTable extends TableWidget
 {
     public $record;
-
-    public static function getReceivedQtyColumnColor(PurchaseOrderItem $purchaseOrderItem): string
-    {
-        $receivedQty = $purchaseOrderItem->getReceivedQty();
-        $requestedQty = (float) $purchaseOrderItem->qty;
-
-        return match (true) {
-            $receivedQty == 0 => 'danger',
-            $receivedQty < $requestedQty => 'info',
-            default => 'success',
-        };
-    }
 
     public function table(Table $table): Table
     {
@@ -44,20 +31,22 @@ class PurchaseOrderItemsTable extends TableWidget
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
-                    ->alignment(Alignment::End)
+                    ->color('gray')
+                    ->alignEnd()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
+                    ->wrapHeader()
                     ->searchable()
-                    ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold)
+                    ->fontFamily(FontFamily::Mono)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
                     ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
-                    ->description(function (PurchaseOrderItem $record): HtmlString {
+                    ->description(function ($record): HtmlString {
                         $descriptionLines = collect([
                             filled($record->description) ? nl2br($record->description) : null,
                             $record->purchaseRequestItem?->purchaseRequest?->number
@@ -65,49 +54,52 @@ class PurchaseOrderItemsTable extends TableWidget
                             : null,
                         ])->filter();
 
-                        return new HtmlString($descriptionLines->isNotEmpty()
-                            ? $descriptionLines->implode('<br>')
-                            : '');
+                        return new HtmlString($descriptionLines->isNotEmpty() ? $descriptionLines->implode('<br>') : '');
                     })
                     ->searchable()
+                    ->verticallyAlignStart()
                     ->wrap()
                 ,
                 TextColumn::make('item.unit')
-                    ->label('Unit')
+                    ->label(__('item.unit.label'))
+                    ->wrapHeader()
                     ->color('gray')
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
                     ->numeric()
-                    ->alignment(Alignment::End)
+                    ->alignEnd()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('price')
                     ->label(__('purchase-order.purchase_order_item.price.label'))
+                    ->wrapHeader()
                     ->numeric()
-                    ->alignment(Alignment::End)
+                    ->alignEnd()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('subtotal')
                     ->label(__('purchase-order.subtotal.label'))
+                    ->wrapHeader()
                     ->state(fn(PurchaseOrderItem $record): float => $record->getSubtotalAmount())
                     ->numeric()
-                    // ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
-                    // ->formatStateUsing(fn(float $state): string => number_format($state, 2, ',', '.'))
-                    ->alignment(Alignment::End)
+                    ->alignEnd()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('received_qty')
                     ->label(__('purchase-order.purchase_order_item.received_qty.label'))
+                    ->wrapHeader()
                     ->state(fn(PurchaseOrderItem $record): float|null => $record->getReceivedQty() > 0 ? $record->getReceivedQty() : null)
+                    ->placeholder('-')
                     ->numeric()
-                    ->color(fn(PurchaseOrderItem $record): string => self::getReceivedQtyColumnColor($record))
-                    ->alignment(Alignment::End)
+                    ->color(fn(PurchaseOrderItem $record): string => $record->getReceivedQtyColor())
+                    ->weight(FontWeight::Bold)
+                    ->alignEnd()
                     ->verticallyAlignStart()
                     ->visible(fn() => $this->record && $this->record->goodsReceives()->exists())
                 ,
             ])
-            ->defaultSort('id', 'asc')
+            ->defaultSort('sort', 'asc')
             ->striped()
             ->stackedOnMobile(false)
             ->paginated(false)

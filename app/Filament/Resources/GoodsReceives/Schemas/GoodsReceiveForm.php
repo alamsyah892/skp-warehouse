@@ -2,17 +2,13 @@
 
 namespace App\Filament\Resources\GoodsReceives\Schemas;
 
-use App\Enums\GoodsReceiveStatus;
 use App\Enums\GoodsReceiveType;
-use App\Enums\PurchaseOrderStatus;
-use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Models\GoodsReceive;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Vendor;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -26,7 +22,6 @@ use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Arr;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class GoodsReceiveForm
@@ -442,23 +437,8 @@ class GoodsReceiveForm
 
                                 $purchaseOrderId = (int) ($get('../../purchase_order_id') ?? 0);
 
-                                return $purchaseOrderId > 0
-                                    ? static::getPurchaseOrderItemOptions($purchaseOrderId)
-                                    : []
-                                ;
+                                return PurchaseOrderItem::getOptions($purchaseOrderId);
                             })
-                            ->getOptionLabelUsing(function ($value): ?string {
-                                $record = static::getPurchaseOrderItemRecord((int) $value);
-                                if (!$record) {
-                                    return null;
-                                }
-
-                                $purchaseRequestNumber = $record->purchaseRequestItem?->purchaseRequest?->number;
-                                $suffix = $purchaseRequestNumber ? " | # {$purchaseRequestNumber}" : '';
-
-                                return "{$record->item?->code} | {$record->item?->name}" . $suffix;
-                            })
-                            ->preload()
                             ->searchable()
                             ->getSearchResultsUsing(function (string $search, $get): array {
                                 $type = static::normalizeTypeState($get('../../type'));
@@ -468,31 +448,27 @@ class GoodsReceiveForm
 
                                 $purchaseOrderId = (int) ($get('../../purchase_order_id') ?? 0);
 
-                                return $purchaseOrderId > 0
-                                    ? static::getPurchaseOrderItemOptions($purchaseOrderId, $search)
-                                    : []
-                                ;
+                                return PurchaseOrderItem::getOptions($purchaseOrderId);
                             })
-                            ->disabled(fn($get): bool => static::normalizeTypeState($get('../../type')) !== GoodsReceiveType::PURCHASE_ORDER || blank($get('../../purchase_order_id')))
-                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->live()
+                            ->preload()
                             ->hint(function ($get, $record): string {
-                                $purchaseOrderItem = static::getPurchaseOrderItemRecord((int) ($get('purchase_order_item_id') ?? 0));
+                                $source = PurchaseOrderItem::findWithDetail((int) ($get('purchase_order_item_id') ?? 0));
 
-                                if (!$purchaseOrderItem) {
+                                if (!$source) {
                                     return '';
                                 }
 
-                                $exceptGoodsReceiveId = $record?->goods_receive_id;
+                                $goodsReceiveId = $record?->goods_receive_id;
 
                                 return implode(' | ', array_filter([
                                     __('goods-receive.purchase_order_item.source_item.context_value', [
-                                        'ordered_qty' => number_format((float) $purchaseOrderItem->qty, 2),
-                                        'received_qty' => number_format((float) $purchaseOrderItem->getReceivedQty($exceptGoodsReceiveId), 2),
-                                        'remaining_qty' => number_format((float) $purchaseOrderItem->getRemainingQty($exceptGoodsReceiveId), 2),
+                                        'ordered_qty' => number_format((float) $source->qty, 2),
+                                        'received_qty' => number_format((float) $source->getReceivedQty($goodsReceiveId), 2),
+                                        'remaining_qty' => number_format((float) $source->getRemainingQty($goodsReceiveId), 2),
                                     ]),
                                 ]));
                             })
+                            ->live()
                             ->afterStateUpdated(function ($state, $set, $get, $record): void {
                                 $type = static::normalizeTypeState($get('../../type'));
 
@@ -507,7 +483,7 @@ class GoodsReceiveForm
                                     return;
                                 }
 
-                                $source = static::getPurchaseOrderItemRecord((int) $state);
+                                $source = PurchaseOrderItem::findWithDetail((int) $state);
 
                                 if (!$source) {
                                     $set('item_id', null);
@@ -516,25 +492,25 @@ class GoodsReceiveForm
                                     return;
                                 }
 
-                                $exceptGoodsReceiveId = $record?->goods_receive_id;
+                                $goodsReceiveId = $record?->goods_receive_id;
 
                                 $set('item_id', $source->item_id);
-                                $set('qty', $source->getRemainingQty($exceptGoodsReceiveId));
+                                $set('qty', $source->getRemainingQty($goodsReceiveId));
                                 $set('description', $source->description);
                             })
+                            ->disabled(
+                                fn($operation, $get): bool =>
+                                $operation === 'edit' || (static::normalizeTypeState($get('../../type')) !== GoodsReceiveType::PURCHASE_ORDER || blank($get('../../purchase_order_id')))
+                            )
+                            ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->visible(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)
                             ->columnSpanFull()
                         ,
                         Select::make('item_id')
                             ->label(__('item.code.label') . ' | ' . __('item.name.label'))
-                            ->options(fn(): array => static::getItemOptions())
-                            ->getOptionLabelUsing(function ($value): ?string {
-                                $item = static::getItemRecord((int) $value);
-                                return $item ? "{$item->code} | {$item->name}" : null;
-                            })
-                            ->preload()
-                            ->searchable()
-                            ->getSearchResultsUsing(fn(string $search): array => static::getItemOptions($search))
+                            ->relationship('item', 'name')
+                            ->getOptionLabelFromRecordUsing(fn($record): string => "{$record->code} | {$record->name}")
+                            ->searchable(['code', 'name'])
                             ->required()
                             ->disabled(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)
                             ->live()
@@ -544,28 +520,23 @@ class GoodsReceiveForm
                                 'lg' => 8,
                             ])
                         ,
+
                         TextInput::make('qty')
                             ->numeric()
-                            ->minValue(0.01)
                             ->placeholder(0.01)
+                            ->suffix(fn($get): string|null => Item::query()->whereKey($get('item_id'))->value('unit'))
+                            ->minValue(0.01)
                             ->required()
-                            ->suffix(fn($get) => static::getItemUnit((int) ($get('item_id') ?? 0)))
                             ->live(debounce: 500)
                             ->rule(function ($get, $record) {
                                 return function (string $attribute, $value, $fail) use ($get, $record): void {
-                                    $type = static::normalizeTypeState($get('../../type'));
+                                    $sourceId = (int) $get('purchase_order_item_id');
 
-                                    if ($type !== GoodsReceiveType::PURCHASE_ORDER) {
+                                    if ($sourceId <= 0) {
                                         return;
                                     }
 
-                                    $purchaseOrderItemId = (int) $get('purchase_order_item_id');
-
-                                    if ($purchaseOrderItemId <= 0) {
-                                        return;
-                                    }
-
-                                    $source = static::getPurchaseOrderItemRecord($purchaseOrderItemId);
+                                    $source = PurchaseOrderItem::findWithDetail($sourceId);
 
                                     if (!$source) {
                                         return;
@@ -588,8 +559,8 @@ class GoodsReceiveForm
                         ,
                         Textarea::make('description')
                             ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-order.purchase_order_item.description.placeholder'))
-                            ->helperText(__('purchase-order.purchase_order_item.description.helper'))
+                            ->placeholder(__('goods-receive.goods_receive_item.description.placeholder'))
+                            ->helperText(__('goods-receive.goods_receive_item.description.helper'))
                             ->autosize()
                             ->columnSpanFull()
                         ,
@@ -628,24 +599,22 @@ class GoodsReceiveForm
                     ->color('gray')
                     ->visibleOn('edit')
                 ,
-                TextEntry::make('updated_at')
-                    ->date()
+                TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
                     ->size(TextSize::Small)
                     ->color('gray')
                     ->visibleOn('edit')
                 ,
-                TextEntry::make('deleted_at')
-                    ->date()
+                TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
                     ->color('gray')
                     ->visible(fn($state) => $state != null)
                 ,
                 Textarea::make('info')
-                    ->label(__('goods-receive.info.label'))
-                    ->placeholder(__('goods-receive.info.placeholder'))
-                    ->helperText(__('goods-receive.info.helper'))
+                    ->label(__('purchase-order.info.label'))
+                    ->placeholder(__('purchase-order.info.placeholder'))
+                    ->helperText(__('purchase-order.info.helper'))
                     ->autosize()
                     ->required(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
                     ->disabled(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
@@ -660,10 +629,11 @@ class GoodsReceiveForm
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", (string) $state))->map(fn($line) => '• ' . e($line))->implode('<br>'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
                     ->html()
+                    ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(GoodsReceiveStatus::RECEIVED))
+                    ->visible(fn($state, $record) => filled($state))
                 ,
             ])
         ;
@@ -691,8 +661,8 @@ class GoodsReceiveForm
                         ->icon(Heroicon::Hashtag)
                         ->iconColor('primary')
                         ->state($purchaseOrder->number)
-                        ->fontFamily(FontFamily::Mono)
                         ->weight(FontWeight::Bold)
+                        ->fontFamily(FontFamily::Mono)
                     ,
                     Grid::make()
                         ->schema([
@@ -709,12 +679,13 @@ class GoodsReceiveForm
                                 ->iconColor('primary')
                                 ->state($purchaseOrder->created_at)
                                 ->date()
+                                ->alignEnd()
                             ,
                         ])
                     ,
                     TextEntry::make("purchase_order_description")
                         ->hiddenLabel()
-                        ->state(nl2br(e((string) $purchaseOrder->description)))
+                        ->state(nl2br($purchaseOrder->description))
                         ->html()
                         ->color('gray')
                         ->visible(fn($state) => filled($state))
@@ -740,7 +711,7 @@ class GoodsReceiveForm
             ->schema(function ($get) {
                 $purchaseOrderId = (int) ($get('purchase_order_id') ?? 0);
                 $purchaseOrder = static::getPurchaseOrderRecord($purchaseOrderId);
-                $vendor = static::getVendorRecord($purchaseOrder?->vendor_id);
+                $vendor = Vendor::find($purchaseOrder?->vendor_id);
 
                 if (!$vendor) {
                     return [];
@@ -751,33 +722,41 @@ class GoodsReceiveForm
                         ->hiddenLabel()
                         ->icon(Heroicon::BuildingStorefront)
                         ->iconColor('primary')
-                        ->state($vendor->name)
                         ->weight(FontWeight::Bold)
+                        ->state($vendor->name)
                     ,
                     TextEntry::make('vendor_address')
                         ->hiddenLabel()
                         ->icon(Heroicon::MapPin)
                         ->iconColor('primary')
                         ->state(collect([$vendor->address, $vendor->city])->filter()->join(' - '))
+                        ->size(TextSize::Small)
                         ->color('gray')
+                        ->visible(fn($state) => filled($state))
                     ,
                     Grid::make()
+                        ->columns([
+                            'default' => 2,
+                            'lg' => 2,
+                        ])
                         ->schema([
                             TextEntry::make('vendor_phone')
                                 ->hiddenLabel()
                                 ->icon(Heroicon::Phone)
                                 ->iconColor('primary')
                                 ->state($vendor->phone)
+                                ->size(TextSize::Small)
                                 ->color('gray')
-                                ->visible(fn($state) => $state != null)
+                                ->visible(fn($state) => filled($state))
                             ,
                             TextEntry::make('vendor_fax')
                                 ->hiddenLabel()
                                 ->icon(Heroicon::DocumentText)
                                 ->iconColor('primary')
                                 ->state($vendor->fax)
+                                ->size(TextSize::Small)
                                 ->color('gray')
-                                ->visible(fn($state) => $state != null)
+                                ->visible(fn($state) => filled($state))
                             ,
                         ])
                     ,
@@ -786,24 +765,27 @@ class GoodsReceiveForm
                         ->icon(Heroicon::UserCircle)
                         ->iconColor('primary')
                         ->state($vendor->contact_person)
+                        ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => $state != null)
+                        ->visible(fn($state) => filled($state))
                     ,
                     TextEntry::make('vendor_email')
                         ->hiddenLabel()
                         ->icon(Heroicon::Envelope)
                         ->iconColor('primary')
                         ->state($vendor->email)
+                        ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => $state != null)
+                        ->visible(fn($state) => filled($state))
                     ,
                     TextEntry::make('vendor_website')
                         ->hiddenLabel()
                         ->icon(Heroicon::GlobeAlt)
                         ->iconColor('primary')
                         ->state($vendor->website)
+                        ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => $state != null)
+                        ->visible(fn($state) => filled($state))
                     ,
                 ];
             })
@@ -823,12 +805,6 @@ class GoodsReceiveForm
         return GoodsReceiveType::tryFrom((int) $state);
     }
 
-    // protected static function shouldLockHeader(callable $get): bool
-    // {
-    //     return static::normalizeTypeState($get('type')) === GoodsReceiveType::PURCHASE_ORDER
-    //         && filled($get('purchase_order_id'));
-    // }
-
     protected static function getPurchaseOrderRecord(?int $purchaseOrderId): ?PurchaseOrder
     {
         if (!$purchaseOrderId) {
@@ -844,165 +820,5 @@ class GoodsReceiveForm
         }
 
         return $cache[$purchaseOrderId];
-    }
-
-    protected static function getVendorRecord(?int $vendorId): ?Vendor
-    {
-        if (!$vendorId) {
-            return null;
-        }
-
-        static $cache = [];
-
-        if (!array_key_exists($vendorId, $cache)) {
-            $cache[$vendorId] = Vendor::query()->find($vendorId);
-        }
-
-        return $cache[$vendorId];
-    }
-
-    // protected static function fillHeaderFieldsFromPurchaseOrder(callable $set, ?PurchaseOrder $purchaseOrder): void
-    // {
-    //     if (!$purchaseOrder) {
-    //         return;
-    //     }
-
-    //     $set('warehouse_id', $purchaseOrder->warehouse_id);
-    //     $set('company_id', $purchaseOrder->company_id);
-    //     $set('division_id', $purchaseOrder->division_id);
-    //     $set('project_id', $purchaseOrder->project_id);
-    //     $set('warehouse_address_id', $purchaseOrder->warehouse_address_id);
-    // }
-
-    protected static function getPurchaseOrderItemRecord(?int $purchaseOrderItemId): ?PurchaseOrderItem
-    {
-        if (!$purchaseOrderItemId) {
-            return null;
-        }
-
-        static $cache = [];
-
-        if (!array_key_exists($purchaseOrderItemId, $cache)) {
-            $cache[$purchaseOrderItemId] = PurchaseOrderItem::query()
-                ->with([
-                    'item',
-                    'purchaseRequestItem.purchaseRequest',
-                ])
-                ->find($purchaseOrderItemId);
-        }
-
-        return $cache[$purchaseOrderItemId];
-    }
-
-    protected static function getPurchaseOrderItemOptions(int $purchaseOrderId, ?string $search = null): array
-    {
-        static $cache = [];
-
-        $cacheKey = md5(json_encode([
-            'purchase_order_id' => $purchaseOrderId,
-            'search' => filled($search) ? trim($search) : null,
-        ], JSON_THROW_ON_ERROR));
-
-        if (!array_key_exists($cacheKey, $cache)) {
-            $query = PurchaseOrderItem::query()
-                ->where('purchase_order_id', $purchaseOrderId)
-                ->with([
-                    'item:id,code,name',
-                    'purchaseRequestItem.purchaseRequest:id,number',
-                ])
-                ->orderBy('sort');
-
-            if (filled($search)) {
-                $query->where(function (Builder $builder) use ($search): void {
-                    $builder
-                        ->whereHas('item', function (Builder $itemQuery) use ($search): void {
-                            $itemQuery
-                                ->where('name', 'like', "%{$search}%")
-                                ->orWhere('code', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('purchaseRequestItem.purchaseRequest', function (Builder $prQuery) use ($search): void {
-                            $prQuery->where('number', 'like', "%{$search}%");
-                        });
-                });
-            }
-
-            $cache[$cacheKey] = $query
-                ->limit(50)
-                ->get()
-                ->mapWithKeys(function (PurchaseOrderItem $record): array {
-                    $purchaseRequestNumber = $record->purchaseRequestItem?->purchaseRequest?->number;
-                    $suffix = $purchaseRequestNumber ? " | # {$purchaseRequestNumber}" : '';
-
-                    return [
-                        $record->id => "{$record->item?->code} | {$record->item?->name}" . $suffix,
-                    ];
-                })
-                ->toArray();
-        }
-
-        return $cache[$cacheKey];
-    }
-
-    protected static function getItemRecord(?int $itemId): ?Item
-    {
-        if (!$itemId) {
-            return null;
-        }
-
-        static $cache = [];
-
-        if (!array_key_exists($itemId, $cache)) {
-            $cache[$itemId] = Item::query()->find($itemId);
-        }
-
-        return $cache[$itemId];
-    }
-
-    protected static function getItemOptions(?string $search = null): array
-    {
-        static $cache = [];
-
-        $cacheKey = md5(json_encode([
-            'search' => filled($search) ? trim($search) : null,
-        ], JSON_THROW_ON_ERROR));
-
-        if (!array_key_exists($cacheKey, $cache)) {
-            $query = Item::query()->orderBy('code')->orderBy('name');
-
-            if (filled($search)) {
-                $query->where(function (Builder $builder) use ($search): void {
-                    $builder
-                        ->where('name', 'like', "%{$search}%")
-                        ->orWhere('code', 'like', "%{$search}%");
-                });
-            }
-
-            $cache[$cacheKey] = $query
-                ->limit(50)
-                ->get(['id', 'code', 'name'])
-                ->mapWithKeys(fn(Item $item): array => [
-                    $item->id => "{$item->code} | {$item->name}",
-                ])
-                ->toArray();
-        }
-
-        return $cache[$cacheKey];
-    }
-
-    protected static function getItemUnit(?int $itemId): ?string
-    {
-        if (!$itemId) {
-            return null;
-        }
-
-        static $cache = [];
-
-        if (!array_key_exists($itemId, $cache)) {
-            $cache[$itemId] = Item::query()
-                ->whereKey($itemId)
-                ->value('unit');
-        }
-
-        return $cache[$itemId];
     }
 }

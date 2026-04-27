@@ -57,15 +57,15 @@ return [
 
     'status' => [
         'received' => [
-            'label' => 'Received',
+            'label' => 'Diterima',
             'action_label' => 'Terima',
         ],
         'returned' => [
-            'label' => 'Returned',
-            'action_label' => 'Dikembalikan',
+            'label' => 'Dikembalikan',
+            'action_label' => 'Kembalikan',
         ],
         'canceled' => [
-            'label' => 'Canceled',
+            'label' => 'Dibatalkan',
             'action_label' => 'Batalkan',
         ],
         'action' => [
@@ -99,6 +99,13 @@ return [
 
     'goods_receive_items' => [
         'label' => 'Item Penerimaan',
+    ],
+
+    'goods_receive_item' => [
+        'description' => [
+            'placeholder' => 'Deskripsi item penerimaan barang',
+            'helper' => 'Contoh: spesifikasi, merk, atau instruksi pengiriman',
+        ],
     ],
 
     'purchase_order_item' => [

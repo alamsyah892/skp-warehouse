@@ -12,6 +12,7 @@ use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\Role;
+use App\Models\Vendor;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Repeater;
@@ -520,7 +521,7 @@ class PurchaseOrderForm
                                 return '';
                             })
                             ->live()
-                            ->afterStateUpdated(function ($state, $set): void {
+                            ->afterStateUpdated(function ($state, $set, $record): void {
                                 if (!$state) {
                                     $set('item_id', null);
                                     $set('qty', null);
@@ -539,8 +540,11 @@ class PurchaseOrderForm
                                     return;
                                 }
 
+                                $purchaseOrderId = $record?->purchase_order_id;
+
                                 $set('item_id', $source->item_id);
-                                $set('qty', $source->getRemainingQty());
+                                $set('qty', $source->getRemainingQty($purchaseOrderId));
+                                // $set('qty', $source->getRemainingQty());
                                 $set('description', $source->description);
                             })
                             ->disabled(fn($record): bool => $record?->getReceivedQty() ?? 0 > 0)
@@ -887,7 +891,7 @@ class PurchaseOrderForm
             ->visible(fn($get) => filled($get('vendor_id')))
             ->schema(function ($get) {
                 $vendorId = $get('vendor_id');
-                $vendor = \App\Models\Vendor::find($vendorId);
+                $vendor = Vendor::find($vendorId);
 
                 if (!$vendor) {
                     return [];

@@ -136,22 +136,6 @@ class PurchaseRequestItem extends Model
         return $cache[$cacheKey];
     }
 
-    public static function getCompatibleForPurchaseOrderQuery(array $purchaseRequestIds = []): Builder
-    {
-        return self::query()
-            ->with([
-                'item:id,code,name,unit',
-                'purchaseRequest:id,number,warehouse_id,company_id,division_id,project_id,status',
-            ])
-            ->whereHas('purchaseRequest', function (Builder $query) use ($purchaseRequestIds): void {
-                if (blank($purchaseRequestIds)) {
-                    return;
-                }
-
-                $query->whereIn('id', $purchaseRequestIds);
-            });
-    }
-
     public static function findWithDetail(?int $id): ?self
     {
         if (!$id) {
@@ -167,5 +151,21 @@ class PurchaseRequestItem extends Model
         }
 
         return $cache[$id];
+    }
+
+    public static function getCompatibleForPurchaseOrderQuery(array $purchaseRequestIds = []): Builder
+    {
+        return self::query()
+            ->with([
+                'item:id,code,name,unit',
+                'purchaseRequest:id,number,warehouse_id,company_id,division_id,project_id,status',
+            ])
+            ->whereHas('purchaseRequest', function (Builder $query) use ($purchaseRequestIds): void {
+                if (blank($purchaseRequestIds)) {
+                    return;
+                }
+
+                $query->whereIn('id', $purchaseRequestIds);
+            });
     }
 }

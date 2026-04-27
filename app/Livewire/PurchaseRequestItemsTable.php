@@ -29,6 +29,7 @@ class PurchaseRequestItemsTable extends TableWidget
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
+                    ->color('gray')
                     ->alignEnd()
                     ->verticallyAlignStart()
                 ,
