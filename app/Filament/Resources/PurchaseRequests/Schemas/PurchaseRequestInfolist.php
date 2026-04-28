@@ -325,8 +325,12 @@ class PurchaseRequestInfolist
 
         if ($status === PurchaseRequestStatus::FINISHED) {
             return
-                static::hasRemainingPurchaseRequestItems($record) ||
-                $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::FINISHED)->exists()
+                static::hasRemainingPurchaseRequestItems($record)
+                ||
+                $record->purchaseOrders()->whereIn('status', [
+                    PurchaseOrderStatus::DRAFT,
+                    PurchaseOrderStatus::ORDERED,
+                ])->exists()
             ;
         }
 

@@ -75,6 +75,7 @@ class GoodsReceiveResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
+            ->withQuantitySummary()
             ->withCount(['goodsReceiveItems'])
             ->withoutGlobalScopes([SoftDeletingScope::class]);
     }

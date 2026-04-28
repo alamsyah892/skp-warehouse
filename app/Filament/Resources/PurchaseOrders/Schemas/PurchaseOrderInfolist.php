@@ -310,8 +310,13 @@ class PurchaseOrderInfolist
     {
         if ($status === PurchaseOrderStatus::FINISHED) {
             return
-                static::hasRemainingGoodsReceiveItems($record) ||
-                $record->goodsReceives()->where('status', '!=', GoodsReceiveStatus::RECEIVED)->exists()
+                static::hasRemainingGoodsReceiveItems($record)
+                // ||
+                // $record->goodsReceives()->whereNotIn('status', [
+                //     GoodsReceiveStatus::RECEIVED,
+                // ])->exists()
+                // //  ||
+                // // $record->goodsReceives()->where('status', '!=', GoodsReceiveStatus::RECEIVED)->exists()
             ;
         }
 

@@ -16,18 +16,20 @@ return new class extends Migration {
             $table->foreignId('goods_receive_id')
                 ->constrained('goods_receives')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
+                ->cascadeOnDelete()
+            ;
+            $table->foreignId('item_id')
+                ->constrained('items')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('purchase_order_item_id')
                 ->nullable()
                 ->constrained('purchase_order_items')
                 ->cascadeOnUpdate()
-                ->nullOnDelete();
-
-            $table->foreignId('item_id')
-                ->constrained('items')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+                // ->nullOnDelete()
+            ;
 
             $table->decimal('qty', 15, 2)->default(0);
             $table->text('description');

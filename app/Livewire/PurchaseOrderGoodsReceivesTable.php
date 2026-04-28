@@ -7,6 +7,7 @@ use App\Models\GoodsReceive;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
@@ -24,6 +25,7 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
             ->heading(null)
             ->query(
                 GoodsReceive::query()
+                    ->withQuantitySummary()
                     ->with([
                         'user',
                     ])
@@ -34,9 +36,9 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
             )
             ->columns([
                 TextColumn::make('number')
-                    ->label(__('goods-receive.number.label'))
+                    ->label(__('common.number.label'))
                     ->wrapHeader()
-                    ->description(fn($record): ?string => Str::limit($record->description, 20))
+                    ->description(fn($record): ?string => Str::limit($record->description, 32))
                     ->tooltip(fn($record): string => $record->description)
                     ->searchable(['number', 'description'])
                     ->sortable()
@@ -45,23 +47,30 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                     ->fontFamily(FontFamily::Mono)
                     ->verticallyAlignStart()
                     ->wrap(false)
+                    ->grow(false)
                 ,
+
                 TextColumn::make('type')
                     ->label(__('goods-receive.type.label'))
                     ->wrapHeader()
-                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->formatStateUsing(fn($state) => '')
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->tooltip(fn($state) => $state?->label())
+                    ->size(TextSize::Large)
                     ->alignCenter()
                     ->badge()
                     ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                 ,
+
                 TextColumn::make('status')
-                    ->formatStateUsing(fn($state) => $state?->label())
+                    ->formatStateUsing(fn($state) => '')
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->tooltip(fn($state) => $state?->label())
+                    ->size(TextSize::Large)
                     ->alignCenter()
                     ->badge()
                     ->sortable()
@@ -78,20 +87,37 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                 ,
 
                 UserColumn::make('user')
-                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->label((__('common.log_activity.created.label') . ' ' . __('common.log_activity.by')))
+                    ->wrapHeader()
                     ->verticallyAlignStart()
                     ->wrap(false)
                     ->wrapped(false)
+                    ->grow(false)
+                    ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 TextColumn::make('goods_receive_items_count')
                     ->label(__('goods-receive.goods_receive_items.count_label'))
                     ->wrapHeader()
+                    ->numeric()
                     ->color('gray')
                     ->alignEnd()
                     ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: false)
+                ,
+                TextColumn::make('goods_receive_items_sum_qty')
+                    ->label(__('goods-receive.goods_receive_items.sum_qty_label'))
+                    ->wrapHeader()
+                    ->formatStateUsing(fn($state): string => $state)
+                    ->numeric()
+                    ->color('gray')
+                    ->alignEnd()
+                    ->sortable()
+                    ->verticallyAlignStart()
+                    ->wrap()
+                    ->toggleable(isToggledHiddenByDefault: true)
                 ,
             ])
             ->recordActions([

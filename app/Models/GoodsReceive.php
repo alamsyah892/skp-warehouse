@@ -10,6 +10,7 @@ use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
 use App\Models\Concerns\HasStateMachine;
 use App\Models\Concerns\LogsAllFillable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -198,6 +199,16 @@ class GoodsReceive extends Model
     public function hasStatus(GoodsReceiveStatus $status): bool
     {
         return $this->status === $status;
+    }
+
+    public function getTotalReceivedQty(): float
+    {
+        return (float) ($this->getAttribute('goods_receive_items_sum_qty') ?? 0);
+    }
+
+    public function scopeWithQuantitySummary(Builder $query): Builder
+    {
+        return $query->withSum('goodsReceiveItems', 'qty');
     }
 
     /**

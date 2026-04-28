@@ -35,20 +35,20 @@ class ListPurchaseOrders extends ListRecords
         return [
             __('purchase-order.status.all') => Tab::make()->icon(Heroicon::Bars4),
             PurchaseOrderStatus::DRAFT->label() => Tab::make()
-                ->modifyQueryUsing(fn ($query) => $query->where('status', PurchaseOrderStatus::DRAFT))
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseOrderStatus::DRAFT))
                 ->icon(PurchaseOrderStatus::DRAFT->icon())
                 ->badge($getStatusBadge(PurchaseOrderStatus::DRAFT))
                 ->badgeColor(PurchaseOrderStatus::DRAFT->color()),
             PurchaseOrderStatus::CANCELED->label() => Tab::make()
-                ->modifyQueryUsing(fn ($query) => $query->where('status', PurchaseOrderStatus::CANCELED))
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseOrderStatus::CANCELED))
                 ->icon(PurchaseOrderStatus::CANCELED->icon()),
             PurchaseOrderStatus::ORDERED->label() => Tab::make()
-                ->modifyQueryUsing(fn ($query) => $query->where('status', PurchaseOrderStatus::ORDERED))
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseOrderStatus::ORDERED))
                 ->icon(PurchaseOrderStatus::ORDERED->icon())
                 ->badge($getStatusBadge(PurchaseOrderStatus::ORDERED))
                 ->badgeColor(PurchaseOrderStatus::ORDERED->color()),
             PurchaseOrderStatus::FINISHED->label() => Tab::make()
-                ->modifyQueryUsing(fn ($query) => $query->where('status', PurchaseOrderStatus::FINISHED))
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseOrderStatus::FINISHED))
                 ->icon(PurchaseOrderStatus::FINISHED->icon()),
         ];
     }

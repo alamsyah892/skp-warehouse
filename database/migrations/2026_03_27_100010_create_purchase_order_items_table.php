@@ -28,6 +28,7 @@ return new class extends Migration {
                 ->constrained('purchase_request_items')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
+                // ->nullOnDelete()
             ;
 
             $table->decimal('qty', 15, 2)->default(0);

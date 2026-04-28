@@ -100,6 +100,7 @@ return [
     'goods_receive_items' => [
         'label' => 'Item Penerimaan',
         'count_label' => 'Jumlah Item',
+        'sum_qty_label' => 'Total Qty',
     ],
 
     'goods_receive_item' => [

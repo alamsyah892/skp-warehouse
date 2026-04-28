@@ -5,6 +5,7 @@ declare(strict_types=1);
 return [
     'code.label' => 'Kode',
     'name.label' => 'Nama',
+    'number.label' => 'Nomor',
     'description.label' => 'Deskripsi',
     'notes.label' => 'Catatan',
     'is_active.label' => 'Aktif',
