@@ -43,11 +43,12 @@ class PurchaseOrdersTable
                     ->formatStateUsing(fn($state) => '')
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->iconColor(fn($state) => $state?->color())
                     ->tooltip(fn($state) => $state?->label())
                     ->size(TextSize::Large)
                     ->alignCenter()
-                    ->badge()
-                    ->sortable()
+                    // ->badge()
+                    // ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                 ,
@@ -56,11 +57,12 @@ class PurchaseOrdersTable
                     ->formatStateUsing(fn($state) => '')
                     ->icon(fn($state) => $state?->icon())
                     ->color(fn($state) => $state?->color())
+                    ->iconColor(fn($state) => $state?->color())
                     ->tooltip(fn($state) => $state?->label())
                     ->size(TextSize::Large)
                     ->alignCenter()
-                    ->badge()
-                    ->sortable()
+                    // ->badge()
+                    // ->sortable()
                     ->verticallyAlignStart()
                     ->wrap()
                 ,
@@ -208,7 +210,7 @@ class PurchaseOrdersTable
                         $record->getReceivedPercentage() < 100.0 => 'warning',
                         default => 'success',
                     })
-                    ->alignCenter()
+                    ->alignEnd()
                     ->badge()
                     ->sortable()
                     ->verticallyAlignStart()
