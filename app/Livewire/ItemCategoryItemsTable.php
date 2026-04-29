@@ -30,7 +30,7 @@ class ItemCategoryItemsTable extends TableWidget
             ->query(
                 Item::query()
                     ->where('category_id', $this->record->id)
-                    ->withCount(['purchaseRequestItems' => fn($query) => $query->forUserWarehouses(Auth::user())])
+                    ->withCount(['purchaseRequestItems'])
             )
             ->columns([
                 TextColumn::make('name')

@@ -390,6 +390,15 @@ class PurchaseOrderForm
                                     $set('purchaseRequests', $selection['ids']);
                                 }
 
+                                $filteredPurchaseOrderItems = static::filterPurchaseOrderItemsForSelection(
+                                    items: (array) ($get('purchaseOrderItems') ?? []),
+                                    purchaseRequestIds: $selection['ids'],
+                                );
+
+                                if ($filteredPurchaseOrderItems !== (array) ($get('purchaseOrderItems') ?? [])) {
+                                    $set('purchaseOrderItems', $filteredPurchaseOrderItems);
+                                }
+
                                 if ($selection['header']) {
                                     $header = $selection['header'];
 
@@ -1129,6 +1138,45 @@ class PurchaseOrderForm
             && $current->company_id === $first->company_id
             && $current->division_id === $first->division_id
             && $current->project_id === $first->project_id
+        ;
+    }
+
+    /**
+     * @param  array<int|string, mixed>  $items
+     * @param  array<int|string, mixed>  $purchaseRequestIds
+     * @return array<int, array<string, mixed>>
+     */
+    public static function filterPurchaseOrderItemsForSelection(array $items, array $purchaseRequestIds): array
+    {
+        $selectedPurchaseRequestIds = PurchaseRequest::normalizeIds($purchaseRequestIds);
+
+        $allowedPurchaseRequestItemIds = PurchaseRequestItem::query()
+            ->when(
+                $selectedPurchaseRequestIds !== [],
+                fn($query) => $query->whereIn('purchase_request_id', $selectedPurchaseRequestIds),
+                fn($query) => $query->whereRaw('1 = 0'),
+            )
+            ->pluck('id')
+            ->map(fn(mixed $id): int => (int) $id)
+            ->all()
+        ;
+
+        return collect($items)
+            ->filter(function (mixed $item) use ($allowedPurchaseRequestItemIds): bool {
+                if (!is_array($item)) {
+                    return false;
+                }
+
+                $purchaseRequestItemId = (int) ($item['purchase_request_item_id'] ?? 0);
+
+                if ($purchaseRequestItemId <= 0) {
+                    return true;
+                }
+
+                return in_array($purchaseRequestItemId, $allowedPurchaseRequestItemIds, true);
+            })
+            ->values()
+            ->all()
         ;
     }
 

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\PurchaseOrders\Pages;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
+use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderForm;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\RestoreAction;
@@ -30,6 +31,11 @@ class EditPurchaseOrder extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
+        $data['purchaseOrderItems'] = PurchaseOrderForm::filterPurchaseOrderItemsForSelection(
+            items: (array) ($data['purchaseOrderItems'] ?? []),
+            purchaseRequestIds: (array) ($data['purchaseRequests'] ?? []),
+        );
+
         $record = $this->record;
         $record->applyRevision($data);
         $record->hasWatchedFieldChanges($data);
