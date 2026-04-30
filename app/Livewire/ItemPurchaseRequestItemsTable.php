@@ -28,7 +28,7 @@ class ItemPurchaseRequestItemsTable extends TableWidget
             ->query(
                 PurchaseRequestItem::query()
                     ->where('item_id', $this->record->id)
-                    ->forUserWarehouses(Auth::user())
+                    // ->forUserWarehouses(Auth::user())
                     ->with([
                         'purchaseRequest.warehouse',
                         'purchaseRequest.company',

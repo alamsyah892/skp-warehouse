@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\GoodsReceiveStatus;
+use App\Enums\GoodsIssueStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseRequestStatus;
+use App\Models\GoodsIssue;
 use App\Models\GoodsReceive;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
 use App\Models\User;
+use App\Policies\GoodsIssuePolicy;
 use App\Policies\GoodsReceivePolicy;
 use App\Policies\PurchaseOrderPolicy;
 use App\Policies\PurchaseRequestPolicy;
@@ -40,6 +43,15 @@ it('denies updating goods receive when its purchase order is finished', function
     $goodsReceive->setRelation('purchaseOrder', $purchaseOrder);
 
     expect(app(GoodsReceivePolicy::class)->update($user, $goodsReceive))->toBeFalse();
+});
+
+it('denies updating canceled goods issue in policy', function () {
+    $user = mockUserCan('Update Goods Issue');
+
+    $goodsIssue = new GoodsIssue();
+    $goodsIssue->status = GoodsIssueStatus::CANCELED;
+
+    expect(app(GoodsIssuePolicy::class)->update($user, $goodsIssue))->toBeFalse();
 });
 
 function mockUserCan(string $permission): User
