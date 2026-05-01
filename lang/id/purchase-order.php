@@ -92,9 +92,9 @@ return [
 
     'purchase_order_items' => [
         'label' => 'Item Purchase Order',
-        'count_label' => 'Jumlah Item',
-        'sum_qty_label' => 'Total Qty',
-        'received_qty_label' => 'Total Qty GR',
+        'count_label' => 'Jml Item',
+        'sum_qty_label' => 'Qty Item',
+        'received_qty_label' => 'Qty GR',
         'received_percentage_label' => '% GR',
     ],
 
@@ -110,7 +110,7 @@ return [
     ],
 
     'goods_receives' => [
-        'count_label' => 'Jumlah GR',
+        'count_label' => 'Jml GR',
     ],
 
     'purchase_order_item' => [

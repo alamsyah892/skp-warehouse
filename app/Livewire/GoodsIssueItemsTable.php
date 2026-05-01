@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\GoodsIssueItem;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -28,15 +29,19 @@ class GoodsIssueItemsTable extends TableWidget
                     ->label('#')
                     ->numeric()
                     ->color('gray')
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
-                    ->verticallyAlignStart(),
+                    ->verticallyAlignStart()
+                    ->width('1%')
+                ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
                     ->wrapHeader()
                     ->searchable()
                     ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
-                    ->verticallyAlignStart(),
+                    ->verticallyAlignStart()
+                ,
                 TextColumn::make('item.name')
                     ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
@@ -46,17 +51,24 @@ class GoodsIssueItemsTable extends TableWidget
                         );
                     })
                     ->searchable()
+                    ->size(TextSize::ExtraSmall)
                     ->verticallyAlignStart()
-                    ->wrap(),
+                    ->wrap()
+                ,
                 TextColumn::make('item.unit')
                     ->label(__('item.unit.label'))
                     ->wrapHeader()
                     ->color('gray')
-                    ->verticallyAlignStart(),
+                    ->size(TextSize::ExtraSmall)
+                    ->verticallyAlignStart()
+                ,
                 TextColumn::make('qty')
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
-                    ->verticallyAlignStart(),
+                    ->wrap(false)
+                    ->verticallyAlignStart()
+                ,
             ])
             ->defaultSort('sort', 'asc')
             ->striped()

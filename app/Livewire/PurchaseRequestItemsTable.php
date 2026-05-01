@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\PurchaseRequestItem;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
@@ -30,8 +31,10 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->label('#')
                     ->numeric()
                     ->color('gray')
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
                     ->verticallyAlignStart()
+                    ->width('1%')
                 ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
@@ -46,6 +49,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->wrapHeader()
                     ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->searchable()
+                    ->size(TextSize::ExtraSmall)
                     ->verticallyAlignStart()
                     ->wrap()
                 ,
@@ -53,22 +57,28 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->label(__('item.unit.label'))
                     ->wrapHeader()
                     ->color('gray')
+                    ->size(TextSize::ExtraSmall)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
+                    ->wrap(false)
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('ordered_qty')
-                    ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
+                    ->label(__('purchase-request.purchase_request_items.ordered_qty_label'))
                     ->wrapHeader()
                     ->state(fn(PurchaseRequestItem $record): float|null => $record->getOrderedQty() > 0 ? $record->getOrderedQty() : null)
                     ->placeholder('-')
                     ->numeric()
                     ->color(fn(PurchaseRequestItem $record): string => $record->getOrderedQtyColor())
                     ->weight(FontWeight::Bold)
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
+                    ->sortable()
+                    ->wrap(false)
                     ->verticallyAlignStart()
                     ->visible(fn() => $this->record && $this->record->purchaseOrders()->exists())
                 ,

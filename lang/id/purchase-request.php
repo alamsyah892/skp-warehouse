@@ -87,9 +87,9 @@ return [
 
     'purchase_request_items' => [
         'label' => 'Item Pengajuan Pembelian',
-        'count_label' => 'Jumlah Item',
-        'sum_qty_label' => 'Total Qty',
-        'ordered_qty_label' => 'Total Qty PO',
+        'count_label' => 'Jml Item',
+        'sum_qty_label' => 'Qty Item',
+        'ordered_qty_label' => 'Qty PO',
         'ordered_percentage_label' => '% PO',
     ],
 
@@ -101,7 +101,7 @@ return [
     ],
 
     'purchase_orders' => [
-        'count_label' => 'Jumlah PO',
+        'count_label' => 'Jml PO',
     ],
 
     'section' => [
