@@ -5,7 +5,6 @@ namespace App\Filament\Resources\PurchaseRequests\Tables;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\IconSize;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -26,20 +25,21 @@ class PurchaseRequestsTable
                 TextColumn::make('number')
                     ->label(__('common.number.label'))
                     ->wrapHeader()
-                    ->description(fn($record): ?string => Str::limit($record->description, 32))
-                    ->tooltip(fn($record): string => $record->description)
-                    ->searchable(['number', 'description'])
-                    ->sortable()
+                    // ->icon(fn($record) => $record->type->icon())
+                    // ->iconColor(fn($record) => $record->type->color())
                     ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
+                    ->description(fn($record): ?string => Str::limit($record->description, 32))
+                    ->tooltip(fn($record): ?string => $record->description)
                     ->wrap(false)
+                    ->searchable(['number', 'description'])
+                    ->sortable()
                     ->width('1%')
                 ,
                 IconColumn::make('status')
                     ->icon(fn($state) => $state->icon())
                     ->color(fn($state) => $state->color())
                     ->tooltip(fn($state) => $state->label())
-                    // ->size(IconSize::Small)
                     ->alignCenter()
                     ->width('1%')
                 ,
@@ -47,19 +47,20 @@ class PurchaseRequestsTable
                     ->label(__('common.created_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
                     ->wrap(false)
+                    ->sortable()
                 ,
 
                 UserColumn::make('user')
                     ->label((__('common.log_activity.created.label') . ' ' . __('common.log_activity.by')))
+                    ->tooltip(fn($state) => $state?->name)
                     ->size(TextSize::ExtraSmall)
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 TextColumn::make('project.name')
-                    ->label(__('purchase-request.fieldset.warehouse_project.label'))
+                    ->label(__('project.warehouse_project.label'))
                     ->wrapHeader()
                     ->limit(16)
                     ->description(
@@ -76,22 +77,23 @@ class PurchaseRequestsTable
                 ,
 
                 TextColumn::make('warehouseAddress.address')
-                    ->label(__('purchase-request.warehouse_address.label'))
+                    ->label(__('warehouse-address.delivery.label'))
                     ->wrapHeader()
                     ->limit(16)
                     ->tooltip(fn($state) => $state)
                     ->placeholder('-')
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
 
                 TextColumn::make('memo')
                     ->limit(16)
                     ->tooltip(fn($state) => $state)
-                    ->searchable()
                     ->placeholder('-')
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('boq')
@@ -99,9 +101,10 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->limit(16)
                     ->tooltip(fn($state) => $state)
-                    ->searchable()
                     ->placeholder('-')
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
 
@@ -109,43 +112,42 @@ class PurchaseRequestsTable
                     ->label(__('purchase-request.purchase_request_items.count_label'))
                     ->wrapHeader()
                     ->numeric()
-                    ->color('gray')
+                    ->size(TextSize::ExtraSmall)
                     ->alignEnd()
-                    ->sortable()
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('purchase_request_items_sum_qty')
                     ->label(__('purchase-request.purchase_request_items.sum_qty_label'))
                     ->wrapHeader()
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
                     ->alignEnd()
-                    ->sortable()
-                    ->size(TextSize::ExtraSmall)
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('purchase_orders_count')
                     ->label(__('purchase-request.purchase_orders.count_label'))
                     ->wrapHeader()
                     ->numeric()
-                    ->color('gray')
-                    ->alignEnd()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->alignEnd()
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('purchase_request_items_ordered_qty_sum')
                     ->label(__('purchase-request.purchase_request_items.ordered_qty_label'))
                     ->wrapHeader()
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
                     ->alignEnd()
-                    ->sortable()
-                    ->size(TextSize::ExtraSmall)
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('purchase_request_items_ordered_percentage')
@@ -153,14 +155,14 @@ class PurchaseRequestsTable
                     ->wrapHeader()
                     ->formatStateUsing(fn($state): string => $state . '%')
                     ->color(fn($record): string => match (true) {
-                        $record->getOrderedPercentage() <= 0.0 => 'danger',
-                        $record->getOrderedPercentage() < 100.0 => 'warning',
+                        $record->getOrderedPercentage() <= 0 => 'danger',
+                        $record->getOrderedPercentage() < 100 => 'warning',
                         default => 'success',
                     })
                     ->alignCenter()
                     ->badge()
-                    ->sortable()
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
@@ -168,21 +170,21 @@ class PurchaseRequestsTable
                     ->label(__('common.updated_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->color('gray')
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('deleted_at')
                     ->label(__('common.deleted_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->color('gray')
                     ->placeholder('-')
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
             ])
@@ -202,7 +204,7 @@ class PurchaseRequestsTable
                     ->preload()
                 ,
                 SelectFilter::make('company')
-                    ->label(__('purchase-request.company.label'))
+                    ->label(__('company.warehouse.label'))
                     ->relationship(
                         'company',
                         'alias',
@@ -232,7 +234,7 @@ class PurchaseRequestsTable
                     )
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                     ->multiple()
-                    ->searchable(['name', 'code', 'po_code'])
+                    ->searchable(['code', 'po_code', 'name'])
                     ->preload()
                 ,
 

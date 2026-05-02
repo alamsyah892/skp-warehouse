@@ -53,7 +53,12 @@ enum GoodsIssueStatus: int
                     Role::LOGISTIC_MANAGER,
                 ],
             ],
-            self::CANCELED => [],
+            self::CANCELED => [
+                self::ISSUED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
         };
     }
 

@@ -21,45 +21,47 @@ class GoodsIssueItemsTable extends TableWidget
             ->heading(null)
             ->query(
                 GoodsIssueItem::query()
-                    ->with(['item'])
-                    ->where('goods_issue_id', $this->record->id),
+                    ->with([
+                        'item'
+                    ])
+                    ->whereHas(
+                        'goodsIssue',
+                        fn($query) => $query->whereKey($this->record->id)
+                    )
             )
             ->columns([
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->alignEnd()
-                    ->verticallyAlignStart()
                     ->width('1%')
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
                     ->wrapHeader()
-                    ->searchable()
                     ->weight(FontWeight::Bold)
+                    ->size(TextSize::ExtraSmall)
                     ->fontFamily(FontFamily::Mono)
+                    ->searchable()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
                     ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
-                    ->description(function (GoodsIssueItem $record): HtmlString {
-                        return new HtmlString(
-                            filled($record->description) ? nl2br(e($record->description)) : ''
-                        );
-                    })
-                    ->searchable()
+                    ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
                     ->size(TextSize::ExtraSmall)
-                    ->verticallyAlignStart()
+                    ->searchable()
                     ->wrap()
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.unit')
                     ->label(__('item.unit.label'))
                     ->wrapHeader()
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
@@ -70,9 +72,12 @@ class GoodsIssueItemsTable extends TableWidget
                     ->verticallyAlignStart()
                 ,
             ])
-            ->defaultSort('sort', 'asc')
+            ->defaultSort('id', 'asc')
+
             ->striped()
             ->stackedOnMobile(false)
-            ->paginated(false);
+
+            ->paginated(false)
+        ;
     }
 }

@@ -11,7 +11,6 @@ use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Livewire\PurchaseOrderGoodsReceivesTable;
 use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\PurchaseOrder;
-use App\Models\PurchaseOrderItem;
 use App\Models\PurchaseRequest;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
@@ -30,8 +29,6 @@ use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Contracts\View\View as ViewContract;
-use Illuminate\Support\Collection;
 use Zvizvi\UserFields\Components\UserEntry;
 
 class PurchaseOrderInfolist
@@ -308,26 +305,26 @@ class PurchaseOrderInfolist
 
     protected static function shouldHideStatusAction(PurchaseOrder $record, PurchaseOrderStatus $status): bool
     {
-        if ($status === PurchaseOrderStatus::FINISHED) {
-            return !static::hasConfirmedAllGoodsReceives($record);
+        if ($record->goodsReceives()->exists()) {
+            if ($status === PurchaseOrderStatus::CANCELED) {
+                $hasNotCanceledGR = $record->goodsReceives()->whereNot('status', GoodsReceiveStatus::CANCELED)->exists();
+
+                return $hasNotCanceledGR;
+            }
+
+            if ($status === PurchaseOrderStatus::FINISHED) {
+                $hasNotConfirmedGR = $record->goodsReceives()->whereNot('status', GoodsReceiveStatus::CONFIRMED)->exists();
+
+                $hasRemainingQty = $record->purchaseRequestItems->contains(
+                    fn($item): bool => $item->getRemainingQty() > 0
+                );
+
+                return $hasNotConfirmedGR || $hasRemainingQty;
+            }
         }
 
-        if ($status !== PurchaseOrderStatus::CANCELED) {
-            return false;
-        }
-
-        return $record->goodsReceives()->where('status', '!=', GoodsReceiveStatus::CANCELED)->exists();
+        return false;
     }
-
-    protected static function hasConfirmedAllGoodsReceives(PurchaseOrder $record): bool
-    {
-        return $record->goodsReceives()->exists()
-            && !$record->goodsReceives()
-                ->where('status', '!=', GoodsReceiveStatus::CONFIRMED)
-                ->exists();
-    }
-
-
 
     protected static function tabSection(): Tabs
     {
@@ -477,6 +474,27 @@ class PurchaseOrderInfolist
                 ,
             ])
         ;
+    }
+
+    protected static function getSummary($record): array
+    {
+        static $summaries = [];
+
+        if (!isset($summaries[$record->id])) {
+            $summaries[$record->id] = PurchaseOrder::calculateOrderSummary(
+                $record->purchaseOrderItems->map(fn($item) => [
+                    'id' => $item->id,
+                    'qty' => $item->qty,
+                    'price' => $item->price,
+                ])->all(),
+                $record->discount,
+                $record->tax_type,
+                $record->tax_percentage,
+                $record->rounding
+            );
+        }
+
+        return $summaries[$record->id];
     }
 
     protected static function infoSection(): Section
@@ -669,27 +687,5 @@ class PurchaseOrderInfolist
                 ;
             })
         ;
-    }
-
-
-    protected static function getSummary($record): array
-    {
-        static $summaries = [];
-
-        if (!isset($summaries[$record->id])) {
-            $summaries[$record->id] = PurchaseOrder::calculateOrderSummary(
-                $record->purchaseOrderItems->map(fn($item) => [
-                    'id' => $item->id,
-                    'qty' => $item->qty,
-                    'price' => $item->price,
-                ])->all(),
-                $record->discount,
-                $record->tax_type,
-                $record->tax_percentage,
-                $record->rounding
-            );
-        }
-
-        return $summaries[$record->id];
     }
 }

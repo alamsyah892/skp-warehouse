@@ -6,6 +6,7 @@ use App\Enums\GoodsReceiveType;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -28,20 +29,20 @@ class GoodsReceivesTable
                     ->wrapHeader()
                     ->icon(fn($record) => $record->type->icon())
                     ->iconColor(fn($record) => $record->type->color())
-                    ->description(fn($record): ?string => Str::limit($record->description, 32))
-                    ->tooltip(fn($record): string => $record->description)
-                    ->searchable(['number', 'description'])
-                    ->sortable()
+                    ->iconPosition(IconPosition::After)
                     ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
+                    ->description(fn($record): ?string => Str::limit($record->description, 32))
+                    ->tooltip(fn($record): ?string => $record->description)
                     ->wrap(false)
+                    ->searchable(['number', 'description'])
+                    ->sortable()
                     ->width('1%')
                 ,
                 IconColumn::make('status')
                     ->icon(fn($state) => $state->icon())
                     ->color(fn($state) => $state->color())
                     ->tooltip(fn($state) => $state->label())
-                    // ->size(IconSize::Small)
                     ->alignCenter()
                     ->width('1%')
                 ,
@@ -49,19 +50,20 @@ class GoodsReceivesTable
                     ->label(__('common.created_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
                     ->wrap(false)
+                    ->sortable()
                 ,
 
                 UserColumn::make('user')
                     ->label((__('common.log_activity.created.label') . ' ' . __('common.log_activity.by')))
+                    ->tooltip(fn($state) => $state?->name)
                     ->size(TextSize::ExtraSmall)
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
                 TextColumn::make('project.name')
-                    ->label(__('goods-receive.fieldset.warehouse_project.label'))
+                    ->label(__('project.warehouse_project.label'))
                     ->wrapHeader()
                     ->limit(16)
                     ->description(
@@ -78,23 +80,23 @@ class GoodsReceivesTable
                 ,
 
                 TextColumn::make('warehouseAddress.address')
-                    ->label(__('goods-receive.warehouse_address.label'))
+                    ->label(__('warehouse-address.receiving.label'))
                     ->wrapHeader()
                     ->limit(16)
                     ->tooltip(fn($state) => $state)
                     ->placeholder('-')
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
 
                 TextColumn::make('purchaseOrder.number')
                     ->label(__('purchase-order.model.plural_label'))
                     ->wrapHeader()
-                    ->searchable()
                     ->fontFamily(FontFamily::Mono)
                     ->listWithLineBreaks()
                     ->badge()
+                    ->searchable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
 
@@ -102,44 +104,43 @@ class GoodsReceivesTable
                     ->label(__('goods-receive.goods_receive_items.count_label'))
                     ->wrapHeader()
                     ->numeric()
-                    ->color('gray')
-                    ->alignEnd()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->alignEnd()
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('goods_receive_items_sum_qty')
                     ->label(__('goods-receive.goods_receive_items.sum_qty_label'))
                     ->wrapHeader()
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
                     ->alignEnd()
-                    ->sortable()
-                    ->size(TextSize::ExtraSmall)
                     ->wrap(false)
-                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                 ,
 
                 TextColumn::make('updated_at')
                     ->label(__('common.updated_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->color('gray')
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
                 TextColumn::make('deleted_at')
                     ->label(__('common.deleted_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->color('gray')
                     ->placeholder('-')
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true)
                 ,
             ])
@@ -167,7 +168,7 @@ class GoodsReceivesTable
                     ->preload()
                 ,
                 SelectFilter::make('company')
-                    ->label(__('goods-receive.company.label'))
+                    ->label(__('company.warehouse.label'))
                     ->relationship(
                         'company',
                         'alias',
@@ -197,7 +198,7 @@ class GoodsReceivesTable
                     )
                     ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                     ->multiple()
-                    ->searchable(['name', 'code', 'po_code'])
+                    ->searchable(['code', 'po_code', 'name'])
                     ->preload()
                 ,
 

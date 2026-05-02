@@ -35,7 +35,7 @@ enum GoodsReceiveStatus: int
     public function color(): string
     {
         return match ($this) {
-            self::RECEIVED => 'primary',
+            self::RECEIVED => 'info',
             self::CANCELED => 'danger',
             self::RETURNED => 'warning',
             self::CONFIRMED => 'success',
@@ -46,7 +46,8 @@ enum GoodsReceiveStatus: int
     {
         return match ($this) {
             self::RECEIVED => Heroicon::OutlinedInboxArrowDown,
-            self::RETURNED => Heroicon::OutlinedArrowUturnLeft,
+            self::RETURNED => Heroicon::OutlinedReceiptRefund,
+                // self::RETURNED => Heroicon::OutlinedArrowUturnLeft,
             self::CANCELED => Heroicon::OutlinedXCircle,
             self::CONFIRMED => Heroicon::OutlinedCheckCircle,
         };
@@ -81,9 +82,24 @@ enum GoodsReceiveStatus: int
                     Role::FINANCE_MANAGER,
                 ],
             ],
-            self::RETURNED => [],
-            self::CANCELED => [],
-            self::CONFIRMED => [],
+            self::CANCELED => [
+                self::RECEIVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
+            self::RETURNED => [
+                self::RECEIVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
+            self::CONFIRMED => [
+                self::RECEIVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
         };
     }
 

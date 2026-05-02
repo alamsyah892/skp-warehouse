@@ -7,6 +7,7 @@ use App\Models\GoodsReceive;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\IconPosition;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -33,7 +34,10 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                     ->withCount([
                         'goodsReceiveItems',
                     ])
-                    ->where('purchase_order_id', $this->record->id),
+                    ->whereHas(
+                        'purchaseOrder',
+                        fn($query) => $query->whereKey($this->record->id)
+                    )
             )
             ->columns([
                 TextColumn::make('number')
@@ -41,20 +45,20 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                     ->wrapHeader()
                     ->icon(fn($record) => $record->type->icon())
                     ->iconColor(fn($record) => $record->type->color())
-                    ->description(fn($record): ?string => Str::limit($record->description, 32))
-                    ->tooltip(fn($record): string => $record->description)
-                    ->searchable(['number', 'description'])
-                    ->sortable()
+                    ->iconPosition(IconPosition::After)
                     ->weight(FontWeight::Bold)
                     ->fontFamily(FontFamily::Mono)
+                    ->description(fn($record): ?string => Str::limit($record->description, 32))
+                    ->tooltip(fn($record): ?string => $record->description)
                     ->wrap(false)
+                    ->searchable(['number', 'description'])
+                    ->sortable()
                     ->width('1%')
                 ,
                 IconColumn::make('status')
                     ->icon(fn($state) => $state->icon())
                     ->color(fn($state) => $state->color())
                     ->tooltip(fn($state) => $state->label())
-                    // ->size(IconSize::Small)
                     ->alignCenter()
                     ->width('1%')
                 ,
@@ -62,13 +66,14 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                     ->label(__('common.created_at.label'))
                     ->wrapHeader()
                     ->date()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
                     ->wrap(false)
+                    ->sortable()
                 ,
 
                 UserColumn::make('user')
                     ->label((__('common.log_activity.created.label') . ' ' . __('common.log_activity.by')))
+                    ->tooltip(fn($state) => $state?->name)
                     ->size(TextSize::ExtraSmall)
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
@@ -77,23 +82,22 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                     ->label(__('goods-receive.goods_receive_items.count_label'))
                     ->wrapHeader()
                     ->numeric()
-                    ->color('gray')
-                    ->alignEnd()
-                    ->sortable()
                     ->size(TextSize::ExtraSmall)
+                    ->alignEnd()
                     ->wrap(false)
+                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false)
                 ,
                 TextColumn::make('goods_receive_items_sum_qty')
                     ->label(__('goods-receive.goods_receive_items.sum_qty_label'))
                     ->wrapHeader()
                     ->numeric()
+                    ->size(TextSize::ExtraSmall)
                     ->color('gray')
                     ->alignEnd()
-                    ->sortable()
-                    ->size(TextSize::ExtraSmall)
                     ->wrap(false)
-                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true)
                 ,
             ])
             ->recordActions([
@@ -103,9 +107,11 @@ class PurchaseOrderGoodsReceivesTable extends TableWidget
                 ,
             ], position: RecordActionsPosition::BeforeColumns)
             ->defaultSort('id', 'asc')
+
             ->striped()
-            ->stackedOnMobile()
-            ->paginated(false);
+            ->stackedOnMobile(false)
+
+            ->paginated(false)
+        ;
     }
 }
-

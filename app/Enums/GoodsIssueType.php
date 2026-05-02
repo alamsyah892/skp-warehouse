@@ -20,16 +20,16 @@ enum GoodsIssueType: int
     public function color(): string
     {
         return match ($this) {
-            self::ISSUE => 'warning',
-            self::TRANSFER => 'info',
+            self::ISSUE => 'primary',
+            self::TRANSFER => 'warning',
         };
     }
 
     public function icon()
     {
         return match ($this) {
-            self::ISSUE => Heroicon::OutlinedShoppingCart,
-            self::TRANSFER => Heroicon::OutlinedArrowUturnLeft,
+            self::ISSUE => Heroicon::OutlinedLinkSlash,
+            self::TRANSFER => Heroicon::OutlinedShare,
         };
     }
 

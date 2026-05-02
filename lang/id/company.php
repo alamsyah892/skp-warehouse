@@ -6,6 +6,8 @@ return [
     'model.label' => 'Perusahaan',
     'model.plural_label' => 'Perusahaan',
 
+    'warehouse.label' => 'Perusahaan (Gudang Kecil)',
+
 
     'section.main_info.label' => 'Informasi Perusahaan',
     'section.main_info.description' => 'Informasi utama dan identitas dasar perusahaan.',

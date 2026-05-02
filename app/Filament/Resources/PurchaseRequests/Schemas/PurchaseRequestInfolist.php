@@ -207,6 +207,59 @@ class PurchaseRequestInfolist
         ;
     }
 
+    protected static function dataSectionFooter($record): array
+    {
+        return collect($record->getNextStatuses())
+            ->reject(fn(PurchaseRequestStatus $status): bool => static::shouldHideStatusAction($record, $status))
+            ->map(function ($status) use ($record) {
+                return Action::make('changeStatus' . $status->value)
+                    ->label(__($status->actionLabel()))
+                    ->icon($status->icon())
+                    ->color($status->color())
+                    ->requiresConfirmation()
+                    ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-request.model.label'))
+                    ->modalDescription(__('purchase-request.status.action.note', ['status' => __($status->label())]))
+                    ->action(function () use ($status, $record) {
+                        $record->changeStatus($status);
+
+                        Notification::make()
+                            ->success()
+                            ->title(__('purchase-request.status.action.changed'))
+                            ->send()
+                        ;
+
+                        return redirect(request()->header('Referer'));
+                    })
+                ;
+            })
+            ->values()
+            ->all()
+        ; // return array action
+    }
+
+    protected static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
+    {
+        if ($record->purchaseOrders()->exists()) {
+            if ($status === PurchaseRequestStatus::CANCELED) {
+                $hasNotCanceledPO = $record->purchaseOrders()->whereNot('status', PurchaseOrderStatus::CANCELED)->exists();
+
+                return $hasNotCanceledPO;
+            }
+
+            if ($status === PurchaseRequestStatus::FINISHED) {
+                $hasNotFinishedPO = $record->purchaseOrders()->whereNot('status', PurchaseOrderStatus::FINISHED)->exists();
+
+                $hasRemainingQty = $record->purchaseRequestItems->contains(
+                    fn($item): bool => $item->getRemainingQty() > 0
+                );
+
+                return $hasNotFinishedPO || $hasRemainingQty;
+            }
+        }
+
+        return false;
+    }
+
     protected static function tabSection(): Tabs|string
     {
         return Tabs::make()
@@ -285,66 +338,5 @@ class PurchaseRequestInfolist
                 ,
             ])
         ;
-    }
-
-    protected static function dataSectionFooter($record): array
-    {
-        return collect($record->getNextStatuses())
-            ->reject(fn(PurchaseRequestStatus $status): bool => static::shouldHideStatusAction($record, $status))
-            ->map(function ($status) use ($record) {
-                return Action::make('changeStatus' . $status->value)
-                    ->label(__($status->actionLabel()))
-                    ->icon($status->icon())
-                    ->color($status->color())
-                    ->requiresConfirmation()
-                    ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-request.model.label'))
-                    ->modalDescription(__('purchase-request.status.action.note', ['status' => __($status->label())]))
-                    ->action(function () use ($status, $record) {
-                        $record->changeStatus($status);
-
-                        Notification::make()
-                            ->success()
-                            ->title(__('purchase-request.status.action.changed'))
-                            ->send()
-                        ;
-
-                        return redirect(request()->header('Referer'));
-                    })
-                ;
-            })
-            ->values()
-            ->all()
-        ; // return array action
-    }
-
-    protected static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
-    {
-        if ($status === PurchaseRequestStatus::ORDERED) {
-            return true;
-        }
-
-        if ($status === PurchaseRequestStatus::FINISHED) {
-            return
-                static::hasRemainingPurchaseRequestItems($record)
-                ||
-                $record->purchaseOrders()->whereIn('status', [
-                    PurchaseOrderStatus::DRAFT,
-                    PurchaseOrderStatus::ORDERED,
-                ])->exists()
-            ;
-        }
-
-        if ($status !== PurchaseRequestStatus::CANCELED) {
-            return false;
-        }
-
-        return $record->purchaseOrders()->where('status', '!=', PurchaseOrderStatus::CANCELED)->exists();
-    }
-
-    protected static function hasRemainingPurchaseRequestItems($record): bool
-    {
-        return $record->purchaseRequestItems->contains(
-            fn($item): bool => $item->getRemainingQty() > 0
-        );
     }
 }

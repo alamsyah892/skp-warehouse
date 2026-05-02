@@ -58,6 +58,7 @@ Modul PurchaseRequests (PR / Pengajuan Pembelian)
             - data PR bisa di-edit, nomor urut revisi akan ditambahkan pada nomor PR setelah di-edit
 
         f. saat PR status FINISHED
+            - PR status bisa diubah menjadi ORDERED (oleh PROJECT_OWNER, ADMINISTRATOR)
             - data PR tidak bisa di-edit
         
     - button/action CANCELED PR disembunyikan, jika PR sudah punya PO dan semua PO tersebut status-nya bukan CANCELED
@@ -66,7 +67,7 @@ Modul PurchaseRequests (PR / Pengajuan Pembelian)
 
     - saat user klik button/action untuk perubahan PR status, buat Log/Info perubahan status dengan setStatusLog()
 
-    - tampilkan Qty PO (ordered_qty) di PR item jika item tersebut sudah punya PO Item dan semua PO tersebut status-nya bukan CANCELED
+    - tampilkan Qty PO (ordered_qty) di PR item jika PR tersebut sudah punya PO
 
     - tampilkan Tab PO (list PO) jika PR tersebut sudah punya PO
 

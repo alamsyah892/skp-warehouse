@@ -25,21 +25,21 @@ class ListGoodsReceives extends ListRecords
 
     public function getTabs(): array
     {
-        // $getStatusBadge = function (GoodsReceiveStatus $status): ?int {
-        //     $count = GoodsReceiveResource::getEloquentQuery()
-        //         ->where('status', $status)
-        //         ->count();
+        $getStatusBadge = function (GoodsReceiveStatus $status): ?int {
+            $count = GoodsReceiveResource::getEloquentQuery()
+                ->where('status', $status)
+                ->count();
 
-        //     return $count > 0 ? $count : null;
-        // };
+            return $count > 0 ? $count : null;
+        };
 
         return [
             __('purchase-order.status.all') => Tab::make()->icon(Heroicon::Bars4),
             GoodsReceiveStatus::RECEIVED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', GoodsReceiveStatus::RECEIVED))
                 ->icon(GoodsReceiveStatus::RECEIVED->icon())
-            // ->badge($getStatusBadge(GoodsReceiveStatus::RECEIVED))
-            // ->badgeColor(GoodsReceiveStatus::RECEIVED->color())
+                ->badge($getStatusBadge(GoodsReceiveStatus::RECEIVED))
+                ->badgeColor(GoodsReceiveStatus::RECEIVED->color())
             ,
             GoodsReceiveStatus::CANCELED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', GoodsReceiveStatus::CANCELED))

@@ -24,40 +24,44 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->with([
                         'item',
                     ])
-                    ->where('purchase_request_id', $this->record->id)
+                    ->whereHas(
+                        'purchaseRequest',
+                        fn($query) => $query->whereKey($this->record->id)
+                    )
             )
             ->columns([
                 TextColumn::make('sort')
                     ->label('#')
                     ->numeric()
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->alignEnd()
-                    ->verticallyAlignStart()
                     ->width('1%')
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.code')
                     ->label(__('item.code.label'))
                     ->wrapHeader()
-                    ->searchable()
                     ->weight(FontWeight::Bold)
+                    ->size(TextSize::ExtraSmall)
                     ->fontFamily(FontFamily::Mono)
+                    ->searchable()
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.name')
                     ->label(__('item.name.label') . ' | ' . __('common.description.label'))
                     ->wrapHeader()
                     ->description(fn($record): HtmlString => new HtmlString(nl2br($record->description)))
-                    ->searchable()
                     ->size(TextSize::ExtraSmall)
-                    ->verticallyAlignStart()
+                    ->searchable()
                     ->wrap()
+                    ->verticallyAlignStart()
                 ,
                 TextColumn::make('item.unit')
                     ->label(__('item.unit.label'))
                     ->wrapHeader()
-                    ->color('gray')
                     ->size(TextSize::ExtraSmall)
+                    ->color('gray')
                     ->verticallyAlignStart()
                 ,
                 TextColumn::make('qty')
@@ -73,19 +77,20 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->state(fn(PurchaseRequestItem $record): float|null => $record->getOrderedQty() > 0 ? $record->getOrderedQty() : null)
                     ->placeholder('-')
                     ->numeric()
-                    ->color(fn(PurchaseRequestItem $record): string => $record->getOrderedQtyColor())
                     ->weight(FontWeight::Bold)
                     ->size(TextSize::ExtraSmall)
+                    ->color(fn(PurchaseRequestItem $record): string => $record->getOrderedQtyColor())
                     ->alignEnd()
-                    ->sortable()
                     ->wrap(false)
                     ->verticallyAlignStart()
                     ->visible(fn() => $this->record && $this->record->purchaseOrders()->exists())
                 ,
             ])
-            ->defaultSort('sort', 'asc')
+            ->defaultSort('id', 'asc')
+
             ->striped()
             ->stackedOnMobile(false)
+
             ->paginated(false)
         ;
     }

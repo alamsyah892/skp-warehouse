@@ -32,17 +32,17 @@ enum GoodsReceiveType: int
     {
         return match ($this) {
             self::PURCHASE_ORDER => 'primary',
-            self::MANUAL => 'gray',
-            self::CORRECTION => 'info',
+            self::MANUAL => 'warning',
+            self::CORRECTION => 'success',
         };
     }
 
     public function icon()
     {
         return match ($this) {
-            self::PURCHASE_ORDER => Heroicon::OutlinedShoppingCart,
-            self::MANUAL => Heroicon::OutlinedPencilSquare,
-            self::CORRECTION => Heroicon::OutlinedPlus,
+            self::PURCHASE_ORDER => Heroicon::OutlinedTruck,
+            self::MANUAL => Heroicon::OutlinedPlus,
+            self::CORRECTION => Heroicon::OutlinedPencilSquare,
         };
     }
 

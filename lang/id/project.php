@@ -6,6 +6,8 @@ return [
     'model.label' => 'Proyek',
     'model.plural_label' => 'Proyek',
 
+    'warehouse_project.label' => 'Gudang Proyek',
+
 
     'section.main_info.label' => 'Informasi Proyek',
     'section.main_info.description' => 'Informasi utama dan identitas dasar proyek.',
