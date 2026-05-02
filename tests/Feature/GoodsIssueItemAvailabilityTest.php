@@ -19,7 +19,7 @@ use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
 
-it('calculates available goods issue quantity from received stock minus issued stock', function () {
+it('calculates available goods issue quantity from received and confirmed stock minus issued stock', function () {
     $ctx = createGoodsIssueContext();
 
     $goodsReceive = GoodsReceive::query()->create([
@@ -36,7 +36,7 @@ it('calculates available goods issue quantity from received stock minus issued s
     ]);
 
     $goodsReceive->update([
-        'status' => GoodsReceiveStatus::RECEIVED,
+        'status' => GoodsReceiveStatus::CONFIRMED,
     ]);
 
     $goodsReceive->goodsReceiveItems()->create([

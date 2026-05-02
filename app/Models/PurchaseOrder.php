@@ -30,7 +30,10 @@ class PurchaseOrder extends Model
     use HasFactory;
 
     use SoftDeletes;
-    use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasStateMachine, HasDocumentRevision;
+    use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasDocumentRevision;
+    use HasStateMachine {
+        changeStatus as protected changeStateStatus;
+    }
 
 
     /** 
@@ -236,6 +239,24 @@ class PurchaseOrder extends Model
         return round(($this->getTotalReceivedQty() / $totalOrderedQty) * 100, 2);
     }
 
+    public function changeStatus($newStatus, ?string $note = ''): void
+    {
+        $normalizedStatus = $newStatus instanceof PurchaseOrderStatus
+            ? $newStatus
+            : PurchaseOrderStatus::from($newStatus);
+
+        // $previousStatus = $this->status;
+
+        $this->changeStateStatus($normalizedStatus, $note);
+
+        if (
+            $normalizedStatus === PurchaseOrderStatus::ORDERED
+            // && $previousStatus !== PurchaseOrderStatus::ORDERED
+        ) {
+            $this->syncPurchaseRequestsToOrdered();
+        }
+    }
+
     public function scopeWithQuantitySummary(Builder $query): Builder
     {
         return $query
@@ -246,7 +267,10 @@ class PurchaseOrder extends Model
                     ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
                     ->join('purchase_order_items', 'purchase_order_items.id', '=', 'goods_receive_items.purchase_order_item_id')
                     ->whereColumn('purchase_order_items.purchase_order_id', 'purchase_orders.id')
-                    ->where('goods_receives.status', GoodsReceiveStatus::RECEIVED->value),
+                    ->whereIn('goods_receives.status', [
+                        GoodsReceiveStatus::RECEIVED->value,
+                        GoodsReceiveStatus::CONFIRMED->value,
+                    ]),
                 'purchase_order_items_received_qty_sum',
             )
             ->selectSub(
@@ -264,13 +288,16 @@ class PurchaseOrder extends Model
                                         inner join purchase_order_items as received_purchase_order_items
                                             on received_purchase_order_items.id = goods_receive_items.purchase_order_item_id
                                         where received_purchase_order_items.purchase_order_id = purchase_orders.id
-                                            and goods_receives.status = ?
+                                            and goods_receives.status in (?, ?)
                                     ), 0) / coalesce(sum(purchase_order_items.qty), 0)
                                 ) * 100,
                                 2
                             )
                         end',
-                        [GoodsReceiveStatus::RECEIVED->value]
+                        [
+                            GoodsReceiveStatus::RECEIVED->value,
+                            GoodsReceiveStatus::CONFIRMED->value,
+                        ]
                     )
                     ->whereColumn('purchase_order_items.purchase_order_id', 'purchase_orders.id'),
                 'purchase_order_items_received_percentage',
@@ -300,6 +327,25 @@ class PurchaseOrder extends Model
         }
 
         return $user->hasAnyRole($flow[$newStatus->value] ?? []);
+    }
+
+    protected function syncPurchaseRequestsToOrdered(): void
+    {
+        $this->loadMissing('purchaseRequests');
+
+        $this->purchaseRequests
+            // ->filter(fn(PurchaseRequest $purchaseRequest): bool => $purchaseRequest->status === PurchaseRequestStatus::APPROVED)
+            ->each(function (PurchaseRequest $purchaseRequest): void {
+                $purchaseRequest->update([
+                    'status' => PurchaseRequestStatus::ORDERED,
+                ]);
+
+                $purchaseRequest->setStatusLog(
+                    PurchaseRequestStatus::ORDERED,
+                    PurchaseRequestStatus::APPROVED,
+                    (string) $this->number,
+                );
+            });
     }
 
 

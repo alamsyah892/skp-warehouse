@@ -309,15 +309,7 @@ class PurchaseOrderInfolist
     protected static function shouldHideStatusAction(PurchaseOrder $record, PurchaseOrderStatus $status): bool
     {
         if ($status === PurchaseOrderStatus::FINISHED) {
-            return
-                static::hasRemainingGoodsReceiveItems($record)
-                // ||
-                // $record->goodsReceives()->whereNotIn('status', [
-                //     GoodsReceiveStatus::RECEIVED,
-                // ])->exists()
-                // //  ||
-                // // $record->goodsReceives()->where('status', '!=', GoodsReceiveStatus::RECEIVED)->exists()
-            ;
+            return !static::hasConfirmedAllGoodsReceives($record);
         }
 
         if ($status !== PurchaseOrderStatus::CANCELED) {
@@ -327,11 +319,12 @@ class PurchaseOrderInfolist
         return $record->goodsReceives()->where('status', '!=', GoodsReceiveStatus::CANCELED)->exists();
     }
 
-    protected static function hasRemainingGoodsReceiveItems($record): bool
+    protected static function hasConfirmedAllGoodsReceives(PurchaseOrder $record): bool
     {
-        return $record->purchaseOrderItems->contains(
-            fn($item): bool => $item->getRemainingQty() > 0
-        );
+        return $record->goodsReceives()->exists()
+            && !$record->goodsReceives()
+                ->where('status', '!=', GoodsReceiveStatus::CONFIRMED)
+                ->exists();
     }
 
 

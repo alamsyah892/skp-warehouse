@@ -53,6 +53,12 @@ class ListGoodsReceives extends ListRecords
             // ->badge($getStatusBadge(GoodsReceiveStatus::RETURNED))
             // ->badgeColor(GoodsReceiveStatus::RETURNED->color())
             ,
+            GoodsReceiveStatus::CONFIRMED->label() => Tab::make()
+                ->modifyQueryUsing(fn($query) => $query->where('status', GoodsReceiveStatus::CONFIRMED))
+                ->icon(GoodsReceiveStatus::CONFIRMED->icon())
+            // ->badge($getStatusBadge(GoodsReceiveStatus::CONFIRMED))
+            // ->badgeColor(GoodsReceiveStatus::CONFIRMED->color())
+            ,
         ];
     }
 }

@@ -17,6 +17,8 @@ class Role extends RoleModel
     public const LOGISTIC_MANAGER = 'Logistic Manager';
     public const PURCHASING = 'Purchasing';
     public const PURCHASING_MANAGER = 'Purchasing Manager';
+    public const FINANCE = 'Finance';
+    public const FINANCE_MANAGER = 'Finance Manager';
     public const QUANTITY_SURVEYOR = 'Quantity Surveyor';
     public const AUDIT = 'Audit';
     public const AUDIT_MANAGER = 'Audit Manager';
@@ -28,6 +30,8 @@ class Role extends RoleModel
         self::LOGISTIC_MANAGER,
         self::PURCHASING,
         self::PURCHASING_MANAGER,
+        self::FINANCE,
+        self::FINANCE_MANAGER,
         self::QUANTITY_SURVEYOR,
         self::AUDIT,
         self::AUDIT_MANAGER,

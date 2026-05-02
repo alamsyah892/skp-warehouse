@@ -78,7 +78,10 @@ class PurchaseOrderItem extends Model
     {
         return (float) $this->goodsReceiveItems()
             ->whereHas('goodsReceive', function ($query) use ($exceptGoodsReceiveId) {
-                $query->where('status', GoodsReceiveStatus::RECEIVED);
+                $query->whereIn('status', [
+                    GoodsReceiveStatus::RECEIVED,
+                    GoodsReceiveStatus::CONFIRMED,
+                ]);
 
                 if ($exceptGoodsReceiveId) {
                     $query->where('id', '!=', $exceptGoodsReceiveId);

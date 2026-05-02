@@ -65,7 +65,6 @@ class GoodsReceive extends Model
     public const MODEL_ALIAS = 'GR';
     public const SELECTABLE_PURCHASE_ORDER_STATUSES = [
         PurchaseOrderStatus::ORDERED,
-        PurchaseOrderStatus::FINISHED,
     ];
 
     /**

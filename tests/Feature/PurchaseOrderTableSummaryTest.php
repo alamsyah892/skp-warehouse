@@ -121,14 +121,40 @@ it('aggregates ordered and received quantities for purchase order summaries', fu
         'sort' => 1,
     ]);
 
+    $confirmedGoodsReceive = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::PURCHASE_ORDER,
+        'purchase_order_id' => $purchaseOrder->id,
+        'company_id' => $ctx['company']->id,
+        'warehouse_id' => $ctx['warehouse']->id,
+        'warehouse_address_id' => $ctx['warehouseAddress']->id,
+        'division_id' => $ctx['division']->id,
+        'project_id' => $ctx['project']->id,
+        'description' => 'Confirmed summary receive',
+        'delivery_order' => 'DO-PO-SUMMARY-003',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $confirmedGoodsReceive->update([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+    ]);
+
+    $confirmedGoodsReceive->goodsReceiveItems()->create([
+        'purchase_order_item_id' => $firstPurchaseOrderItem->id,
+        'item_id' => $ctx['item']->id,
+        'qty' => 2,
+        'description' => '',
+        'sort' => 1,
+    ]);
+
     $summary = PurchaseOrder::query()
         ->withQuantitySummary()
         ->findOrFail($purchaseOrder->id);
 
     expect($summary->getTotalOrderedQty())->toBe(15.0)
-        ->and($summary->getTotalReceivedQty())->toBe(5.0)
-        ->and((float) $summary->getAttribute('purchase_order_items_received_percentage'))->toBe(33.33)
-        ->and($summary->getReceivedPercentage())->toBe(33.33);
+        ->and($summary->getTotalReceivedQty())->toBe(7.0)
+        ->and((float) $summary->getAttribute('purchase_order_items_received_percentage'))->toBe(46.67)
+        ->and($summary->getReceivedPercentage())->toBe(46.67);
 });
 
 function createPurchaseOrderSummaryContext(): array

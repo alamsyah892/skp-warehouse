@@ -8,8 +8,9 @@ use Filament\Support\Icons\Heroicon;
 enum GoodsReceiveStatus: int
 {
     case RECEIVED = 1;
-    case RETURNED = 2;
-    case CANCELED = 3;
+    case CANCELED = 2;
+    case RETURNED = 3;
+    case CONFIRMED = 4;
 
     public function label(): string
     {
@@ -17,6 +18,7 @@ enum GoodsReceiveStatus: int
             self::RECEIVED => __('goods-receive.status.received.label'),
             self::RETURNED => __('goods-receive.status.returned.label'),
             self::CANCELED => __('goods-receive.status.canceled.label'),
+            self::CONFIRMED => __('goods-receive.status.confirmed.label'),
         };
     }
 
@@ -26,15 +28,17 @@ enum GoodsReceiveStatus: int
             self::RECEIVED => __('goods-receive.status.received.action_label'),
             self::RETURNED => __('goods-receive.status.returned.action_label'),
             self::CANCELED => __('goods-receive.status.canceled.action_label'),
+            self::CONFIRMED => __('goods-receive.status.confirmed.action_label'),
         };
     }
 
     public function color(): string
     {
         return match ($this) {
-            self::RECEIVED => 'success',
-            self::RETURNED => 'warning',
+            self::RECEIVED => 'primary',
             self::CANCELED => 'danger',
+            self::RETURNED => 'warning',
+            self::CONFIRMED => 'success',
         };
     }
 
@@ -44,6 +48,7 @@ enum GoodsReceiveStatus: int
             self::RECEIVED => Heroicon::OutlinedInboxArrowDown,
             self::RETURNED => Heroicon::OutlinedArrowUturnLeft,
             self::CANCELED => Heroicon::OutlinedXCircle,
+            self::CONFIRMED => Heroicon::OutlinedCheckCircle,
         };
     }
 
@@ -51,21 +56,34 @@ enum GoodsReceiveStatus: int
     {
         return match ($this) {
             self::RECEIVED => [
-                self::RETURNED->value => [
-                    Role::PROJECT_OWNER,
-                    Role::ADMINISTRATOR,
-                    Role::LOGISTIC,
-                    Role::LOGISTIC_MANAGER,
-                ],
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
+                ],
+                self::RETURNED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                    Role::LOGISTIC,
+                    Role::LOGISTIC_MANAGER,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
+                ],
+                self::CONFIRMED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
+                    Role::FINANCE,
+                    Role::FINANCE_MANAGER,
                 ],
             ],
             self::RETURNED => [],
             self::CANCELED => [],
+            self::CONFIRMED => [],
         };
     }
 
@@ -74,10 +92,11 @@ enum GoodsReceiveStatus: int
         static $cache = null;
 
         return $cache ??= collect(self::cases())
-            ->mapWithKeys(fn (self $status): array => [
+            ->mapWithKeys(fn(self $status): array => [
                 (string) $status->value => $status->label(),
             ])
-            ->toArray();
+            ->toArray()
+        ;
     }
 }
 

@@ -35,27 +35,40 @@ Modul PurchaseRequests (PR / Pengajuan Pembelian)
         - setStatusLog() dengan value note dari PR number
 
 3. PurchaseRequestInfolist
-    - tampilkan button/action untuk perubahan PR status dengan ketentuan sebagai berikut:
+    - ketentuan perubahan data PR dan PR status sebagai berikut:
         a. saat PR status DRAFT
-            - tampilkan button/action CANCELED dan REQUESTED (untuk user PROJECT_OWNER, ADMINISTRATOR, LOGISTIC, LOGISTIC_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - PR status bisa diubah menjadi CANCELED atau REQUESTED (oleh PROJECT_OWNER, ADMINISTRATOR, LOGISTIC, LOGISTIC_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - data PR bisa di-edit, nomor urut revisi tidak akan ditambahkan pada nomor PR setelah di-edit
 
         b. saat PR status CANCELED
+            - PR status bisa diubah menjadi DRAFT atau REQUESTED atau APPROVED atau ORDERED (oleh PROJECT_OWNER, ADMINISTRATOR)
             - data PR tidak bisa di-edit
 
         c. saat PR status REQUESTED
-            - tampilkan button/action CANCELED dan APPROVED (untuk user PROJECT_OWNER, ADMINISTRATOR, QUANTITY_SURVEYOR, AUDIT, AUDIT_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - PR status bisa diubah menjadi CANCELED atau APPROVED (oleh PROJECT_OWNER, ADMINISTRATOR, QUANTITY_SURVEYOR, AUDIT, AUDIT_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - data PR bisa di-edit, nomor urut revisi akan ditambahkan pada nomor PR setelah di-edit
 
         d. saat PR status APPROVED
-            - tampilkan button/action CANCELED (untuk user PROJECT_OWNER, ADMINISTRATOR, QUANTITY_SURVEYOR, AUDIT, AUDIT_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - PR status bisa diubah menjadi CANCELED (oleh PROJECT_OWNER, ADMINISTRATOR, QUANTITY_SURVEYOR, AUDIT, AUDIT_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - data PR bisa di-edit, nomor urut revisi akan ditambahkan pada nomor PR setelah di-edit
 
         e. saat PR status ORDERED
-            - tampilkan button/action FINISHED (untuk user PROJECT_OWNER, ADMINISTRATOR, LOGISTIC, LOGISTIC_MANAGER, PURCHASING, PURCHASING_MANAGER) dan CANCELED (untuk user PROJECT_OWNER, ADMINISTRATOR, PURCHASING, PURCHASING_MANAGER)
-        
-    - sembunyikan button/action CANCELED jika PR sudah dibuat PO dan semua PO tersebut statusnya dalam (DRAFT, ORDERED, FINISHED)
-    - sembunyikan button/action FINISHED jika qty PR item ada yang belum dibuat PO (baru dipesan sebagian) atau semua PO status nya bukan FINISHED
-    - saat user klik button/action untuk perubahan PR status, buat infonya dengan setStatusLog()
+            - PR status bisa diubah menjadi CANCELED (oleh PROJECT_OWNER, ADMINISTRATOR, PURCHASING, PURCHASING_MANAGER) 
+            atau FINISHED (oleh PROJECT_OWNER, ADMINISTRATOR, LOGISTIC, LOGISTIC_MANAGER, PURCHASING, PURCHASING_MANAGER)
+            - data PR bisa di-edit, nomor urut revisi akan ditambahkan pada nomor PR setelah di-edit
 
-    - tampilkan ordered_qty di PR item jika PR tersebut sudah dibuat PO dan semua PO tersebut statusnya bukan CANCELED
+        f. saat PR status FINISHED
+            - data PR tidak bisa di-edit
+        
+    - button/action CANCELED PR disembunyikan, jika PR sudah punya PO dan semua PO tersebut status-nya bukan CANCELED
+
+    - button/action FINISHED PR disembunyikan, jika PR sudah punya PO dan semua PO tersebut status-nya bukan FINISHED, dan masih ada PR Item yang Qty PO-nya masih sisa (PR Item->getRemainingQty() > 0)
+
+    - saat user klik button/action untuk perubahan PR status, buat Log/Info perubahan status dengan setStatusLog()
+
+    - tampilkan Qty PO (ordered_qty) di PR item jika item tersebut sudah punya PO Item dan semua PO tersebut status-nya bukan CANCELED
+
+    - tampilkan Tab PO (list PO) jika PR tersebut sudah punya PO
 
 4. PurchaseRequestForm (edit)
     a. form edit
@@ -65,10 +78,10 @@ Modul PurchaseRequests (PR / Pengajuan Pembelian)
             - mengubah item, qty, dan description PR item
             - menambahkan PR item
             - menghapus PR item
-        - tampilkan ordered_qty di PR item jika PR item tersebut sudah dibuat PO dan semua PO tersebut statusnya bukan CANCELED
-        - jika PR item sudah dibuat PO dan PO tersebut statusnya bukan CANCELED, minimum qty nya adalah ordered_qty (jumlah qty PO)
-        - jika PR item sudah dibuat PO dan PO tersebut statusnya bukan CANCELED, PR item tersebut tidak dapat dihapus
-        - jika PR item sudah dibuat PO dan PO tersebut statusnya bukan CANCELED, item dari PR item tersebut tidak dapat diubah (disabled)
+        - tampilkan ordered_qty di PR item jika PR item tersebut sudah dibuat PO dan semua PO tersebut status-nya bukan CANCELED
+        - jika PR item sudah dibuat PO dan PO tersebut status-nya bukan CANCELED, minimum qty nya adalah ordered_qty (jumlah qty PO)
+        - jika PR item sudah dibuat PO dan PO tersebut status-nya bukan CANCELED, PR item tersebut tidak dapat dihapus
+        - jika PR item sudah dibuat PO dan PO tersebut status-nya bukan CANCELED, item dari PR item tersebut tidak dapat diubah (disabled)
         - textInput info value nya kosongkan dulu
         - ketika textInput info disabled, value nya harus kosong
 
@@ -148,11 +161,11 @@ Modul PO
         c. saat PO status ORDERED
             - tampilkan button/action CANCELED dan FINISHED (untuk user PROJECT_OWNER, ADMINISTRATOR, PURCHASING, PURCHASING_MANAGER)
     
-    - sembunyikan button/action CANCELED jika PO sudah dibuat GoodsReceives, dan semua GoodsReceives tersebut statusnya bukan CANCELED
+    - sembunyikan button/action CANCELED jika PO sudah dibuat GoodsReceives, dan semua GoodsReceives tersebut status-nya bukan CANCELED
     - sembunyikan button/action FINISHED jika qty PO item ada yang belum dibuat GoodsReceives (baru diterima sebagian)
     - saat user klik button/action untuk perubahan PO status, buat infonya dengan setStatusLog()
 
-    - tampilkan received_qty di PO item jika PO tersebut sudah dibuat GoodsReceives dan semua GoodsReceives tersebut statusnya bukan CANCELED
+    - tampilkan received_qty di PO item jika PO tersebut sudah dibuat GoodsReceives dan semua GoodsReceives tersebut status-nya bukan CANCELED
 
 
 4. PurchaseOrderForm (edit)
@@ -163,10 +176,10 @@ Modul PO
             - mengubah item_id, qty, price, dan description PO item
             - menambahkan PO item
             - menghapus PO item
-        - tampilkan received_qty di PO item jika PO item tersebut sudah dibuat GR dan semua GR tersebut statusnyabukan CANCELED
-        - jika PO item sudah dibuat GR dan GR tersebut statusnya bukan CANCELED, minimum qty nya adalah received_qty (jumlah qty GR)
-        - jika PO item sudah dibuat GR dan GR tersebut statusnya bukan CANCELED, PO item tersebut tidak dapat dihapus
-        - jika PO item sudah dibuat GR dan GR tersebut statusnya bukan CANCELED, item dari PO tersebut tidak dapat diubah (disabled)
+        - tampilkan received_qty di PO item jika PO item tersebut sudah dibuat GR dan semua GR tersebut status-nyabukan CANCELED
+        - jika PO item sudah dibuat GR dan GR tersebut status-nya bukan CANCELED, minimum qty nya adalah received_qty (jumlah qty GR)
+        - jika PO item sudah dibuat GR dan GR tersebut status-nya bukan CANCELED, PO item tersebut tidak dapat dihapus
+        - jika PO item sudah dibuat GR dan GR tersebut status-nya bukan CANCELED, item dari PO tersebut tidak dapat diubah (disabled)
         - textInput info value nya kosongkan dulu
         - ketika textInput info disabled, value nya harus kosong
 
@@ -181,5 +194,11 @@ Modul PO
         - refresh data PO number dan textEntry info, dan pastikan textInput info kosong lagi
 
 
+- jika User memiliki Warehouses, list di PR table berdasarkan User Warehouses, opsi warehouse_id di PR filter berdasarkan User Warehouses
+- jika User memiliki Warehouses, opsi warehouse_id di PR form berdasarkan User Warehouses
+- saat PR dibuat, default status-nya adalah DRAFT
+- saat PR status = DRAFT
+    - PR bisa di CANCELED atau REQUESTED (oleh LOGISTIC, LOGISTIC_MANAGER, atau oleh user yang membuat PR)
+    - PR bisa di-edit tanpa mengubah nomor Revisi
 
-
+PR dapat dibatalkan 

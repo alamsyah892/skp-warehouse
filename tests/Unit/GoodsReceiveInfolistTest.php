@@ -1,23 +1,33 @@
 <?php
 
 use App\Enums\GoodsReceiveStatus;
-use App\Enums\PurchaseOrderStatus;
-use App\Filament\Resources\GoodsReceives\Schemas\GoodsReceiveInfolist;
 use App\Models\GoodsReceive;
-use App\Models\PurchaseOrder;
+use App\Models\Role;
 
-it('hides returned and canceled actions when purchase order is finished', function () {
-    $purchaseOrder = new PurchaseOrder();
-    $purchaseOrder->status = PurchaseOrderStatus::FINISHED;
-
+it('allows confirming goods receive only for purchasing or finance roles', function () {
     $goodsReceive = new GoodsReceive();
     $goodsReceive->status = GoodsReceiveStatus::RECEIVED;
-    $goodsReceive->setRelation('purchaseOrder', $purchaseOrder);
+    $goodsReceive->user_id = 99;
 
-    $method = new \ReflectionMethod(GoodsReceiveInfolist::class, 'shouldHideStatusAction');
-    $method->setAccessible(true);
-
-    expect($method->invoke(null, $goodsReceive, GoodsReceiveStatus::RETURNED))->toBeTrue()
-        ->and($method->invoke(null, $goodsReceive, GoodsReceiveStatus::CANCELED))->toBeTrue()
-        ->and($method->invoke(null, $goodsReceive, GoodsReceiveStatus::RECEIVED))->toBeFalse();
+    expect($goodsReceive->canChangeStatusTo(GoodsReceiveStatus::CONFIRMED, fakeUserWithRoles([Role::PURCHASING])))->toBeTrue()
+        ->and($goodsReceive->canChangeStatusTo(GoodsReceiveStatus::CONFIRMED, fakeUserWithRoles([Role::FINANCE])))->toBeTrue()
+        ->and($goodsReceive->canChangeStatusTo(GoodsReceiveStatus::CONFIRMED, fakeUserWithRoles([Role::LOGISTIC])))->toBeFalse()
+        ->and($goodsReceive->canChangeStatusTo(GoodsReceiveStatus::CONFIRMED, fakeUserWithRoles([], 99)))->toBeFalse();
 });
+
+function fakeUserWithRoles(array $roles, int $id = 1): object
+{
+    return new class($roles, $id)
+    {
+        public function __construct(
+            private array $roles,
+            public int $id,
+        ) {
+        }
+
+        public function hasAnyRole(array $roles): bool
+        {
+            return array_intersect($this->roles, $roles) !== [];
+        }
+    };
+}

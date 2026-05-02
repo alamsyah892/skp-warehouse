@@ -69,7 +69,10 @@ class GoodsIssueItem extends Model
         $receivedQuantities = GoodsReceiveItem::query()
             ->selectRaw('goods_receive_items.item_id, coalesce(sum(goods_receive_items.qty), 0) as total_qty')
             ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
-            ->where('goods_receives.status', GoodsReceiveStatus::RECEIVED->value)
+            ->whereIn('goods_receives.status', [
+                GoodsReceiveStatus::RECEIVED->value,
+                GoodsReceiveStatus::CONFIRMED->value,
+            ])
             ->where('goods_receives.warehouse_id', $normalizedHeader['warehouse_id'])
             ->where('goods_receives.company_id', $normalizedHeader['company_id'])
             ->where('goods_receives.division_id', $normalizedHeader['division_id'])

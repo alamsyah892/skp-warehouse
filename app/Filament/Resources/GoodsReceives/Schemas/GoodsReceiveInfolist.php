@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\GoodsReceives\Schemas;
 
 use App\Enums\GoodsReceiveStatus;
-use App\Enums\PurchaseOrderStatus;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Components\Infolists\StatusTimelineSection;
 use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
@@ -212,7 +211,7 @@ class GoodsReceiveInfolist
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br(e($state)))
+                            ->formatStateUsing(fn($state) => nl2br($state))
                             ->html()
                         ,
                         TextEntry::make('delivery_order')
@@ -258,13 +257,6 @@ class GoodsReceiveInfolist
 
     protected static function shouldHideStatusAction(GoodsReceive $record, GoodsReceiveStatus $status): bool
     {
-        if (
-            in_array($status, [GoodsReceiveStatus::RETURNED, GoodsReceiveStatus::CANCELED], true)
-            && $record->purchaseOrder?->hasStatus(PurchaseOrderStatus::FINISHED)
-        ) {
-            return true;
-        }
-
         return false;
     }
 
@@ -295,7 +287,7 @@ class GoodsReceiveInfolist
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
-                    ->formatStateUsing(fn($state) => nl2br(e($state)))
+                    ->formatStateUsing(fn($state) => nl2br($state))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
@@ -317,7 +309,7 @@ class GoodsReceiveInfolist
                 ,
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . e($line))->implode('<br>'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . $line)->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')

@@ -85,14 +85,22 @@ enum PurchaseRequestStatus: int
             ],
 
             self::CANCELED => [
-                // self::REQUESTED->value => [
-                //     Role::PROJECT_OWNER,
-                //     Role::ADMINISTRATOR,
-                //     Role::LOGISTIC,
-                //     Role::LOGISTIC_MANAGER,
-                //     Role::PURCHASING,
-                //     Role::PURCHASING_MANAGER,
-                // ],
+                self::DRAFT->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::REQUESTED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::APPROVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::ORDERED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
             ],
 
             self::REQUESTED => [
@@ -151,7 +159,12 @@ enum PurchaseRequestStatus: int
                 ],
             ],
 
-            self::FINISHED => [],
+            self::FINISHED => [
+                self::ORDERED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
         };
     }
 

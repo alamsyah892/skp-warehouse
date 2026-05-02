@@ -32,17 +32,22 @@ it('denies updating finished purchase order in policy', function () {
     expect(app(PurchaseOrderPolicy::class)->update($user, $purchaseOrder))->toBeFalse();
 });
 
-it('denies updating goods receive when its purchase order is finished', function () {
+it('denies updating confirmed goods receive in policy', function () {
     $user = mockUserCan('Update Goods Receipt');
 
-    $purchaseOrder = new PurchaseOrder();
-    $purchaseOrder->status = PurchaseOrderStatus::FINISHED;
-
     $goodsReceive = new GoodsReceive();
-    $goodsReceive->status = GoodsReceiveStatus::RECEIVED;
-    $goodsReceive->setRelation('purchaseOrder', $purchaseOrder);
+    $goodsReceive->status = GoodsReceiveStatus::CONFIRMED;
 
     expect(app(GoodsReceivePolicy::class)->update($user, $goodsReceive))->toBeFalse();
+});
+
+it('denies deleting confirmed goods receive in policy', function () {
+    $user = mockUserCan('Delete Goods Receipt');
+
+    $goodsReceive = new GoodsReceive();
+    $goodsReceive->status = GoodsReceiveStatus::CONFIRMED;
+
+    expect(app(GoodsReceivePolicy::class)->delete($user, $goodsReceive))->toBeFalse();
 });
 
 it('denies updating canceled goods issue in policy', function () {

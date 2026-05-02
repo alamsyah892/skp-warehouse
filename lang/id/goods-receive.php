@@ -68,6 +68,10 @@ return [
             'label' => 'Dibatalkan',
             'action_label' => 'Batalkan',
         ],
+        'confirmed' => [
+            'label' => 'Dikonfirmasi',
+            'action_label' => 'Konfirmasi',
+        ],
         'action' => [
             'note' => 'Ubah status menjadi :status. Tambahkan catatan (opsional).',
             'changed' => 'Status berhasil diubah.',
