@@ -306,16 +306,25 @@ class PurchaseOrderInfolist
     protected static function shouldHideStatusAction(PurchaseOrder $record, PurchaseOrderStatus $status): bool
     {
         if ($status === PurchaseOrderStatus::CANCELED) {
-            $hasNotCanceledGR = $record->goodsReceives()->whereNot('status', GoodsReceiveStatus::CANCELED)->exists();
+            $hasNotCanceledGR = $record->goodsReceives()->whereNotIn('status', [
+                GoodsReceiveStatus::CANCELED
+            ])->exists();
+            // ->whereNot('status', GoodsReceiveStatus::CANCELED)->exists();
 
             return $hasNotCanceledGR;
         }
 
         if ($status === PurchaseOrderStatus::FINISHED) {
-            $hasNotConfirmedGR = $record->goodsReceives()->whereNot('status', GoodsReceiveStatus::CONFIRMED)->exists();
+            $hasNotConfirmedGR = $record->goodsReceives()->whereNotIn('status', [
+                GoodsReceiveStatus::CANCELED,
+                GoodsReceiveStatus::RETURNED,
+                GoodsReceiveStatus::CONFIRMED
+            ])->exists();
+            // ->whereNot('status', GoodsReceiveStatus::CONFIRMED)->exists();
 
-            $hasRemainingQty = $record->purchaseRequestItems->contains(
-                fn($item): bool => $item->getRemainingQty() > 0
+            $hasRemainingQty = $record->purchaseOrderItems->contains(
+                fn($item): bool =>
+                $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
             );
 
             return $hasNotConfirmedGR || $hasRemainingQty;

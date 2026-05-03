@@ -203,3 +203,187 @@ Modul PO
     - PR bisa di-edit tanpa mengubah nomor Revisi
 
 PR dapat dibatalkan 
+
+
+fixing data
+-- update goods_receives gr set status = 4 where status = 1;
+
+-- PO yang seharusnya belum selesai karena ada item yang qty GR nya -
+select distinct(poi.purchase_order_id) 
+from purchase_order_items poi 
+join purchase_orders po 
+	on poi.purchase_order_id = po.id
+where 1
+	and po.status = 4
+	and poi.purchase_request_item_id is not null
+	and poi.id not in (
+		select DISTINCT(gri.purchase_order_item_id) 
+		from goods_receive_items gri 
+		where 1
+			and gri.purchase_order_item_id is not null
+	)
+;
+
+-- PO yang seharusnya belum selesai karena ada item yang qty GR nya < qty PO
+select poi.* 
+from (
+	select poi.purchase_order_id, gri.purchase_order_item_id, poi.qty, sum(gri.qty) qty_gr 
+	from goods_receive_items gri 
+	join purchase_order_items poi 
+		on gri.purchase_order_item_id = poi.id
+	where 1
+		and gri.purchase_order_item_id is not null
+	group by gri.purchase_order_item_id 
+) poi
+join purchase_orders po 
+	on poi.purchase_order_id = po.id
+where 1
+	and po.status = 4
+	and poi.qty > poi.qty_gr 
+;
+
+-- hapus status nya jadi diselesaikan lalu update statusnya jadi dipesan
+
+-- delete from purchase_order_status_logs posl 
+-- where 
+-- 	posl.purchase_order_id in (
+-- 		select distinct(poi.purchase_order_id) 
+-- 		from purchase_order_items poi 
+-- 		join purchase_orders po 
+-- 			on poi.purchase_order_id = po.id
+-- 		where 1
+-- 			and po.status = 4
+-- 			and poi.purchase_request_item_id is not null
+-- 			and poi.id not in (
+-- 				select DISTINCT(gri.purchase_order_item_id) 
+-- 				from goods_receive_items gri 
+-- 				where 1
+-- 					and gri.purchase_order_item_id is not null
+-- 			)
+-- 	)
+-- 	and posl.to_status = 4
+-- ;
+
+-- update purchase_orders po 
+-- set status = 3
+-- where 
+-- 	po.id in (
+-- 		select distinct(poi.purchase_order_id) 
+-- 		from purchase_order_items poi 
+-- 		join purchase_orders po 
+-- 			on poi.purchase_order_id = po.id
+-- 		where 1
+-- 			and po.status = 4
+-- 			and poi.purchase_request_item_id is not null
+-- 			and poi.id not in (
+-- 				select DISTINCT(gri.purchase_order_item_id) 
+-- 				from goods_receive_items gri 
+-- 				where 1
+-- 					and gri.purchase_order_item_id is not null
+-- 			)
+-- 	)
+-- ;
+
+-- delete from purchase_order_status_logs posl 
+-- where 
+-- 	posl.purchase_order_id in (
+-- 		select poi.purchase_order_id  
+-- 		from (
+-- 			select poi.purchase_order_id, gri.purchase_order_item_id, poi.qty, sum(gri.qty) qty_gr 
+-- 			from goods_receive_items gri 
+-- 			join purchase_order_items poi 
+-- 				on gri.purchase_order_item_id = poi.id
+-- 			where 1
+-- 				and gri.purchase_order_item_id is not null
+-- 			group by gri.purchase_order_item_id 
+-- 		) poi
+-- 		join purchase_orders po 
+-- 			on poi.purchase_order_id = po.id
+-- 		where 1
+-- 			and po.status = 4
+-- 			and poi.qty > poi.qty_gr 
+-- 	)
+-- 	and posl.to_status = 4
+-- ;
+
+-- update purchase_orders po 
+-- set status = 3
+-- where 
+-- 	po.id in (
+-- 		select poi.purchase_order_id 
+-- 		from (
+-- 			select poi.purchase_order_id, gri.purchase_order_item_id, poi.qty, sum(gri.qty) qty_gr 
+-- 			from goods_receive_items gri 
+-- 			join purchase_order_items poi 
+-- 				on gri.purchase_order_item_id = poi.id
+-- 			where 1
+-- 				and gri.purchase_order_item_id is not null
+-- 			group by gri.purchase_order_item_id 
+-- 		) poi
+-- 		join purchase_orders po 
+-- 			on poi.purchase_order_id = po.id
+-- 		where 1
+-- 			and po.status = 4
+-- 			and poi.qty > poi.qty_gr 
+-- 	)
+-- ;
+
+-- PO dipesan yang seharusnya sudah selesai
+select poi_qty.purchase_order_id, poi_qty.qty, poi_qty_gr.qty_gr 
+from (
+	select poi.purchase_order_id, sum(poi.qty) qty
+	from purchase_order_items poi
+	join purchase_orders po 
+		on poi.purchase_order_id = po.id and po.status = 3
+	group by poi.purchase_order_id 
+	order by poi.purchase_order_id asc
+) poi_qty
+join (
+	select poi.purchase_order_id, sum(gri.qty) qty_gr 
+	from goods_receive_items gri
+	join purchase_order_items poi 
+		on gri.purchase_order_item_id = poi.id
+	join purchase_orders po 
+		on poi.purchase_order_id = po.id and po.status = 3
+	where 1
+		and gri.purchase_order_item_id is not null
+	group by poi.purchase_order_id
+	order by poi.purchase_order_id asc
+) poi_qty_gr
+	on poi_qty.purchase_order_id = poi_qty_gr.purchase_order_id 
+where poi_qty.qty = poi_qty_gr.qty_gr 
+;
+
+-- create status nya jadi diselesaikan lalu update statusnya jadi selesai
+
+-- query create status ke selesai 
+
+-- update purchase_orders po 
+-- set status = 4
+-- where 
+-- 	po.id in (
+-- 		select poi_qty.purchase_order_id
+-- 		from (
+-- 			select poi.purchase_order_id, sum(poi.qty) qty
+-- 			from purchase_order_items poi
+-- 			join purchase_orders po 
+-- 				on poi.purchase_order_id = po.id and po.status = 3
+-- 			group by poi.purchase_order_id 
+-- 			order by poi.purchase_order_id asc
+-- 		) poi_qty
+-- 		join (
+-- 			select poi.purchase_order_id, sum(gri.qty) qty_gr 
+-- 			from goods_receive_items gri
+-- 			join purchase_order_items poi 
+-- 				on gri.purchase_order_item_id = poi.id
+-- 			join purchase_orders po 
+-- 				on poi.purchase_order_id = po.id and po.status = 3
+-- 			where 1
+-- 				and gri.purchase_order_item_id is not null
+-- 			group by poi.purchase_order_id
+-- 			order by poi.purchase_order_id asc
+-- 		) poi_qty_gr
+-- 			on poi_qty.purchase_order_id = poi_qty_gr.purchase_order_id 
+-- 		where poi_qty.qty = poi_qty_gr.qty_gr 
+-- 	)
+-- ;

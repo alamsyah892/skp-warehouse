@@ -23,8 +23,8 @@ class GoodsIssueResource extends Resource
 {
     protected static ?string $model = GoodsIssue::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::RectangleStack;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLinkSlash;
+    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::LinkSlash;
     public static ?int $navigationSort = 2;
     protected static string|UnitEnum|null $navigationGroup = 'Warehouse';
 

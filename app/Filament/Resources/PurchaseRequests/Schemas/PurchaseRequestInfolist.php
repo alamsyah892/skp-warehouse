@@ -240,13 +240,18 @@ class PurchaseRequestInfolist
     protected static function shouldHideStatusAction($record, PurchaseRequestStatus $status): bool
     {
         if ($status === PurchaseRequestStatus::CANCELED) {
-            $hasNotCanceledPO = $record->purchaseOrders()->whereNot('status', PurchaseOrderStatus::CANCELED)->exists();
+            $hasNotCanceledPO = $record->purchaseOrders()->whereNotIn('status', [
+                PurchaseOrderStatus::CANCELED
+            ])->exists();
 
             return $hasNotCanceledPO;
         }
 
         if ($status === PurchaseRequestStatus::FINISHED) {
-            $hasNotFinishedPO = $record->purchaseOrders()->whereNot('status', PurchaseOrderStatus::FINISHED)->exists();
+            $hasNotFinishedPO = $record->purchaseOrders()->whereNotIn('status', [
+                PurchaseOrderStatus::CANCELED,
+                PurchaseOrderStatus::FINISHED
+            ])->exists();
 
             $hasRemainingQty = $record->purchaseRequestItems->contains(
                 fn($item): bool => $item->getRemainingQty() > 0
