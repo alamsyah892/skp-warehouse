@@ -77,7 +77,7 @@ class PurchaseRequestItem extends Model
         $requestedQty = (float) $this->qty;
 
         return match (true) {
-            $orderedQty == 0.0 => 'danger',
+            $orderedQty == 0 => 'gray',
             $orderedQty < $requestedQty => 'warning',
             default => 'success',
         };

@@ -500,7 +500,8 @@ class GoodsReceiveForm
                             })
                             ->disabled(
                                 fn($operation, $get): bool =>
-                                $operation === 'edit' || (static::normalizeTypeState($get('../../type')) !== GoodsReceiveType::PURCHASE_ORDER || blank($get('../../purchase_order_id')))
+                                    // $operation === 'edit' || 
+                                (static::normalizeTypeState($get('../../type')) !== GoodsReceiveType::PURCHASE_ORDER || blank($get('../../purchase_order_id')))
                             )
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->visible(fn($get): bool => static::normalizeTypeState($get('../../type')) === GoodsReceiveType::PURCHASE_ORDER)

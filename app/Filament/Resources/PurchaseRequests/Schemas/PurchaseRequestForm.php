@@ -377,8 +377,8 @@ class PurchaseRequestForm
                                     ->label(__('purchase-order.purchase_order_item.ordered_qty.label'))
                                     ->state(fn($record): float => $record?->getOrderedQty() ?? 0)
                                     ->numeric()
-                                    ->color(fn($record): string => $record?->getOrderedQtyColor() ?? 'danger')
-                                    ->visible(fn($record): bool => $record?->getOrderedQty() ?? 0 > 0)
+                                    ->color(fn($record): string => $record?->getOrderedQtyColor() ?? 'gray')
+                                    // ->visible(fn($record): bool => $record?->getOrderedQty() ?? 0 > 0)
                                     ->columnSpan([
                                         'default' => 1,
                                         'lg' => 2,

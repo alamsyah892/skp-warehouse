@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 
 class PurchaseOrderItem extends Model
 {
@@ -96,7 +97,7 @@ class PurchaseOrderItem extends Model
         $orderedQty = (float) $this->qty;
 
         return match (true) {
-            $receivedQty == 0.0 => 'danger',
+            $receivedQty == 0 => 'gray',
             $receivedQty < $orderedQty => 'warning',
             default => 'success',
         };
@@ -112,6 +113,10 @@ class PurchaseOrderItem extends Model
 
     public static function getOptions(int $purchaseOrderId, ?string $search = null): array
     {
+        if ($purchaseOrderId <= 0) {
+            return [];
+        }
+
         static $cache = [];
 
         $cacheKey = md5(json_encode([
@@ -145,13 +150,13 @@ class PurchaseOrderItem extends Model
             $cache[$cacheKey] = $query
                 ->limit(50)
                 ->get()
-                ->mapWithKeys(function (PurchaseOrderItem $record): array {
-                    $purchaseRequestNumber = $record->purchaseRequestItem?->purchaseRequest?->number;
-                    $prefix = $purchaseRequestNumber ? "{$purchaseRequestNumber} | " : '';
-
-                    return [
-                        $record->id => $prefix . "{$record->item?->code} | {$record->item?->name}",
-                    ];
+                ->groupBy(fn(self $record): string => $record->purchaseRequestItem?->purchaseRequest?->number ?? '-')
+                ->map(function (Collection $items): Collection {
+                    return $items->mapWithKeys(function (self $record): array {
+                        return [
+                            $record->id => "{$record->item?->code} | {$record->item?->name}",
+                        ];
+                    });
                 })
                 ->toArray();
         }

@@ -376,7 +376,7 @@ class PurchaseOrderForm
                                         }
                                     });
 
-                                    return $query->orderByDesc('purchase_requests.id');
+                                    return $query->orderBy('purchase_requests.id');
                                 },
                             )
                             ->multiple()
