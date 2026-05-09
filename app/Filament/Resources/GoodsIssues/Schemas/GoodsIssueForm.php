@@ -337,24 +337,24 @@ class GoodsIssueForm
                                         static::getCurrentGoodsIssueId($record),
                                         $search,
                                     ))
-                                    ->hint(function ($get, $record): string {
-                                        $itemId = (int) ($get('item_id') ?? 0);
-                                        $detail = GoodsIssueItem::getAvailabilityDetail(
-                                            static::getHeaderFromState($get),
-                                            $itemId,
-                                            static::getCurrentGoodsIssueId($record),
-                                        );
+                                    // ->hint(function ($get, $record): string {
+                                    //     $itemId = (int) ($get('item_id') ?? 0);
+                                    //     $detail = GoodsIssueItem::getAvailabilityDetail(
+                                    //         static::getHeaderFromState($get),
+                                    //         $itemId,
+                                    //         static::getCurrentGoodsIssueId($record),
+                                    //     );
 
-                                        if (!$detail) {
-                                            return '';
-                                        }
+                                    //     if (!$detail) {
+                                    //         return '';
+                                    //     }
 
-                                        return __('goods-issue.stock_item.context_value', [
-                                            'received_qty' => number_format($detail['received_qty'], 2),
-                                            'issued_qty' => number_format($detail['issued_qty'], 2),
-                                            'available_qty' => number_format($detail['available_qty'], 2),
-                                        ]);
-                                    })
+                                    //     return __('goods-issue.stock_item.context_value', [
+                                    //         'received_qty' => number_format($detail['received_qty'], 2),
+                                    //         'issued_qty' => number_format($detail['issued_qty'], 2),
+                                    //         'available_qty' => number_format($detail['available_qty'], 2),
+                                    //     ]);
+                                    // })
                                     ->required()
                                     ->live()
                                     ->afterStateUpdated(function ($state, $set, $get, $record): void {
@@ -395,23 +395,6 @@ class GoodsIssueForm
                                 'lg' => 2,
                             ])
                             ->schema([
-                                TextEntry::make('available_qty')
-                                    ->label(__('goods-issue.goods_issue_item.available_qty.label'))
-                                    ->state(function ($get, $record): float {
-                                        $itemId = (int) ($get('item_id') ?? 0);
-
-                                        return GoodsIssueItem::getAvailableQtyForItem(
-                                            static::getHeaderFromState($get),
-                                            $itemId,
-                                            static::getCurrentGoodsIssueId($record),
-                                        );
-                                    })
-                                    ->numeric()
-                                    ->color('primary')
-                                    ->columnSpan([
-                                        'default' => 1,
-                                        'lg' => 2,
-                                    ]),
                                 TextInput::make('qty')
                                     ->numeric()
                                     ->placeholder(0.01)
@@ -443,7 +426,26 @@ class GoodsIssueForm
                                     ->columnSpan([
                                         'default' => 1,
                                         'lg' => 2,
-                                    ]),
+                                    ])
+                                ,
+                                TextEntry::make('available_qty')
+                                    ->label(__('goods-issue.goods_issue_item.available_qty.label'))
+                                    ->state(function ($get, $record): float {
+                                        $itemId = (int) ($get('item_id') ?? 0);
+
+                                        return GoodsIssueItem::getAvailableQtyForItem(
+                                            static::getHeaderFromState($get),
+                                            $itemId,
+                                            static::getCurrentGoodsIssueId($record),
+                                        );
+                                    })
+                                    ->numeric()
+                                    ->color('primary')
+                                    ->columnSpan([
+                                        'default' => 1,
+                                        'lg' => 2,
+                                    ])
+                                ,
                             ]),
                     ])
                     ->collapsible()

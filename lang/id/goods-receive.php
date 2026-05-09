@@ -50,6 +50,9 @@ return [
         'manual' => [
             'label' => 'BPB Manual',
         ],
+        'transfer' => [
+            'label' => 'Mutasi Stok',
+        ],
         'correction' => [
             'label' => 'Koreksi Stok',
         ],

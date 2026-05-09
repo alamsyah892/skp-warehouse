@@ -4,6 +4,7 @@ use App\Enums\GoodsIssueType;
 use App\Enums\GoodsReceiveStatus;
 use App\Enums\GoodsReceiveType;
 use App\Filament\Resources\StockItems\StockItemResource;
+use App\Filament\Resources\StockItems\Support\StockItemMutationData;
 use App\Models\Company;
 use App\Models\Division;
 use App\Models\GoodsIssue;
@@ -14,6 +15,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Models\WarehouseAddress;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -226,6 +228,205 @@ it('does not show rows with zero available quantity', function () {
     $row = StockItemResource::getEloquentQuery()->first();
 
     expect($row)->toBeNull();
+});
+
+it('returns zero opening balance and full running mutation history when no period is selected', function () {
+    $context = createStockContext('HIST');
+
+    $goodsReceiveMarch = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::MANUAL,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Receive March',
+        'delivery_order' => 'DO-HIST-01',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsReceiveMarch->forceFill([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+        'created_at' => CarbonImmutable::create(2026, 3, 10, 9, 0, 0),
+    ])->saveQuietly();
+
+    $goodsReceiveMarch->goodsReceiveItems()->create([
+        'item_id' => $context['item']->id,
+        'purchase_order_item_id' => null,
+        'qty' => 10,
+        'description' => 'Line receive March',
+        'sort' => 1,
+    ]);
+
+    $goodsIssueMarch = GoodsIssue::query()->create([
+        'type' => GoodsIssueType::ISSUE,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Issue March',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsIssueMarch->forceFill([
+        'created_at' => CarbonImmutable::create(2026, 3, 20, 10, 0, 0),
+    ])->saveQuietly();
+
+    $goodsIssueMarch->goodsIssueItems()->create([
+        'item_id' => $context['item']->id,
+        'qty' => 4,
+        'description' => 'Line issue March',
+        'sort' => 1,
+    ]);
+
+    $goodsReceiveApril = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::MANUAL,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Receive April',
+        'delivery_order' => 'DO-HIST-02',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsReceiveApril->forceFill([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+        'created_at' => CarbonImmutable::create(2026, 4, 5, 11, 0, 0),
+    ])->saveQuietly();
+
+    $goodsReceiveApril->goodsReceiveItems()->create([
+        'item_id' => $context['item']->id,
+        'purchase_order_item_id' => null,
+        'qty' => 3,
+        'description' => 'Line receive April',
+        'sort' => 1,
+    ]);
+
+    $row = StockItemResource::getEloquentQuery()->firstOrFail();
+    $summary = StockItemMutationData::getSummary($row);
+
+    expect($summary['opening_balance'])->toBe(0.0)
+        ->and($summary['total_received'])->toBe(13.0)
+        ->and($summary['total_issued'])->toBe(4.0)
+        ->and($summary['ending_balance'])->toBe(9.0)
+        ->and(array_column($summary['mutations'], 'balance'))->toBe([10.0, 6.0, 9.0]);
+});
+
+it('uses previous month ending balance as opening balance when year and month are selected', function () {
+    $context = createStockContext('PERIOD');
+
+    $goodsReceiveMarch = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::MANUAL,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Receive March',
+        'delivery_order' => 'DO-PERIOD-01',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsReceiveMarch->forceFill([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+        'created_at' => CarbonImmutable::create(2026, 3, 10, 9, 0, 0),
+    ])->saveQuietly();
+
+    $goodsReceiveMarch->goodsReceiveItems()->create([
+        'item_id' => $context['item']->id,
+        'purchase_order_item_id' => null,
+        'qty' => 8,
+        'description' => 'Line receive March',
+        'sort' => 1,
+    ]);
+
+    $goodsIssueMarch = GoodsIssue::query()->create([
+        'type' => GoodsIssueType::ISSUE,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Issue March',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsIssueMarch->forceFill([
+        'created_at' => CarbonImmutable::create(2026, 3, 20, 10, 0, 0),
+    ])->saveQuietly();
+
+    $goodsIssueMarch->goodsIssueItems()->create([
+        'item_id' => $context['item']->id,
+        'qty' => 3,
+        'description' => 'Line issue March',
+        'sort' => 1,
+    ]);
+
+    $goodsReceiveApril = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::MANUAL,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Receive April',
+        'delivery_order' => 'DO-PERIOD-02',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsReceiveApril->forceFill([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+        'created_at' => CarbonImmutable::create(2026, 4, 5, 11, 0, 0),
+    ])->saveQuietly();
+
+    $goodsReceiveApril->goodsReceiveItems()->create([
+        'item_id' => $context['item']->id,
+        'purchase_order_item_id' => null,
+        'qty' => 4,
+        'description' => 'Line receive April',
+        'sort' => 1,
+    ]);
+
+    $goodsIssueApril = GoodsIssue::query()->create([
+        'type' => GoodsIssueType::ISSUE,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Issue April',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsIssueApril->forceFill([
+        'created_at' => CarbonImmutable::create(2026, 4, 18, 8, 0, 0),
+    ])->saveQuietly();
+
+    $goodsIssueApril->goodsIssueItems()->create([
+        'item_id' => $context['item']->id,
+        'qty' => 2,
+        'description' => 'Line issue April',
+        'sort' => 1,
+    ]);
+
+    $row = StockItemResource::getEloquentQuery()->firstOrFail();
+    $summary = StockItemMutationData::getSummary($row, 2026, 4);
+
+    expect($summary['opening_balance'])->toBe(5.0)
+        ->and($summary['total_received'])->toBe(4.0)
+        ->and($summary['total_issued'])->toBe(2.0)
+        ->and($summary['ending_balance'])->toBe(7.0)
+        ->and(array_column($summary['mutations'], 'balance'))->toBe([9.0, 7.0]);
 });
 
 function createStockContext(string $suffix): array

@@ -10,7 +10,9 @@ enum PurchaseRequestStatus: int
     case DRAFT = 1;
     case CANCELED = 2;
     case REQUESTED = 3;
-    case APPROVED = 4;
+    case CHECKED = 7;
+    case APPROVED = 8;
+    case REVIEWED = 4;
     case ORDERED = 5;
     case FINISHED = 6;
 
@@ -20,7 +22,9 @@ enum PurchaseRequestStatus: int
             self::DRAFT => __('purchase-request.status.draft.label'),
             self::CANCELED => __('purchase-request.status.canceled.label'),
             self::REQUESTED => __('purchase-request.status.requested.label'),
+            self::CHECKED => __('purchase-request.status.checked.label'),
             self::APPROVED => __('purchase-request.status.approved.label'),
+            self::REVIEWED => __('purchase-request.status.reviewed.label'),
             self::ORDERED => __('purchase-request.status.ordered.label'),
             self::FINISHED => __('purchase-request.status.finished.label'),
         };
@@ -32,7 +36,9 @@ enum PurchaseRequestStatus: int
             self::DRAFT => __('purchase-request.status.draft.action_label'),
             self::CANCELED => __('purchase-request.status.canceled.action_label'),
             self::REQUESTED => __('purchase-request.status.requested.action_label'),
+            self::CHECKED => __('purchase-request.status.checked.action_label'),
             self::APPROVED => __('purchase-request.status.approved.action_label'),
+            self::REVIEWED => __('purchase-request.status.reviewed.action_label'),
             self::ORDERED => __('purchase-request.status.ordered.action_label'),
             self::FINISHED => __('purchase-request.status.finished.action_label'),
         };
@@ -44,7 +50,9 @@ enum PurchaseRequestStatus: int
             self::DRAFT => 'gray',
             self::CANCELED => 'danger',
             self::REQUESTED => 'warning',
+            self::CHECKED => 'primary',
             self::APPROVED => 'primary',
+            self::REVIEWED => 'primary',
             self::ORDERED => 'info',
             self::FINISHED => 'success',
         };
@@ -56,7 +64,9 @@ enum PurchaseRequestStatus: int
             self::DRAFT => Heroicon::OutlinedPencilSquare,
             self::CANCELED => Heroicon::OutlinedXCircle,
             self::REQUESTED => Heroicon::OutlinedClock,
-            self::APPROVED => Heroicon::OutlinedInboxArrowDown,
+            self::CHECKED => Heroicon::OutlinedMagnifyingGlassCircle,
+            self::APPROVED => Heroicon::OutlinedCheck,
+            self::REVIEWED => Heroicon::OutlinedEye,
             self::ORDERED => Heroicon::OutlinedShoppingCart,
             self::FINISHED => Heroicon::OutlinedCheckCircle,
         };
@@ -93,7 +103,7 @@ enum PurchaseRequestStatus: int
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                 ],
-                self::APPROVED->value => [
+                self::REVIEWED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                 ],
@@ -113,7 +123,7 @@ enum PurchaseRequestStatus: int
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
-                self::APPROVED->value => [
+                self::REVIEWED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                     Role::QUANTITY_SURVEYOR,
@@ -124,7 +134,7 @@ enum PurchaseRequestStatus: int
                 ],
             ],
 
-            self::APPROVED => [
+            self::REVIEWED => [
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,

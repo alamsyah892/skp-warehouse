@@ -33,7 +33,7 @@ it('updates related purchase requests to ordered when purchase order becomes ord
     ]);
 
     $purchaseRequest->update([
-        'status' => PurchaseRequestStatus::APPROVED,
+        'status' => PurchaseRequestStatus::REVIEWED,
     ]);
 
     $purchaseOrder = PurchaseOrder::query()->create([

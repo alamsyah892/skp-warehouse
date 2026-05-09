@@ -31,7 +31,7 @@ class ListPurchaseRequests extends ListRecords
             ->groupBy('status')
             ->pluck('aggregate', 'status');
 
-        $getStatusBadge = fn (PurchaseRequestStatus $status) => (int) ($counts[$status->value] ?? 0) ?: null;
+        $getStatusBadge = fn(PurchaseRequestStatus $status) => (int) ($counts[$status->value] ?? 0) ?: null;
 
         return [
             __('purchase-request.status.all') => Tab::make()
@@ -53,11 +53,23 @@ class ListPurchaseRequests extends ListRecords
                 ->badge($getStatusBadge(PurchaseRequestStatus::REQUESTED))
                 ->badgeColor(PurchaseRequestStatus::REQUESTED->color())
             ,
+            PurchaseRequestStatus::CHECKED->label() => Tab::make()
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::CHECKED))
+                ->icon(PurchaseRequestStatus::CHECKED->icon())
+                ->badge($getStatusBadge(PurchaseRequestStatus::CHECKED))
+                ->badgeColor(PurchaseRequestStatus::CHECKED->color())
+            ,
             PurchaseRequestStatus::APPROVED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::APPROVED))
                 ->icon(PurchaseRequestStatus::APPROVED->icon())
                 ->badge($getStatusBadge(PurchaseRequestStatus::APPROVED))
                 ->badgeColor(PurchaseRequestStatus::APPROVED->color())
+            ,
+            PurchaseRequestStatus::REVIEWED->label() => Tab::make()
+                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::REVIEWED))
+                ->icon(PurchaseRequestStatus::REVIEWED->icon())
+                ->badge($getStatusBadge(PurchaseRequestStatus::REVIEWED))
+                ->badgeColor(PurchaseRequestStatus::REVIEWED->color())
             ,
             PurchaseRequestStatus::ORDERED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::ORDERED))

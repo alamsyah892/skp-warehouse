@@ -34,7 +34,7 @@ it('aggregates requested and ordered quantities for purchase request summaries',
     ]);
 
     $purchaseRequest->update([
-        'status' => PurchaseRequestStatus::APPROVED,
+        'status' => PurchaseRequestStatus::REVIEWED,
     ]);
 
     $firstPurchaseRequestItem = $purchaseRequest->purchaseRequestItems()->create([

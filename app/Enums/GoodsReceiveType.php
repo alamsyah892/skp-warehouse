@@ -8,13 +8,15 @@ enum GoodsReceiveType: int
 {
     case PURCHASE_ORDER = 1;
     case MANUAL = 2;
-    case CORRECTION = 3;
+    case TRANSFER = 3;
+    case CORRECTION = 4;
 
     public function label(): string
     {
         return match ($this) {
             self::PURCHASE_ORDER => __('goods-receive.type.purchase_order.label'),
             self::MANUAL => __('goods-receive.type.manual.label'),
+            self::TRANSFER => __('goods-receive.type.transfer.label'),
             self::CORRECTION => __('goods-receive.type.correction.label'),
         };
     }
@@ -24,6 +26,7 @@ enum GoodsReceiveType: int
         return match ($this) {
             self::PURCHASE_ORDER => 'BPB',
             self::MANUAL => 'BPB-N',
+            self::TRANSFER => 'MM',
             self::CORRECTION => 'IMP',
         };
     }
@@ -33,6 +36,7 @@ enum GoodsReceiveType: int
         return match ($this) {
             self::PURCHASE_ORDER => 'primary',
             self::MANUAL => 'warning',
+            self::TRANSFER => 'info',
             self::CORRECTION => 'success',
         };
     }
@@ -42,6 +46,7 @@ enum GoodsReceiveType: int
         return match ($this) {
             self::PURCHASE_ORDER => Heroicon::OutlinedTruck,
             self::MANUAL => Heroicon::OutlinedPlus,
+            self::TRANSFER => Heroicon::OutlinedShare,
             self::CORRECTION => Heroicon::OutlinedPencilSquare,
         };
     }

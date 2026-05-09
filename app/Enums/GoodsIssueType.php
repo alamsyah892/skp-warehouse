@@ -17,6 +17,14 @@ enum GoodsIssueType: int
         };
     }
 
+    public function initial(): string
+    {
+        return match ($this) {
+            self::ISSUE => 'BPM',
+            self::TRANSFER => 'MK',
+        };
+    }
+
     public function color(): string
     {
         return match ($this) {

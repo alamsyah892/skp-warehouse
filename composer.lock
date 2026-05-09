@@ -5809,16 +5809,16 @@
         },
         {
             "name": "marcelweidum/filament-expiration-notice",
-            "version": "v1.0.16",
+            "version": "v1.0.17",
             "source": {
                 "type": "git",
                 "url": "https://github.com/MarcelWeidum/filament-expiration-notice.git",
-                "reference": "b50e761c0cb1921cdb492dda55951093ac382be1"
+                "reference": "b208beccfe445bdcaf4905c7ed146ebe4a115df6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/MarcelWeidum/filament-expiration-notice/zipball/b50e761c0cb1921cdb492dda55951093ac382be1",
-                "reference": "b50e761c0cb1921cdb492dda55951093ac382be1",
+                "url": "https://api.github.com/repos/MarcelWeidum/filament-expiration-notice/zipball/b208beccfe445bdcaf4905c7ed146ebe4a115df6",
+                "reference": "b208beccfe445bdcaf4905c7ed146ebe4a115df6",
                 "shasum": ""
             },
             "require": {
@@ -5882,7 +5882,7 @@
                     "type": "buy_me_a_coffee"
                 }
             ],
-            "time": "2026-04-19T12:52:16+00:00"
+            "time": "2026-05-08T17:26:51+00:00"
         },
         {
             "name": "masterminds/html5",

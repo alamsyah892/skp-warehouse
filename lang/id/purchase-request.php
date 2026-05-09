@@ -34,9 +34,17 @@ return [
             'label' => 'Diajukan',
             'action_label' => 'Ajukan',
         ],
+        'checked' => [
+            'label' => 'Diperiksa',
+            'action_label' => 'Selesai Diperiksa',
+        ],
         'approved' => [
             'label' => 'Disetujui',
             'action_label' => 'Setujui',
+        ],
+        'reviewed' => [
+            'label' => 'Di-review',
+            'action_label' => 'Selesai Review',
         ],
         'ordered' => [
             'label' => 'Dipesan',

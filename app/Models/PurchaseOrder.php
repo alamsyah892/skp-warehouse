@@ -101,7 +101,7 @@ class PurchaseOrder extends Model
     public const MODEL_ALIAS = 'PO';
     public const DEFAULT_TAX_PERCENTAGE = 11;
     public const SELECTABLE_PURCHASE_REQUEST_STATUSES = [
-        PurchaseRequestStatus::APPROVED,
+        PurchaseRequestStatus::REVIEWED,
         PurchaseRequestStatus::ORDERED,
     ];
 
@@ -334,7 +334,7 @@ class PurchaseOrder extends Model
         $this->loadMissing('purchaseRequests');
 
         $this->purchaseRequests
-            // ->filter(fn(PurchaseRequest $purchaseRequest): bool => $purchaseRequest->status === PurchaseRequestStatus::APPROVED)
+            // ->filter(fn(PurchaseRequest $purchaseRequest): bool => $purchaseRequest->status === PurchaseRequestStatus::REVIEWED)
             ->each(function (PurchaseRequest $purchaseRequest): void {
                 $purchaseRequest->update([
                     'status' => PurchaseRequestStatus::ORDERED,
@@ -342,7 +342,7 @@ class PurchaseOrder extends Model
 
                 $purchaseRequest->setStatusLog(
                     PurchaseRequestStatus::ORDERED,
-                    PurchaseRequestStatus::APPROVED,
+                    PurchaseRequestStatus::REVIEWED,
                     (string) $this->number,
                 );
             });
