@@ -80,6 +80,8 @@
             "@php artisan filament:optimize-clear",
             "@php artisan optimize",
             "@php artisan filament:optimize",
+            "npm install",
+            "npm audit fix --force",
             "npm run build",
             "@php artisan boost:update --ansi"
         ],
