@@ -10,11 +10,11 @@ enum PurchaseRequestStatus: int
     case DRAFT = 1;
     case CANCELED = 2;
     case REQUESTED = 3;
-    case CHECKED = 7;
-    case APPROVED = 8;
-    case REVIEWED = 4;
-    case ORDERED = 5;
-    case FINISHED = 6;
+    case CHECKED = 7; // 4
+    case APPROVED = 8; // 5
+    case REVIEWED = 4; // 6
+    case ORDERED = 5;  // 7
+    case FINISHED = 6; // 8
 
     public function label(): string
     {
@@ -118,19 +118,37 @@ enum PurchaseRequestStatus: int
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                     Role::QUANTITY_SURVEYOR,
+                ],
+                self::CHECKED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                    Role::QUANTITY_SURVEYOR,
+                ],
+            ],
+
+            self::CHECKED => [
+                self::CANCELED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::APPROVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+            ],
+
+            self::APPROVED => [
+                self::CANCELED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
                     Role::AUDIT,
                     Role::AUDIT_MANAGER,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
                 ],
                 self::REVIEWED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
-                    Role::QUANTITY_SURVEYOR,
                     Role::AUDIT,
                     Role::AUDIT_MANAGER,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
                 ],
             ],
 
@@ -138,9 +156,6 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
-                    Role::QUANTITY_SURVEYOR,
-                    Role::AUDIT,
-                    Role::AUDIT_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
