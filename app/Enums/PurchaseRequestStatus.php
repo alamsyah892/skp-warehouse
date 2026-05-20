@@ -10,11 +10,16 @@ enum PurchaseRequestStatus: int
     case DRAFT = 1;
     case CANCELED = 2;
     case REQUESTED = 3;
-    case CHECKED = 7; // 4
-    case APPROVED = 8; // 5
-    case REVIEWED = 4; // 6
-    case ORDERED = 5;  // 7
-    case FINISHED = 6; // 8
+    // case CHECKED = 7; // 4
+    case CHECKED = 4; // 4
+    // case APPROVED = 8; // 5
+    case APPROVED = 5; // 5
+    // case REVIEWED = 4; // 6
+    case REVIEWED = 6; // 6
+    // case ORDERED = 5;  // 7
+    case ORDERED = 7;  // 7
+    // case FINISHED = 6; // 8
+    case FINISHED = 8; // 8
 
     public function label(): string
     {
