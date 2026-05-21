@@ -429,6 +429,68 @@ it('uses previous month ending balance as opening balance when year and month ar
         ->and(array_column($summary['mutations'], 'balance'))->toBe([9.0, 7.0]);
 });
 
+it('builds filtered mutations for a selected month when receives and issues both exist', function () {
+    $context = createStockContext('FILTER');
+
+    $goodsReceive = GoodsReceive::query()->create([
+        'type' => GoodsReceiveType::MANUAL,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Receive May',
+        'delivery_order' => 'DO-FILTER-01',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsReceive->forceFill([
+        'status' => GoodsReceiveStatus::CONFIRMED,
+        'created_at' => CarbonImmutable::create(2026, 5, 3, 9, 0, 0),
+    ])->saveQuietly();
+
+    $goodsReceive->goodsReceiveItems()->create([
+        'item_id' => $context['item']->id,
+        'purchase_order_item_id' => null,
+        'qty' => 6,
+        'description' => 'Line receive May',
+        'sort' => 1,
+    ]);
+
+    $goodsIssue = GoodsIssue::query()->create([
+        'type' => GoodsIssueType::ISSUE,
+        'company_id' => $context['company']->id,
+        'warehouse_id' => $context['warehouse']->id,
+        'warehouse_address_id' => $context['warehouseAddress']->id,
+        'division_id' => $context['division']->id,
+        'project_id' => $context['project']->id,
+        'description' => 'Issue May',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $goodsIssue->forceFill([
+        'created_at' => CarbonImmutable::create(2026, 5, 17, 14, 0, 0),
+    ])->saveQuietly();
+
+    $goodsIssue->goodsIssueItems()->create([
+        'item_id' => $context['item']->id,
+        'qty' => 2,
+        'description' => 'Line issue May',
+        'sort' => 1,
+    ]);
+
+    $row = StockItemResource::getEloquentQuery()->firstOrFail();
+    $summary = StockItemMutationData::getSummary($row, 2026, 5);
+
+    expect(array_column($summary['mutations'], 'document_type'))->toBe(['GR', 'GI'])
+        ->and(array_column($summary['mutations'], 'balance'))->toBe([6.0, 4.0])
+        ->and($summary['total_received'])->toBe(6.0)
+        ->and($summary['total_issued'])->toBe(2.0)
+        ->and($summary['ending_balance'])->toBe(4.0);
+});
+
 function createStockContext(string $suffix): array
 {
     $suffix = strtoupper($suffix);

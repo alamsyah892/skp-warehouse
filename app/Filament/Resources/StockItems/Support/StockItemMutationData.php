@@ -143,7 +143,8 @@ class StockItemMutationData
                 ),
                 'qty_in' => (float) $row->quantity,
                 'qty_out' => 0.0,
-            ]);
+            ])
+            ->toBase();
 
         $goodsIssues = static::baseGoodsIssueQuery($record)
             ->selectRaw('
@@ -175,7 +176,8 @@ class StockItemMutationData
                 ),
                 'qty_in' => 0.0,
                 'qty_out' => (float) $row->quantity,
-            ]);
+            ])
+            ->toBase();
 
         $mutations = $goodsReceives
             ->merge($goodsIssues)
