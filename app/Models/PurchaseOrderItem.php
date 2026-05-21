@@ -74,6 +74,17 @@ class PurchaseOrderItem extends Model
         return $this->qty * $this->price;
     }
 
+    public function getTotalReceivedQty(): float
+    {
+        $receivedQty = $this->getAttribute('goods_receive_items_received_qty_sum');
+
+        if ($receivedQty !== null) {
+            return (float) $receivedQty;
+        }
+
+        return $this->getReceivedQty();
+    }
+
 
     public function getReceivedQty(?int $exceptGoodsReceiveId = null): float
     {
@@ -108,6 +119,67 @@ class PurchaseOrderItem extends Model
         $remaining = (float) $this->qty - $this->getReceivedQty($exceptGoodsReceiveId);
 
         return max($remaining, 0.0);
+    }
+
+    public function getRemainingReceivedQty(): float
+    {
+        return max((float) $this->qty - $this->getTotalReceivedQty(), 0.0);
+    }
+
+    public function getReceivedPercentage(): float
+    {
+        $receivedPercentage = $this->getAttribute('goods_receive_items_received_percentage');
+
+        if ($receivedPercentage !== null) {
+            return (float) $receivedPercentage;
+        }
+
+        $orderedQty = (float) $this->qty;
+
+        if ($orderedQty <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->getTotalReceivedQty() / $orderedQty) * 100, 2);
+    }
+
+    public function scopeWithQuantitySummary(Builder $query): Builder
+    {
+        return $query
+            ->addSelect('purchase_order_items.*')
+            ->selectSub(
+                GoodsReceiveItem::query()
+                    ->selectRaw('coalesce(sum(goods_receive_items.qty), 0)')
+                    ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
+                    ->whereColumn('goods_receive_items.purchase_order_item_id', 'purchase_order_items.id')
+                    ->whereIn('goods_receives.status', [
+                        GoodsReceiveStatus::RECEIVED->value,
+                        GoodsReceiveStatus::CONFIRMED->value,
+                    ]),
+                'goods_receive_items_received_qty_sum',
+            )
+            ->selectRaw(
+                'case
+                    when coalesce(purchase_order_items.qty, 0) <= 0 then 0
+                    else round(
+                        (
+                            coalesce((
+                                select sum(received_goods_receive_items.qty)
+                                from goods_receive_items as received_goods_receive_items
+                                inner join goods_receives
+                                    on goods_receives.id = received_goods_receive_items.goods_receive_id
+                                where received_goods_receive_items.purchase_order_item_id = purchase_order_items.id
+                                    and goods_receives.status in (?, ?)
+                            ), 0) / coalesce(purchase_order_items.qty, 0)
+                        ) * 100,
+                        2
+                    )
+                end as goods_receive_items_received_percentage',
+                [
+                    GoodsReceiveStatus::RECEIVED->value,
+                    GoodsReceiveStatus::CONFIRMED->value,
+                ]
+            );
     }
 
 

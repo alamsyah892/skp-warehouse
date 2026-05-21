@@ -98,7 +98,13 @@ return [
         'count_label' => 'Jml Item',
         'sum_qty_label' => 'Qty Item',
         'ordered_qty_label' => 'Qty PO',
+        'remaining_ordered_qty_label' => 'Sisa Qty PO',
         'ordered_percentage_label' => '% PO',
+        'received_qty_label' => 'Qty GR',
+        'remaining_received_qty_label' => 'Sisa Qty GR',
+        'received_percentage_label' => '% GR',
+        'purchase_request_status_label' => 'Status PR',
+        'not_fully_received_label' => 'Tampilkan Item yang belum diterima',
     ],
 
     'purchase_request_item' => [

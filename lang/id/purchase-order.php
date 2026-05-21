@@ -95,7 +95,9 @@ return [
         'count_label' => 'Jml Item',
         'sum_qty_label' => 'Qty Item',
         'received_qty_label' => 'Qty GR',
+        'remaining_received_qty_label' => 'Sisa Qty GR',
         'received_percentage_label' => '% GR',
+        'purchase_order_status_label' => 'Status PO',
     ],
 
     'purchase_requests' => [

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GoodsReceiveStatus;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
@@ -71,6 +72,17 @@ class PurchaseRequestItem extends Model
         ;
     }
 
+    public function getTotalOrderedQty(): float
+    {
+        $orderedQty = $this->getAttribute('purchase_order_items_ordered_qty_sum');
+
+        if ($orderedQty !== null) {
+            return (float) $orderedQty;
+        }
+
+        return $this->getOrderedQty();
+    }
+
     public function getOrderedQtyColor(): string
     {
         $orderedQty = $this->getOrderedQty();
@@ -88,6 +100,146 @@ class PurchaseRequestItem extends Model
         $remaining = (float) $this->qty - $this->getOrderedQty($exceptPurchaseOrderId);
 
         return max($remaining, 0.0);
+    }
+
+    public function getRemainingOrderedQty(): float
+    {
+        return max((float) $this->qty - $this->getTotalOrderedQty(), 0.0);
+    }
+
+    public function getOrderedPercentage(): float
+    {
+        $orderedPercentage = $this->getAttribute('purchase_order_items_ordered_percentage');
+
+        if ($orderedPercentage !== null) {
+            return (float) $orderedPercentage;
+        }
+
+        $requestedQty = (float) $this->qty;
+
+        if ($requestedQty <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->getTotalOrderedQty() / $requestedQty) * 100, 2);
+    }
+
+    public function getTotalReceivedQty(): float
+    {
+        $receivedQty = $this->getAttribute('purchase_order_items_received_qty_sum');
+
+        if ($receivedQty !== null) {
+            return (float) $receivedQty;
+        }
+
+        return (float) GoodsReceiveItem::query()
+            ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
+            ->join('purchase_order_items', 'purchase_order_items.id', '=', 'goods_receive_items.purchase_order_item_id')
+            ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')
+            ->where('purchase_order_items.purchase_request_item_id', $this->getKey())
+            ->where('purchase_orders.status', '!=', PurchaseOrderStatus::CANCELED->value)
+            ->whereIn('goods_receives.status', [
+                GoodsReceiveStatus::RECEIVED->value,
+                GoodsReceiveStatus::CONFIRMED->value,
+            ])
+            ->sum('goods_receive_items.qty');
+    }
+
+    public function getRemainingReceivedQty(): float
+    {
+        return max((float) $this->qty - $this->getTotalReceivedQty(), 0.0);
+    }
+
+    public function getReceivedPercentage(): float
+    {
+        $receivedPercentage = $this->getAttribute('purchase_order_items_received_percentage');
+
+        if ($receivedPercentage !== null) {
+            return (float) $receivedPercentage;
+        }
+
+        $requestedQty = (float) $this->qty;
+
+        if ($requestedQty <= 0) {
+            return 0.0;
+        }
+
+        return round(($this->getTotalReceivedQty() / $requestedQty) * 100, 2);
+    }
+
+    public function scopeWithQuantitySummary(Builder $query): Builder
+    {
+        return $query
+            ->addSelect('purchase_request_items.*')
+            ->selectSub(
+                PurchaseOrderItem::query()
+                    ->selectRaw('coalesce(sum(purchase_order_items.qty), 0)')
+                    ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')
+                    ->whereColumn('purchase_order_items.purchase_request_item_id', 'purchase_request_items.id')
+                    ->where('purchase_orders.status', '!=', PurchaseOrderStatus::CANCELED->value),
+                'purchase_order_items_ordered_qty_sum',
+            )
+            ->selectSub(
+                GoodsReceiveItem::query()
+                    ->selectRaw('coalesce(sum(goods_receive_items.qty), 0)')
+                    ->join('goods_receives', 'goods_receives.id', '=', 'goods_receive_items.goods_receive_id')
+                    ->join('purchase_order_items', 'purchase_order_items.id', '=', 'goods_receive_items.purchase_order_item_id')
+                    ->join('purchase_orders', 'purchase_orders.id', '=', 'purchase_order_items.purchase_order_id')
+                    ->whereColumn('purchase_order_items.purchase_request_item_id', 'purchase_request_items.id')
+                    ->where('purchase_orders.status', '!=', PurchaseOrderStatus::CANCELED->value)
+                    ->whereIn('goods_receives.status', [
+                        GoodsReceiveStatus::RECEIVED->value,
+                        GoodsReceiveStatus::CONFIRMED->value,
+                    ]),
+                'purchase_order_items_received_qty_sum',
+            )
+            ->selectRaw(
+                'case
+                    when coalesce(purchase_request_items.qty, 0) <= 0 then 0
+                    else round(
+                        (
+                            coalesce((
+                                select sum(ordered_purchase_order_items.qty)
+                                from purchase_order_items as ordered_purchase_order_items
+                                inner join purchase_orders
+                                    on purchase_orders.id = ordered_purchase_order_items.purchase_order_id
+                                where ordered_purchase_order_items.purchase_request_item_id = purchase_request_items.id
+                                    and purchase_orders.status != ?
+                            ), 0) / coalesce(purchase_request_items.qty, 0)
+                        ) * 100,
+                        2
+                    )
+                end as purchase_order_items_ordered_percentage',
+                [PurchaseOrderStatus::CANCELED->value]
+            )
+            ->selectRaw(
+                'case
+                    when coalesce(purchase_request_items.qty, 0) <= 0 then 0
+                    else round(
+                        (
+                            coalesce((
+                                select sum(received_goods_receive_items.qty)
+                                from goods_receive_items as received_goods_receive_items
+                                inner join goods_receives
+                                    on goods_receives.id = received_goods_receive_items.goods_receive_id
+                                inner join purchase_order_items
+                                    on purchase_order_items.id = received_goods_receive_items.purchase_order_item_id
+                                inner join purchase_orders
+                                    on purchase_orders.id = purchase_order_items.purchase_order_id
+                                where purchase_order_items.purchase_request_item_id = purchase_request_items.id
+                                    and purchase_orders.status != ?
+                                    and goods_receives.status in (?, ?)
+                            ), 0) / coalesce(purchase_request_items.qty, 0)
+                        ) * 100,
+                        2
+                    )
+                end as purchase_order_items_received_percentage',
+                [
+                    PurchaseOrderStatus::CANCELED->value,
+                    GoodsReceiveStatus::RECEIVED->value,
+                    GoodsReceiveStatus::CONFIRMED->value,
+                ]
+            );
     }
 
 
