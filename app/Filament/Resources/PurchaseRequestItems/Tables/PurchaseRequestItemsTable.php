@@ -156,6 +156,7 @@ class PurchaseRequestItemsTable
                         ->tooltip(fn($state) => $state?->label())
                         ->alignCenter()
                         ->width('1%')
+                        ->toggleable(isToggledHiddenByDefault: false)
                     ,
                     TextColumn::make('purchaseRequest.created_at')
                         ->label(__('common.created_at.label'))
@@ -164,12 +165,13 @@ class PurchaseRequestItemsTable
                         ->size(TextSize::ExtraSmall)
                         ->sortable()
                         ->wrap(false)
+                        ->toggleable(isToggledHiddenByDefault: false)
                     ,
                     UserColumn::make('purchaseRequest.user')
                         ->label((__('common.log_activity.created.label') . ' ' . __('common.log_activity.by')))
                         ->tooltip(fn($state) => $state?->name)
                         ->size(TextSize::ExtraSmall)
-                        ->toggleable(isToggledHiddenByDefault: false)
+                        ->toggleable(isToggledHiddenByDefault: true)
                     ,
                     TextColumn::make('purchaseRequest.project.name')
                         ->label(__('project.warehouse_project.label'))
