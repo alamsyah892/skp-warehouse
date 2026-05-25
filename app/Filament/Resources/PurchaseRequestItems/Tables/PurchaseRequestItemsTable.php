@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\PurchaseRequestItems\Tables;
 
+use App\Enums\GoodsReceiveStatus;
+use App\Enums\PurchaseOrderStatus;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Models\PurchaseRequestItem;
 use Filament\Actions\ViewAction;
@@ -11,6 +13,7 @@ use Filament\Support\Enums\TextSize;
 use Filament\Tables\Columns\ColumnGroup;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\Summarizers\Average;
+use Filament\Tables\Columns\Summarizers\Count;
 use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\PaginationMode;
@@ -43,7 +46,8 @@ class PurchaseRequestItemsTable
                                     $itemQuery
                                         ->where('name', 'like', "%{$search}%")
                                         ->orWhere('code', 'like', "%{$search}%");
-                                });
+                                })
+                            ;
                         })
                         ->sortable()
                         ->wrap(false)
@@ -54,7 +58,7 @@ class PurchaseRequestItemsTable
                         ->alignEnd()
                         ->sortable()
                         ->wrap(false)
-                        ->summarize(Sum::make()->hiddenLabel())
+                        ->summarize(Sum::make())
                     ,
                     TextColumn::make('purchase_order_items_ordered_qty_sum')
                         ->label(__('purchase-request.purchase_request_items.ordered_qty_label'))
@@ -64,18 +68,19 @@ class PurchaseRequestItemsTable
                         ->alignEnd()
                         ->sortable()
                         ->wrap(false)
-                        ->summarize(Sum::make()->hiddenLabel())
+                        ->summarize(Sum::make())
                     ,
-                    // TextColumn::make('remaining_ordered_qty')
-                    //     ->label(__('purchase-request.purchase_request_items.remaining_ordered_qty_label'))
-                    //     ->wrapHeader()
-                    //     ->state(fn(PurchaseRequestItem $record): float => $record->getRemainingOrderedQty())
-                    //     ->numeric()
-                    //     ->alignEnd()
-                    //     ->sortable(query: fn(Builder $query, string $direction) => $query->orderByRaw("(purchase_request_items.qty - purchase_order_items_ordered_qty_sum) {$direction}"))
-                    //     ->wrap(false)
-                    //     ->toggleable(isToggledHiddenByDefault: false)
-                    // ,
+                    TextColumn::make('remaining_ordered_qty')
+                        ->label(__('purchase-request.purchase_request_items.remaining_ordered_qty_label'))
+                        ->wrapHeader()
+                        ->state(fn(PurchaseRequestItem $record): float => $record->getRemainingOrderedQty())
+                        ->numeric()
+                        ->alignEnd()
+                        ->sortable(query: fn(Builder $query, string $direction) => $query->orderByRaw("(purchase_request_items.qty - purchase_order_items_ordered_qty_sum) {$direction}"))
+                        ->wrap(false)
+                        ->toggleable(isToggledHiddenByDefault: true)
+                        ->summarize(Sum::make())
+                    ,
                     TextColumn::make('purchase_order_items_ordered_percentage')
                         ->label(__('purchase-request.purchase_request_items.ordered_percentage_label'))
                         ->wrapHeader()
@@ -89,7 +94,7 @@ class PurchaseRequestItemsTable
                         ->alignCenter()
                         ->sortable()
                         ->wrap(false)
-                        ->summarize(Average::make()->hiddenLabel())
+                        ->summarize(Average::make())
                     ,
                     TextColumn::make('purchase_order_items_received_qty_sum')
                         ->label(__('purchase-request.purchase_request_items.received_qty_label'))
@@ -99,18 +104,19 @@ class PurchaseRequestItemsTable
                         ->alignEnd()
                         ->sortable()
                         ->wrap(false)
-                        ->summarize(Sum::make()->hiddenLabel())
+                        ->summarize(Sum::make())
                     ,
-                    // TextColumn::make('remaining_received_qty')
-                    //     ->label(__('purchase-request.purchase_request_items.remaining_received_qty_label'))
-                    //     ->wrapHeader()
-                    //     ->state(fn(PurchaseRequestItem $record): float => $record->getRemainingReceivedQty())
-                    //     ->numeric()
-                    //     ->alignEnd()
-                    //     ->sortable(query: fn(Builder $query, string $direction) => $query->orderByRaw("(purchase_request_items.qty - purchase_order_items_received_qty_sum) {$direction}"))
-                    //     ->wrap(false)
-                    //     ->toggleable(isToggledHiddenByDefault: false)
-                    // ,
+                    TextColumn::make('remaining_received_qty')
+                        ->label(__('purchase-request.purchase_request_items.remaining_received_qty_label'))
+                        ->wrapHeader()
+                        ->state(fn(PurchaseRequestItem $record): float => $record->getRemainingReceivedQty())
+                        ->numeric()
+                        ->alignEnd()
+                        ->sortable(query: fn(Builder $query, string $direction) => $query->orderByRaw("(purchase_request_items.qty - purchase_order_items_received_qty_sum) {$direction}"))
+                        ->wrap(false)
+                        ->toggleable(isToggledHiddenByDefault: true)
+                        ->summarize(Sum::make())
+                    ,
                     TextColumn::make('purchase_order_items_received_percentage')
                         ->label(__('purchase-request.purchase_request_items.received_percentage_label'))
                         ->wrapHeader()
@@ -124,11 +130,11 @@ class PurchaseRequestItemsTable
                         ->alignCenter()
                         ->sortable()
                         ->wrap(false)
-                        ->summarize(Average::make()->hiddenLabel())
+                        ->summarize(Average::make())
                     ,
                 ]),
 
-                ColumnGroup::make(__('purchase-request.model.plural_label'), [
+                ColumnGroup::make(__('purchase-request.model.label'), [
                     TextColumn::make('purchaseRequest.number')
                         ->label(__('purchase-request.number.label'))
                         ->wrapHeader()
@@ -140,13 +146,15 @@ class PurchaseRequestItemsTable
                             return $query->whereHas('purchaseRequest', function (Builder $purchaseRequestQuery) use ($search): void {
                                 $purchaseRequestQuery
                                     ->where('number', 'like', "%{$search}%")
-                                    ->orWhere('description', 'like', "%{$search}%");
+                                    ->orWhere('description', 'like', "%{$search}%")
+                                ;
                             });
                         })
                         ->sortable()
                         ->width('1%')
                         ->wrap(false)
                         ->toggleable(isToggledHiddenByDefault: false)
+                        ->summarize(Count::make())
                     ,
                     IconColumn::make('purchaseRequest.status')
                         ->label('Status')
@@ -273,9 +281,9 @@ class PurchaseRequestItemsTable
                                 and goods_receives.status in (?, ?)
                         ), 0) < purchase_request_items.qty',
                         [
-                            \App\Enums\PurchaseOrderStatus::CANCELED->value,
-                            \App\Enums\GoodsReceiveStatus::RECEIVED->value,
-                            \App\Enums\GoodsReceiveStatus::CONFIRMED->value,
+                            PurchaseOrderStatus::CANCELED->value,
+                            GoodsReceiveStatus::RECEIVED->value,
+                            GoodsReceiveStatus::CONFIRMED->value,
                         ]
                     ))
                 ,

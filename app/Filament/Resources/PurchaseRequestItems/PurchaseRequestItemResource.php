@@ -16,8 +16,8 @@ class PurchaseRequestItemResource extends Resource
 {
     protected static ?string $model = PurchaseRequestItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQueueList;
-    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::QueueList;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::Cube;
     public static ?int $navigationSort = 2;
     protected static string|UnitEnum|null $navigationGroup = 'Purchasing';
 

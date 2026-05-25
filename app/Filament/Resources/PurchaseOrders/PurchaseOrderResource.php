@@ -25,7 +25,7 @@ class PurchaseOrderResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
     protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::ShoppingCart;
-    public static ?int $navigationSort = 2;
+    public static ?int $navigationSort = 3;
     protected static string|UnitEnum|null $navigationGroup = 'Purchasing';
 
     protected static ?string $recordTitleAttribute = 'number';

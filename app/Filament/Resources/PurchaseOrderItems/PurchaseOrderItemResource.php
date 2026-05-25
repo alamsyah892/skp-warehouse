@@ -16,8 +16,8 @@ class PurchaseOrderItemResource extends Resource
 {
     protected static ?string $model = PurchaseOrderItem::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquares2x2;
-    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::Squares2x2;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+    protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::Cube;
     public static ?int $navigationSort = 4;
     protected static string|UnitEnum|null $navigationGroup = 'Purchasing';
 
