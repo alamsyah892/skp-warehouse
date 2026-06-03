@@ -284,7 +284,9 @@ class PurchaseRequestInfolist
 
                 Tab::make(__('purchase-order.model.plural_label'))
                     ->icon(Heroicon::ShoppingCart)
-                    ->badge(fn($record) => $record->purchaseOrders()->count() ?: null)
+                    ->badge(fn($record) => $record->purchaseOrders?->whereNotIn('status', [
+                        PurchaseOrderStatus::CANCELED
+                    ])->count() ?: null)
                     ->badgeTooltip(__('purchase-request.purchase_orders.count_label'))
                     ->schema([
                         // Callout::make()
@@ -328,7 +330,7 @@ class PurchaseRequestInfolist
                 ,
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
-                    ->color('gray')
+                    ->color('danger')
                     ->visible(fn($state) => $state != null)
                 ,
                 TextEntry::make('info')

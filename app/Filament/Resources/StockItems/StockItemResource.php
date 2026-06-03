@@ -130,6 +130,7 @@ class StockItemResource extends Resource
                 'projects.code',
                 'projects.po_code',
             ])
-            ->havingRaw('round(coalesce(sum(goods_receive_items.qty), 0) - coalesce(max(issued_summary.issued_qty), 0), 2) != 0');
+            // ->havingRaw('round(coalesce(sum(goods_receive_items.qty), 0) - coalesce(max(issued_summary.issued_qty), 0), 2) != 0')
+        ;
     }
 }

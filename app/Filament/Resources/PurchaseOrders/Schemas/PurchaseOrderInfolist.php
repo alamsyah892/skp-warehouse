@@ -202,7 +202,7 @@ class PurchaseOrderInfolist
                                     ->fontFamily(FontFamily::Mono)
                                     ->badge()
                                     ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
-                                    ->openUrlInNewTab()
+                                // ->openUrlInNewTab()
                                 ,
                             ])
                             ->columnSpanFull()
@@ -354,7 +354,11 @@ class PurchaseOrderInfolist
 
                 Tab::make(__('goods-receive.model.plural_label'))
                     ->icon(Heroicon::InboxArrowDown)
-                    ->badge(fn($record) => $record->goodsReceives?->count() ?: null)
+                    ->badge(fn($record) =>
+                        $record->goodsReceives?->whereNotIn('status', [
+                            GoodsReceiveStatus::CANCELED,
+                            GoodsReceiveStatus::RETURNED
+                        ])->count() ?: null)
                     ->schema([
                         Livewire::make(PurchaseOrderGoodsReceivesTable::class),
                     ])
@@ -531,7 +535,7 @@ class PurchaseOrderInfolist
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
-                    ->color('gray')
+                    ->color('danger')
                     ->visible(fn($state) => $state != null)
                 ,
                 TextEntry::make('info')

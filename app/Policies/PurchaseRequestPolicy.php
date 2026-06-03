@@ -39,8 +39,7 @@ class PurchaseRequestPolicy
     public function update(User $user, PurchaseRequest $purchaseRequest): bool
     {
         return $user->can('Update Purchase Request')
-            && ($purchaseRequest->status !== PurchaseRequestStatus::CANCELED
-                && $purchaseRequest->status !== PurchaseRequestStatus::FINISHED);
+            && $purchaseRequest->status !== PurchaseRequestStatus::FINISHED;
     }
 
     /**
@@ -49,8 +48,7 @@ class PurchaseRequestPolicy
     public function delete(User $user, PurchaseRequest $purchaseRequest): bool
     {
         return $user->can('Delete Purchase Request')
-            && ($purchaseRequest->status !== PurchaseRequestStatus::CANCELED
-                && $purchaseRequest->status !== PurchaseRequestStatus::FINISHED);
+            && $purchaseRequest->status === PurchaseRequestStatus::CANCELED;
     }
 
     /**

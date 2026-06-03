@@ -23,6 +23,19 @@ it('denies updating finished purchase request in policy', function () {
     expect(app(PurchaseRequestPolicy::class)->update($user, $purchaseRequest))->toBeFalse();
 });
 
+it('only allows deleting canceled purchase request in policy', function () {
+    $user = mockUserCan('Delete Purchase Request');
+
+    $canceledPurchaseRequest = new PurchaseRequest();
+    $canceledPurchaseRequest->status = PurchaseRequestStatus::CANCELED;
+
+    $requestedPurchaseRequest = new PurchaseRequest();
+    $requestedPurchaseRequest->status = PurchaseRequestStatus::REQUESTED;
+
+    expect(app(PurchaseRequestPolicy::class)->delete($user, $canceledPurchaseRequest))->toBeTrue()
+        ->and(app(PurchaseRequestPolicy::class)->delete($user, $requestedPurchaseRequest))->toBeFalse();
+});
+
 it('denies updating finished purchase order in policy', function () {
     $user = mockUserCan('Update Purchase Order');
 

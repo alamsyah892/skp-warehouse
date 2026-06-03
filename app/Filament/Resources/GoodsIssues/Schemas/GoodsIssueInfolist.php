@@ -250,7 +250,7 @@ class GoodsIssueInfolist
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
-                    ->color('gray')
+                    ->color('danger')
                     ->visible(fn($state) => $state != null),
                 TextEntry::make('info')
                     ->label(__('goods-issue.revision_history.label'))

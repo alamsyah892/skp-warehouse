@@ -192,7 +192,7 @@ class GoodsReceiveInfolist
                                 ? PurchaseOrderResource::getUrl('view', ['record' => $record->purchase_order_id])
                                 : null
                             )
-                            ->openUrlInNewTab()
+                            // ->openUrlInNewTab()
                             ->columnSpanFull()
                         ,
                     ])
@@ -304,7 +304,7 @@ class GoodsReceiveInfolist
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
-                    ->color('gray')
+                    ->color('danger')
                     ->visible(fn($state) => $state != null)
                 ,
                 TextEntry::make('info')

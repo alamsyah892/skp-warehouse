@@ -189,8 +189,8 @@ class AdminPanelProvider extends PanelProvider
                 ,
 
                 StickyHeaderPlugin::make()
-                    ->floating()
-                    ->colored()
+                // ->floating()
+                // ->colored()
                 ,
 
                 GlobalSearchModalPlugin::make(),
