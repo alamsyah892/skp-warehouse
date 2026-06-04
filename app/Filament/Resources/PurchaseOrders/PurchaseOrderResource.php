@@ -70,7 +70,8 @@ class PurchaseOrderResource extends Resource
         return parent::getEloquentQuery()
             ->withQuantitySummary()
             ->withCount(['purchaseOrderItems', 'goodsReceives'])
-            ->withoutGlobalScopes([SoftDeletingScope::class]);
+            ->withoutGlobalScopes([SoftDeletingScope::class])
+        ;
     }
 
     public static function getRecordRouteBindingEloquentQuery(): Builder

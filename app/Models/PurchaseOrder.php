@@ -190,7 +190,7 @@ class PurchaseOrder extends Model
 
     public function purchaseRequests(): BelongsToMany
     {
-        return $this->belongsToMany(PurchaseRequest::class);
+        return $this->belongsToMany(PurchaseRequest::class)->withTrashed();
     }
 
     public function goodsReceives(): HasMany

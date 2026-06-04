@@ -24,10 +24,7 @@ class PurchaseRequestItemsTable extends TableWidget
                     ->with([
                         'item',
                     ])
-                    ->whereHas(
-                        'purchaseRequest',
-                        fn($query) => $query->whereKey($this->record->id)
-                    )
+                    ->where('purchase_request_id', $this->record->id)
             )
             ->columns([
                 TextColumn::make('sort')

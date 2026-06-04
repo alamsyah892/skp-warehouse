@@ -64,6 +64,6 @@ class PurchaseRequestPolicy
      */
     public function forceDelete(User $user, PurchaseRequest $purchaseRequest): bool
     {
-        return $user->can('Delete Purchase Request');
+        return false;
     }
 }

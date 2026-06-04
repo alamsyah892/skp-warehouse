@@ -84,14 +84,17 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
+
                 self::REQUESTED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
@@ -122,12 +125,34 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
+                    Role::LOGISTIC,
+                    Role::LOGISTIC_MANAGER,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
+
                     Role::QUANTITY_SURVEYOR,
+
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                 ],
+
                 self::CHECKED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::QUANTITY_SURVEYOR,
+                ],
+                self::APPROVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::REVIEWED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                 ],
             ],
 
@@ -135,10 +160,22 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
+                    Role::QUANTITY_SURVEYOR,
+
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                 ],
                 self::APPROVED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+                ],
+                self::REVIEWED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                 ],
             ],
 
@@ -146,12 +183,14 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::AUDIT,
                     Role::AUDIT_MANAGER,
                 ],
                 self::REVIEWED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::AUDIT,
                     Role::AUDIT_MANAGER,
                 ],
@@ -161,6 +200,10 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
+
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
@@ -170,12 +213,16 @@ enum PurchaseRequestStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
+                    Role::LOGISTIC,
+                    Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
                 self::FINISHED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
@@ -187,6 +234,11 @@ enum PurchaseRequestStatus: int
                 self::ORDERED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
+                    Role::LOGISTIC,
+                    Role::LOGISTIC_MANAGER,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
                 ],
             ],
         };

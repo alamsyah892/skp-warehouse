@@ -38,7 +38,6 @@ class GoodsReceivePolicy
     public function update(User $user, GoodsReceive $goodsReceive): bool
     {
         return $user->can('Update Goods Receipt')
-            && $goodsReceive->status !== GoodsReceiveStatus::CANCELED
             && $goodsReceive->status !== GoodsReceiveStatus::CONFIRMED;
     }
 
@@ -48,8 +47,7 @@ class GoodsReceivePolicy
     public function delete(User $user, GoodsReceive $goodsReceive): bool
     {
         return $user->can('Delete Goods Receipt')
-            && $goodsReceive->status !== GoodsReceiveStatus::CANCELED
-            && $goodsReceive->status !== GoodsReceiveStatus::CONFIRMED;
+            && $goodsReceive->status === GoodsReceiveStatus::CANCELED;
     }
 
     /**

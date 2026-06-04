@@ -17,7 +17,6 @@ class ViewPurchaseOrder extends ViewRecord
         return [
             EditAction::make()
                 ->icon(Heroicon::PencilSquare)
-                ->visible(fn($record): bool => $record?->status !== PurchaseOrderStatus::CANCELED)
                 ->button(),
         ];
     }

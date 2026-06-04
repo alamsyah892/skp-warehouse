@@ -496,7 +496,7 @@ class GoodsReceiveForm
 
                                 $set('item_id', $source->item_id);
                                 $set('qty', $source->getRemainingQty($goodsReceiveId));
-                                $set('description', $source->description);
+                                // $set('description', $source->description);
                             })
                             ->disabled(
                                 fn($operation, $get): bool =>

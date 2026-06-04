@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Vendor;
 use App\Models\Warehouse;
 use App\Models\WarehouseAddress;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 
 uses(LazilyRefreshDatabase::class);
@@ -142,6 +143,74 @@ it('aggregates requested and ordered quantities for purchase request summaries',
         ->and($summary->getTotalOrderedQty())->toBe(5.0)
         ->and((float) $summary->getAttribute('purchase_request_items_ordered_percentage'))->toBe(33.33)
         ->and($summary->getOrderedPercentage())->toBe(33.33);
+});
+
+it('keeps purchase request detail tables queryable after the purchase request is soft deleted', function () {
+    $ctx = createPurchaseRequestSummaryContext();
+
+    $purchaseRequest = PurchaseRequest::query()->create([
+        'company_id' => $ctx['company']->id,
+        'warehouse_id' => $ctx['warehouse']->id,
+        'warehouse_address_id' => $ctx['warehouseAddress']->id,
+        'division_id' => $ctx['division']->id,
+        'project_id' => $ctx['project']->id,
+        'description' => 'Soft deleted purchase request detail test',
+        'memo' => '',
+        'boq' => '',
+        'notes' => '',
+        'info' => '',
+    ]);
+
+    $purchaseRequestItem = $purchaseRequest->purchaseRequestItems()->create([
+        'item_id' => $ctx['item']->id,
+        'qty' => 10,
+        'description' => '',
+        'sort' => 1,
+    ]);
+
+    $purchaseOrder = PurchaseOrder::query()->create([
+        'vendor_id' => $ctx['vendor']->id,
+        'company_id' => $ctx['company']->id,
+        'warehouse_id' => $ctx['warehouse']->id,
+        'warehouse_address_id' => $ctx['warehouseAddress']->id,
+        'division_id' => $ctx['division']->id,
+        'project_id' => $ctx['project']->id,
+        'description' => 'Soft deleted purchase request purchase order test',
+        'delivery_date' => now()->toDateString(),
+        'delivery_notes' => '',
+        'shipping_cost' => 0,
+        'shipping_method' => '',
+        'notes' => '',
+        'terms' => '',
+        'info' => '',
+        'discount' => 0,
+        'tax_type' => \App\Enums\PurchaseOrderTaxType::EXCLUDE,
+        'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
+        'tax_description' => '',
+        'rounding' => 0,
+    ]);
+
+    $purchaseOrder->purchaseRequests()->sync([$purchaseRequest->id]);
+    $purchaseRequest->delete();
+
+    $purchaseRequestItemIds = \App\Models\PurchaseRequestItem::query()
+        ->where('purchase_request_id', $purchaseRequest->id)
+        ->pluck('id')
+        ->all();
+
+    $purchaseOrderIds = PurchaseOrder::query()
+        ->whereHas(
+            'purchaseRequests',
+            fn($query) => $query
+                ->withoutGlobalScope(SoftDeletingScope::class)
+                ->whereKey($purchaseRequest->id)
+        )
+        ->pluck('id')
+        ->all();
+
+    expect($purchaseRequestItemIds)->toBe([$purchaseRequestItem->id])
+        ->and($purchaseOrderIds)->toBe([$purchaseOrder->id])
+        ->and($purchaseOrder->refresh()->purchaseRequests->pluck('id')->all())->toBe([$purchaseRequest->id]);
 });
 
 function createPurchaseRequestSummaryContext(): array

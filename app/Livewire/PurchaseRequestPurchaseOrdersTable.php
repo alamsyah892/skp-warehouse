@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 use Zvizvi\UserFields\Components\UserColumn;
 
@@ -37,7 +38,9 @@ class PurchaseRequestPurchaseOrdersTable extends TableWidget
                     ])
                     ->whereHas(
                         'purchaseRequests',
-                        fn($query) => $query->whereKey($this->record->id)
+                        fn($query) => $query
+                            ->withoutGlobalScope(SoftDeletingScope::class)
+                            ->whereKey($this->record->id)
                     )
             )
             ->columns([

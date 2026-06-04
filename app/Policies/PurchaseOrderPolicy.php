@@ -39,7 +39,6 @@ class PurchaseOrderPolicy
     public function update(User $user, PurchaseOrder $purchaseOrder): bool
     {
         return $user->can('Update Purchase Order')
-            && $purchaseOrder->status !== PurchaseOrderStatus::CANCELED
             && $purchaseOrder->status !== PurchaseOrderStatus::FINISHED;
     }
 
@@ -49,8 +48,7 @@ class PurchaseOrderPolicy
     public function delete(User $user, PurchaseOrder $purchaseOrder): bool
     {
         return $user->can('Delete Purchase Order')
-            && $purchaseOrder->status !== PurchaseOrderStatus::CANCELED
-            && $purchaseOrder->status !== PurchaseOrderStatus::FINISHED;
+            && $purchaseOrder->status === PurchaseOrderStatus::CANCELED;
     }
 
     /**
@@ -66,6 +64,6 @@ class PurchaseOrderPolicy
      */
     public function forceDelete(User $user, PurchaseOrder $purchaseOrder): bool
     {
-        return $user->can('Delete Purchase Order');
+        return false;
     }
 }

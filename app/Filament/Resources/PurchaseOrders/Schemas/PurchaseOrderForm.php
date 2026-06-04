@@ -1000,6 +1000,7 @@ class PurchaseOrderForm
                 return PurchaseRequest::query()
                     ->with(['user', 'warehouseAddress'])
                     ->whereIn('id', $purchaseRequestIds)
+                    ->withTrashed()
                     ->get()
                     ->map(function (PurchaseRequest $purchaseRequest) {
                         return Section::make()

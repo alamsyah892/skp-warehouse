@@ -60,6 +60,7 @@ enum GoodsReceiveStatus: int
                 self::CANCELED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
@@ -68,6 +69,7 @@ enum GoodsReceiveStatus: int
                 self::RETURNED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
                     Role::PURCHASING,
@@ -76,6 +78,7 @@ enum GoodsReceiveStatus: int
                 self::CONFIRMED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                     Role::FINANCE,
@@ -92,6 +95,16 @@ enum GoodsReceiveStatus: int
                 self::RECEIVED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
+                ],
+
+                self::CANCELED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+
+                    Role::LOGISTIC,
+                    Role::LOGISTIC_MANAGER,
+                    Role::PURCHASING,
+                    Role::PURCHASING_MANAGER,
                 ],
             ],
             self::CONFIRMED => [

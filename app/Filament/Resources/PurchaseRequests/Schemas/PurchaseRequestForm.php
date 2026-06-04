@@ -226,17 +226,17 @@ class PurchaseRequestForm
                                             fn($q) => $q->where(function ($qq) use ($companyId, $warehouseId) {
                                                 $qq
                                                     ->whereHas('companies', fn($q2) => $q2->where('companies.id', $companyId))
-                                                    ->orWhereHas('warehouses', fn($q2) => $q2->where('warehouses.id', $warehouseId));
+                                                    ->whereHas('warehouses', fn($q2) => $q2->where('warehouses.id', $warehouseId));
                                             }),
                                         )
-                                        ->when(
-                                            $companyId && blank($warehouseId),
-                                            fn($q) => $q->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId)),
-                                        )
-                                        ->when(
-                                            $warehouseId && blank($companyId),
-                                            fn($q) => $q->whereHas('warehouses', fn($qq) => $qq->where('warehouses.id', $warehouseId)),
-                                        )
+                                        // ->when(
+                                        //     $warehouseId && blank($companyId),
+                                        //     fn($q) => $q->whereHas('warehouses', fn($qq) => $qq->where('warehouses.id', $warehouseId)),
+                                        // )
+                                        // ->when(
+                                        //     $companyId && blank($warehouseId),
+                                        //     fn($q) => $q->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId)),
+                                        // )
                                         ->where('allow_po', true)
                                         ->orderBy('name')->orderBy('code')
                                     ;
