@@ -63,6 +63,6 @@ class GoodsReceivePolicy
      */
     public function forceDelete(User $user, GoodsReceive $goodsReceive): bool
     {
-        return $user->can('Delete Goods Receipt');
+        return false;
     }
 }

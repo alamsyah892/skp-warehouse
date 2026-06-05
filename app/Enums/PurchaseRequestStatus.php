@@ -111,6 +111,14 @@ enum PurchaseRequestStatus: int
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
                 ],
+                self::CHECKED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
+                self::APPROVED->value => [
+                    Role::PROJECT_OWNER,
+                    Role::ADMINISTRATOR,
+                ],
                 self::REVIEWED->value => [
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
@@ -128,8 +136,6 @@ enum PurchaseRequestStatus: int
 
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
 
                     Role::QUANTITY_SURVEYOR,
 
@@ -235,10 +241,10 @@ enum PurchaseRequestStatus: int
                     Role::PROJECT_OWNER,
                     Role::ADMINISTRATOR,
 
-                    Role::LOGISTIC,
-                    Role::LOGISTIC_MANAGER,
-                    Role::PURCHASING,
-                    Role::PURCHASING_MANAGER,
+                    // Role::LOGISTIC,
+                    // Role::LOGISTIC_MANAGER,
+                    // Role::PURCHASING,
+                    // Role::PURCHASING_MANAGER,
                 ],
             ],
         };

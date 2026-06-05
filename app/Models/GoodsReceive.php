@@ -104,7 +104,7 @@ class GoodsReceive extends Model
      */
     public function purchaseOrder(): BelongsTo
     {
-        return $this->belongsTo(PurchaseOrder::class);
+        return $this->belongsTo(PurchaseOrder::class)->withTrashed();
     }
 
     public function company(): BelongsTo

@@ -127,6 +127,14 @@ it('aggregates received quantities for goods receive summaries', function () {
 
     expect((float) $summary->getAttribute('goods_receive_items_sum_qty'))->toBe(5.0)
         ->and($summary->getTotalReceivedQty())->toBe(5.0);
+
+    $goodsReceive->delete();
+
+    expect(\App\Models\GoodsReceiveItem::query()
+        ->where('goods_receive_id', $goodsReceive->id)
+        ->pluck('id')
+        ->all()
+    )->toHaveCount(2);
 });
 
 function createGoodsReceiveSummaryContext(): array

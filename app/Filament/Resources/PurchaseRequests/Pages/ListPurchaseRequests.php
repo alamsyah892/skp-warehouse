@@ -59,12 +59,12 @@ class ListPurchaseRequests extends ListRecords
                 ->badge($getStatusBadge(PurchaseRequestStatus::CHECKED))
                 ->badgeColor(PurchaseRequestStatus::CHECKED->color())
             ,
-            PurchaseRequestStatus::APPROVED->label() => Tab::make()
-                ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::APPROVED))
-                ->icon(PurchaseRequestStatus::APPROVED->icon())
-                ->badge($getStatusBadge(PurchaseRequestStatus::APPROVED))
-                ->badgeColor(PurchaseRequestStatus::APPROVED->color())
-            ,
+            // PurchaseRequestStatus::APPROVED->label() => Tab::make()
+            //     ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::APPROVED))
+            //     ->icon(PurchaseRequestStatus::APPROVED->icon())
+            //     ->badge($getStatusBadge(PurchaseRequestStatus::APPROVED))
+            //     ->badgeColor(PurchaseRequestStatus::APPROVED->color())
+            // ,
             PurchaseRequestStatus::REVIEWED->label() => Tab::make()
                 ->modifyQueryUsing(fn($query) => $query->where('status', PurchaseRequestStatus::REVIEWED))
                 ->icon(PurchaseRequestStatus::REVIEWED->icon())

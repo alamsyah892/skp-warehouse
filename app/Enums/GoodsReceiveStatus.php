@@ -63,6 +63,8 @@ enum GoodsReceiveStatus: int
 
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
@@ -72,6 +74,8 @@ enum GoodsReceiveStatus: int
 
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],
@@ -81,6 +85,8 @@ enum GoodsReceiveStatus: int
 
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                     Role::FINANCE,
                     Role::FINANCE_MANAGER,
                 ],
@@ -103,6 +109,8 @@ enum GoodsReceiveStatus: int
 
                     Role::LOGISTIC,
                     Role::LOGISTIC_MANAGER,
+                    Role::AUDIT,
+                    Role::AUDIT_MANAGER,
                     Role::PURCHASING,
                     Role::PURCHASING_MANAGER,
                 ],

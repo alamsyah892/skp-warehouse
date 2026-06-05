@@ -817,6 +817,7 @@ class GoodsReceiveForm
         if (!array_key_exists($purchaseOrderId, $cache)) {
             $cache[$purchaseOrderId] = PurchaseOrder::query()
                 ->with(['warehouse', 'company', 'division', 'project', 'warehouseAddress'])
+                ->withTrashed()
                 ->find($purchaseOrderId);
         }
 
