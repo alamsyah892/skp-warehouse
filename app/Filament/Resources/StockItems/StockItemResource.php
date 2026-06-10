@@ -21,7 +21,7 @@ class StockItemResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArchiveBox;
     protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::ArchiveBox;
-    public static ?int $navigationSort = 3;
+    public static ?int $navigationSort = 5;
     protected static string|UnitEnum|null $navigationGroup = 'Warehouse';
 
     public static function getModelLabel(): string

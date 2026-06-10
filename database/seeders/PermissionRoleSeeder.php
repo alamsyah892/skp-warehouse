@@ -31,6 +31,7 @@ class PermissionRoleSeeder extends Seeder
             'Courier',
             'Currency',
             'Bank',
+            'Cash Bank Transaction',
 
             'Purchase Request',
             'Purchase Order',
@@ -76,6 +77,7 @@ class PermissionRoleSeeder extends Seeder
             'Courier' => ['Read'],
             'Currency' => ['Read'],
             'Bank' => ['Read'],
+            'Cash Bank Transaction' => ['Create', 'Read', 'Update', 'Delete'],
 
             'Purchase Request' => ['Read'],
             'Purchase Order' => ['Read'],

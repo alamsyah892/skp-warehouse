@@ -10,6 +10,8 @@ use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderForm;
 use App\Filament\Resources\PurchaseOrders\Schemas\PurchaseOrderInfolist;
 use App\Filament\Resources\PurchaseOrders\Tables\PurchaseOrdersTable;
 use App\Models\PurchaseOrder;
+use App\Models\Role;
+use App\Models\User;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -88,5 +90,10 @@ class PurchaseOrderResource extends Resource
                 'statusLogs.user',
             ])
             ->withoutGlobalScopes([SoftDeletingScope::class]);
+    }
+
+    public static function canViewPriceColumn(?User $user): bool
+    {
+        return $user?->hasAnyRole(Role::CAN_VIEW_PRICE) === true;
     }
 }

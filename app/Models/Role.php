@@ -43,6 +43,17 @@ class Role extends RoleModel
         self::ADMINISTRATOR,
     ];
 
+    public const CAN_VIEW_PRICE = [
+        self::PROJECT_OWNER,
+        self::ADMINISTRATOR,
+        self::PURCHASING,
+        self::PURCHASING_MANAGER,
+        self::FINANCE,
+        self::FINANCE_MANAGER,
+        self::AUDIT,
+        self::AUDIT_MANAGER,
+    ];
+
     protected $fillable = [
         'name',
         'guard_name',

@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Models\PurchaseOrderItem;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
@@ -88,6 +89,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->alignEnd()
                     ->wrap(false)
                     ->verticallyAlignStart()
+                    ->visible(fn(): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
                 ,
                 TextColumn::make('subtotal')
                     ->label(__('purchase-order.subtotal.label'))
@@ -98,6 +100,7 @@ class PurchaseOrderItemsTable extends TableWidget
                     ->alignEnd()
                     ->wrap(false)
                     ->verticallyAlignStart()
+                    ->visible(fn(): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
                 ,
                 TextColumn::make('received_qty')
                     ->label(__('purchase-order.purchase_order_items.received_qty_label'))

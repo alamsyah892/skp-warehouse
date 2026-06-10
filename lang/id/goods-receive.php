@@ -79,6 +79,7 @@ return [
             'note' => 'Ubah status menjadi :status. Tambahkan catatan (opsional).',
             'changed' => 'Status berhasil diubah.',
         ],
+        'all' => 'Semua',
     ],
 
     'description' => [

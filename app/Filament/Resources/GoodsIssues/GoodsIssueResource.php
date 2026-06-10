@@ -25,7 +25,7 @@ class GoodsIssueResource extends Resource
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLinkSlash;
     protected static string|BackedEnum|null $activeNavigationIcon = Heroicon::LinkSlash;
-    public static ?int $navigationSort = 2;
+    public static ?int $navigationSort = 3;
     protected static string|UnitEnum|null $navigationGroup = 'Warehouse';
 
     protected static ?string $recordTitleAttribute = 'number';

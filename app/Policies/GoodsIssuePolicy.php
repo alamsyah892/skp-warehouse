@@ -26,13 +26,13 @@ class GoodsIssuePolicy
     public function update(User $user, GoodsIssue $goodsIssue): bool
     {
         return $user->can('Update Goods Issue')
-            && $goodsIssue->status !== GoodsIssueStatus::CANCELED;
+            && $goodsIssue->status !== GoodsIssueStatus::ISSUED;
     }
 
     public function delete(User $user, GoodsIssue $goodsIssue): bool
     {
         return $user->can('Delete Goods Issue')
-            && $goodsIssue->status !== GoodsIssueStatus::CANCELED;
+            && $goodsIssue->status === GoodsIssueStatus::CANCELED;
     }
 
     public function restore(User $user, GoodsIssue $goodsIssue): bool

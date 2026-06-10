@@ -7,6 +7,7 @@ use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
 use App\Filament\Components\Infolists\ActivityLogTab;
 use App\Filament\Components\Infolists\StatusTimelineSection;
+use App\Filament\Resources\PurchaseOrders\PurchaseOrderResource;
 use App\Filament\Resources\PurchaseRequests\PurchaseRequestResource;
 use App\Livewire\PurchaseOrderGoodsReceivesTable;
 use App\Livewire\PurchaseOrderItemsTable;
@@ -376,6 +377,7 @@ class PurchaseOrderInfolist
             ->icon(Heroicon::Calculator)
             ->iconColor('primary')
             ->columnSpanFull()
+            ->visible(fn(): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
             ->columns([
                 'default' => 1,
                 'lg' => 12
