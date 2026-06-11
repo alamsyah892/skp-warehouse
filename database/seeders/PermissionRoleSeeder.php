@@ -32,11 +32,15 @@ class PermissionRoleSeeder extends Seeder
             'Currency',
             'Bank',
             'Cash Bank Transaction',
+            'Invoice',
 
             'Purchase Request',
             'Purchase Order',
             'Goods Receipt',
             'Goods Issue',
+
+            'Cash Bank Transaction',
+            'Invoice',
         ];
 
         // Generate permissions
@@ -78,6 +82,7 @@ class PermissionRoleSeeder extends Seeder
             'Currency' => ['Read'],
             'Bank' => ['Read'],
             'Cash Bank Transaction' => ['Create', 'Read', 'Update', 'Delete'],
+            'Invoice' => ['Create', 'Read', 'Update', 'Delete'],
 
             'Purchase Request' => ['Read'],
             'Purchase Order' => ['Read'],

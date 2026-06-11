@@ -142,6 +142,11 @@ class GoodsReceive extends Model
         return $this->hasMany(GoodsReceiveItem::class)->orderBy('sort');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function statusLogs(): HasMany
     {
         return $this->hasMany(GoodsReceiveStatusLog::class);

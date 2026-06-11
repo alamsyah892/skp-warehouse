@@ -4,53 +4,71 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::create('cash_bank_transactions', function (Blueprint $table) {
+            /** 
+             * Identifier
+             * */
             $table->id();
+            $table->string('number')
+                ->index()
+                ->unique()
+            ;
+            $table->unsignedTinyInteger('type')
+                ->default(1)
+                ->index()
+            ;
+            $table->text('description');
 
-            $table->unsignedTinyInteger('type')->index();
-
+            /** 
+             * Relation
+             */
             $table->foreignId('company_id')
                 ->constrained('companies')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('bank_id')
                 ->constrained('banks')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('vendor_id')
                 ->nullable()
                 ->constrained('vendors')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
+                ->cascadeOnDelete()
+            ;
             $table->foreignId('project_id')
                 ->nullable()
                 ->constrained('projects')
                 ->cascadeOnUpdate()
-                ->cascadeOnDelete();
+                ->cascadeOnDelete()
+            ;
 
-            $table->string('number')->unique();
-            $table->date('date')->index();
-            $table->decimal('amount', 18, 2);
-            $table->string('check_number')->nullable();
-            $table->text('description')->nullable();
-            $table->text('notes')->nullable();
-            $table->text('info')->nullable();
+            /** 
+             * Other
+             */
+            $table->date('voucher_date')
+                ->index()
+                ->nullable()
+                ->default(null)
+            ;
+            $table->string('check_number');
+            $table->decimal('total_amount', 15, 2)
+                ->default(0)
+            ;
+
+            $table->text('notes');
+            $table->text('info');
 
             $table->timestamps();
             $table->softDeletes();
-
-            $table->index(['company_id', 'date']);
-            $table->index(['bank_id', 'date']);
         });
     }
 

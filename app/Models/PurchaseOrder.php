@@ -198,6 +198,11 @@ class PurchaseOrder extends Model
         return $this->hasMany(GoodsReceive::class);
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function statusLogs(): HasMany
     {
         return $this->hasMany(PurchaseOrderStatusLog::class);

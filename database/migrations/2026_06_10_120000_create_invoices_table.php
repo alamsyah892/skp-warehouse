@@ -6,12 +6,9 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        Schema::create('purchase_orders', function (Blueprint $table) {
+        Schema::create('invoices', function (Blueprint $table): void {
             /** 
              * Identifier
              * */
@@ -20,57 +17,28 @@ return new class extends Migration {
                 ->index()
                 ->unique()
             ;
-            $table->unsignedTinyInteger('type')
-                ->default(1)
-                ->index()
-            ;
             $table->text('description');
-            $table->unsignedTinyInteger('status')
-                ->default(1)
-                ->index()
-            ;
 
             /** 
              * Relation
              */
-            // Vendor
             $table->foreignId('vendor_id')
+                ->nullable()
                 ->constrained('vendors')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
-            // Delivery
-            $table->foreignId('company_id')
+            $table->foreignId('purchase_order_id')
                 ->nullable()
-                ->constrained('companies')
+                ->constrained('purchase_orders')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
-            $table->foreignId('warehouse_id')
-                ->nullable()
-                ->constrained('warehouses')
+            $table->foreignId('goods_receive_id')
+                ->constrained('goods_receives')
                 ->cascadeOnUpdate()
                 ->cascadeOnDelete()
             ;
-            $table->foreignId('division_id')
-                ->nullable()
-                ->constrained('divisions')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete()
-            ;
-            $table->foreignId('project_id')
-                ->nullable()
-                ->constrained('projects')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete()
-            ;
-            $table->foreignId('warehouse_address_id')
-                ->nullable()
-                ->constrained('warehouse_addresses')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete()
-            ;
-            // User
             $table->foreignId('user_id')
                 ->constrained('users')
                 ->cascadeOnUpdate()
@@ -78,22 +46,19 @@ return new class extends Migration {
             ;
 
             /** 
-             * Delivery
+             * Other
              */
-            $table->date('delivery_date')
+            $table->date('invoice_date')
+                ->index()
                 ->nullable()
                 ->default(null)
             ;
-            $table->string('delivery_notes', 512);
-            $table->decimal('shipping_cost', 15, 2)
-                ->default(0)
+            $table->date('invoice_due_date')
+                ->index()
+                ->nullable()
+                ->default(null)
             ;
-            $table->string('shipping_method');
 
-            /** 
-             * Other
-             */
-            $table->string('terms');
             $table->text('notes');
             $table->text('info');
 
@@ -120,11 +85,8 @@ return new class extends Migration {
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        Schema::dropIfExists('purchase_orders');
+        Schema::dropIfExists('invoices');
     }
 };

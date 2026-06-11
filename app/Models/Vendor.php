@@ -7,6 +7,7 @@ use App\Models\Concerns\LogsAllFillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
@@ -62,5 +63,10 @@ class Vendor extends Model
     public function itemCategories(): BelongsToMany
     {
         return $this->belongsToMany(ItemCategory::class);
+    }
+
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
     }
 }
