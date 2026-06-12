@@ -30,7 +30,7 @@ class CashBankTransactionsTable
                     ->fontFamily(FontFamily::Mono)
                     ->weight(FontWeight::Bold),
 
-                TextColumn::make('date')
+                TextColumn::make('voucher_date')
                     ->label('Tanggal')
                     ->date()
                     ->sortable(),
@@ -60,8 +60,8 @@ class CashBankTransactionsTable
                 TextColumn::make('type')
                     ->label('Jenis Transaksi')
                     ->badge()
-                    ->color(fn (TransactionType $state): string => $state->color())
-                    ->formatStateUsing(fn (TransactionType $state): string => $state->label())
+                    ->color(fn(TransactionType $state): string => $state->color())
+                    ->formatStateUsing(fn(TransactionType $state): string => $state->label())
                     ->sortable(),
 
                 TextColumn::make('amount')
@@ -73,13 +73,13 @@ class CashBankTransactionsTable
             ->filters([
                 SelectFilter::make('company')
                     ->label('Perusahaan')
-                    ->relationship('company', 'alias', fn ($query) => $query->orderBy('alias')->orderBy('code'))
+                    ->relationship('company', 'alias', fn($query) => $query->orderBy('alias')->orderBy('code'))
                     ->searchable(['alias', 'code', 'name'])
                     ->preload(),
 
                 SelectFilter::make('bank')
                     ->label('Bank / Kas')
-                    ->relationship('bank', 'name', fn ($query) => $query->orderBy('name')->orderBy('code'))
+                    ->relationship('bank', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
                     ->searchable(['name', 'code'])
                     ->preload(),
 
@@ -100,11 +100,11 @@ class CashBankTransactionsTable
                         return $query
                             ->when(
                                 $data['date_from'] ?? null,
-                                fn (Builder $q, string $date): Builder => $q->whereDate('date', '>=', $date),
+                                fn(Builder $q, string $date): Builder => $q->whereDate('date', '>=', $date),
                             )
                             ->when(
                                 $data['date_until'] ?? null,
-                                fn (Builder $q, string $date): Builder => $q->whereDate('date', '<=', $date),
+                                fn(Builder $q, string $date): Builder => $q->whereDate('date', '<=', $date),
                             );
                     }),
 

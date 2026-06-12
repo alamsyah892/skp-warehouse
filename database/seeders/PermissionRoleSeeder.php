@@ -31,8 +31,6 @@ class PermissionRoleSeeder extends Seeder
             'Courier',
             'Currency',
             'Bank',
-            'Cash Bank Transaction',
-            'Invoice',
 
             'Purchase Request',
             'Purchase Order',
