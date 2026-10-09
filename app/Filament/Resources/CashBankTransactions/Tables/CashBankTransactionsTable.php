@@ -64,7 +64,7 @@ class CashBankTransactionsTable
                     ->formatStateUsing(fn(TransactionType $state): string => $state->label())
                     ->sortable(),
 
-                TextColumn::make('amount')
+                TextColumn::make('total_amount')
                     ->label('Jumlah')
                     ->money('IDR', decimalPlaces: 2)
                     ->alignEnd()

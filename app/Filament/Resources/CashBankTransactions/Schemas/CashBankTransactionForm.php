@@ -147,7 +147,7 @@ class CashBankTransactionForm
                             ),
                         ])
                     ,
-                    TextInput::make('amount')
+                    TextInput::make('total_amount')
                         ->label('Jumlah')
                         ->numeric()
                         ->required()

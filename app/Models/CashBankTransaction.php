@@ -29,7 +29,7 @@ class CashBankTransaction extends Model
         'project_id',
         'number',
         'date',
-        'amount',
+        'total_amount',
         'check_number',
         'description',
         'notes',
@@ -46,7 +46,7 @@ class CashBankTransaction extends Model
     protected $casts = [
         'type' => TransactionType::class,
         'date' => 'date',
-        'amount' => 'decimal:2',
+        'total_amount' => 'decimal:2',
     ];
 
     protected static function booted(): void

@@ -37,10 +37,10 @@ class CashBankTransactionInfolist
                     TextEntry::make('type')
                         ->label('Jenis Transaksi')
                         ->badge()
-                        ->color(fn (TransactionType $state): string => $state->color())
-                        ->formatStateUsing(fn (TransactionType $state): string => $state->label()),
+                        ->color(fn(TransactionType $state): string => $state->color())
+                        ->formatStateUsing(fn(TransactionType $state): string => $state->label()),
 
-                    TextEntry::make('amount')
+                    TextEntry::make('total_amount')
                         ->label('Jumlah')
                         ->money('IDR', decimalPlaces: 2),
 
@@ -83,7 +83,7 @@ class CashBankTransactionInfolist
                                 ->label('Dihapus')
                                 ->dateTime()
                                 ->color('gray')
-                                ->visible(fn ($state): bool => $state !== null),
+                                ->visible(fn($state): bool => $state !== null),
                         ]),
                 ]),
         ]);
