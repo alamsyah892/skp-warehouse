@@ -7,8 +7,10 @@
         "filament/filament"
     ],
     "skills": [
+        "infer-conventions",
         "laravel-best-practices",
-        "pest-testing",
-        "tailwindcss-development"
+        "testing-best-practices",
+        "tailwindcss-development",
+        "filament-development"
     ]
 }
