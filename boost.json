@@ -1,16 +1,8 @@
 {
     "agents": [
-        "codex"
+        "opencode"
     ],
-    "cloud": false,
-    "packages": [
-        "filament/filament"
-    ],
-    "skills": [
-        "infer-conventions",
-        "laravel-best-practices",
-        "testing-best-practices",
-        "tailwindcss-development",
-        "filament-development"
-    ]
+    "mcp": true,
+    "nightwatch": false,
+    "sail": false
 }
