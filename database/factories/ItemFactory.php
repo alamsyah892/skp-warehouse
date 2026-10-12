@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Item;
+use App\Models\ItemCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Item>
+ * @extends Factory<Item>
  */
 class ItemFactory extends Factory
 {
@@ -17,7 +19,16 @@ class ItemFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'category_id' => ItemCategory::factory(),
+
+            'code' => fake()->unique()->numerify('ITM-####'),
+            'name' => fake()->unique()->words(3, true),
+            'description' => fake()->sentence(),
+
+            'unit' => fake()->randomElement(['PCS', 'BTG', 'KG', 'MTR', 'BOX']),
+            'type' => Item::TYPE_STOCKABLE,
+
+            'is_active' => true,
         ];
     }
 }

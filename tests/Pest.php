@@ -1,5 +1,9 @@
 <?php
 
+use App\Models\Permission;
+use App\Models\User;
+use Tests\TestCase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
@@ -11,7 +15,7 @@
 |
 */
 
-pest()->extend(Tests\TestCase::class)
+pest()->extend(TestCase::class)
  // ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
     ->in('Feature');
 
@@ -41,7 +45,12 @@ expect()->extend('toBeOne', function () {
 |
 */
 
-function something()
+function createUserWithReadPurchaseOrderPermission(): User
 {
-    // ..
+    Permission::firstOrCreate(['name' => 'Read Purchase Order', 'guard_name' => 'web']);
+
+    $user = User::factory()->create();
+    $user->givePermissionTo('Read Purchase Order');
+
+    return $user;
 }

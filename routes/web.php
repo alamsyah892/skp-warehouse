@@ -1,7 +1,13 @@
 <?php
 
-// use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PrintPurchaseOrderKoController;
+use App\Http\Controllers\PrintPurchaseOrderPoController;
+use Illuminate\Support\Facades\Route;
 
-// Route::get('/', function () {
-//     return view('welcome');
-// });
+Route::middleware('auth')->group(function (): void {
+    Route::get('purchase-orders/{purchaseOrder}/print-ko', PrintPurchaseOrderKoController::class)
+        ->name('purchase-orders.print-ko');
+
+    Route::get('purchase-orders/{purchaseOrder}/print-po', PrintPurchaseOrderPoController::class)
+        ->name('purchase-orders.print-po');
+});

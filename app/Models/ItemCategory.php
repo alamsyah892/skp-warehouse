@@ -4,6 +4,8 @@ namespace App\Models;
 
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
+use Database\Factories\ItemCategoryFactory;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -12,11 +14,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ItemCategory extends Model
 {
+    use DefaultEmptyString, LogsAllFillable;
+
+    /** @use HasFactory<ItemCategoryFactory> */
+    use HasFactory;
+
     use SoftDeletes;
-    use LogsAllFillable, DefaultEmptyString;
 
     public const LEVEL_DOMAIN = 1;
+
     public const LEVEL_CATEGORY = 2;
+
     public const LEVEL_SUB_CATEGORY = 3;
     // public const LEVEL_FINAL_CATEGORY = 4;
 
@@ -78,17 +86,16 @@ class ItemCategory extends Model
         return $this->belongsToMany(Vendor::class);
     }
 
-
     /* ================= ACCESSOR ================= */
 
     public function getParentPathAttribute(): string
     {
-        if (!$this->parent) {
+        if (! $this->parent) {
             return '';
         }
 
         return $this->parent->parent_path
-            ? $this->parent->parent_path . ' → ' . $this->parent->name
+            ? $this->parent->parent_path.' → '.$this->parent->name
             : $this->parent->name;
     }
 
@@ -105,11 +112,10 @@ class ItemCategory extends Model
         return implode(' → ', $names);
     }
 
-
     /* ================= HELPER ================= */
 
     public function isLeaf(): bool
     {
-        return !$this->children()->exists();
+        return ! $this->children()->exists();
     }
 }

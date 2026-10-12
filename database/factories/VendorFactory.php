@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Vendor;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Vendor>
+ * @extends Factory<Vendor>
  */
 class VendorFactory extends Factory
 {
@@ -17,7 +18,22 @@ class VendorFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'code' => fake()->unique()->numerify('VND-####'),
+            'name' => fake()->company(),
+            'description' => fake()->sentence(),
+
+            'address' => fake()->streetAddress(),
+            'city' => fake()->city(),
+            'post_code' => fake()->postcode(),
+            'contact_person' => fake()->name(),
+            'contact_person_position' => fake()->jobTitle(),
+            'phone' => fake()->phoneNumber(),
+            'fax' => fake()->phoneNumber(),
+            'email' => fake()->unique()->companyEmail(),
+            'website' => fake()->url(),
+            'tax_number' => fake()->numerify('##.###.###.#-###.###'),
+
+            'is_active' => true,
         ];
     }
 }

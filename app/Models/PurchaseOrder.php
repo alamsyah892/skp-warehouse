@@ -420,7 +420,7 @@ class PurchaseOrder extends Model
         return round(
             collect($normalizedItems)->sum(
                 fn(array $item): float =>
-                max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0)
+                    max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0)
             ),
             2
         );
@@ -457,7 +457,7 @@ class PurchaseOrder extends Model
         PurchaseOrderTaxType|string|null $taxType,
         float|int|string|null $taxPercentage,
     ): float {
-        $taxableAmount = max(round((float) $netSubtotal, 2), 0.0);
+        $taxableAmount = max((float) $netSubtotal, 2);
         // $rate = self::resolveIndonesianVatRate($taxPercentage);
         $rate = $taxPercentage;
         $normalizedTaxType = self::normalizeTaxType($taxType);
@@ -467,8 +467,8 @@ class PurchaseOrder extends Model
         }
 
         return match ($normalizedTaxType) {
-            PurchaseOrderTaxType::EXCLUDE => round($taxableAmount * ($rate / 100), 0),
-            PurchaseOrderTaxType::INCLUDE => round($taxableAmount - ($taxableAmount / (1 + ($rate / 100))), 0),
+            PurchaseOrderTaxType::EXCLUDE => ($taxableAmount * ($rate / 100)),
+            PurchaseOrderTaxType::INCLUDE => ($taxableAmount - ($taxableAmount / (1 + ($rate / 100)))),
         };
     }
 

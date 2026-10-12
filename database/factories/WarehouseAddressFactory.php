@@ -2,10 +2,12 @@
 
 namespace Database\Factories;
 
+use App\Models\Warehouse;
+use App\Models\WarehouseAddress;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\WarehouseAddress>
+ * @extends Factory<WarehouseAddress>
  */
 class WarehouseAddressFactory extends Factory
 {
@@ -17,7 +19,15 @@ class WarehouseAddressFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'warehouse_id' => Warehouse::factory(),
+
+            'address' => fake()->streetAddress(),
+            'city' => fake()->city(),
+            'post_code' => fake()->postcode(),
+            'phone' => fake()->phoneNumber(),
+            'fax' => fake()->phoneNumber(),
+
+            'as_default' => false,
         ];
     }
 }

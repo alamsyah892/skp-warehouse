@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\ItemCategory;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\ItemCategory>
+ * @extends Factory<ItemCategory>
  */
 class ItemCategoryFactory extends Factory
 {
@@ -17,7 +18,14 @@ class ItemCategoryFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'parent_id' => null,
+            'level' => ItemCategory::LEVEL_CATEGORY,
+
+            'code' => fake()->unique()->numerify('CAT-####'),
+            'name' => fake()->unique()->words(2, true),
+            'description' => fake()->sentence(),
+
+            'allow_po' => true,
         ];
     }
 }

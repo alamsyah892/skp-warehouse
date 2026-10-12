@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Courier;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Courier>
+ * @extends Factory<Courier>
  */
 class CourierFactory extends Factory
 {
@@ -17,7 +18,11 @@ class CourierFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'code' => fake()->unique()->numerify('CRR-####'),
+            'name' => fake()->company(),
+            'description' => fake()->sentence(),
+
+            'is_active' => true,
         ];
     }
 }

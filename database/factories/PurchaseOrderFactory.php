@@ -16,7 +16,7 @@ use App\Models\WarehouseAddress;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PurchaseOrder>
+ * @extends Factory<PurchaseOrder>
  */
 class PurchaseOrderFactory extends Factory
 {
@@ -33,14 +33,11 @@ class PurchaseOrderFactory extends Factory
             'type' => PurchaseOrderType::RED,
             'number' => $this->faker->unique()->bothify('PO/####/??'),
             'description' => $this->faker->sentence(),
-            'memo' => $this->faker->word(),
-            'termin' => $this->faker->word(),
             'notes' => $this->faker->paragraph(),
             'info' => $this->faker->sentence(),
             'discount' => 0,
             'tax_type' => PurchaseOrderTaxType::EXCLUDE,
             'tax_percentage' => PurchaseOrder::DEFAULT_TAX_PERCENTAGE,
-            'tax' => 0,
             'tax_description' => '',
             'rounding' => 0,
             'status' => PurchaseOrderStatus::DRAFT,

@@ -2,10 +2,13 @@
 
 namespace Database\Factories;
 
+use App\Models\Item;
+use App\Models\PurchaseRequest;
+use App\Models\PurchaseRequestItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\PurchaseRequestItem>
+ * @extends Factory<PurchaseRequestItem>
  */
 class PurchaseRequestItemFactory extends Factory
 {
@@ -17,7 +20,12 @@ class PurchaseRequestItemFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'purchase_request_id' => PurchaseRequest::factory(),
+            'item_id' => Item::factory(),
+
+            'qty' => fake()->randomFloat(2, 1, 100),
+            'description' => fake()->sentence(),
+            'sort' => 0,
         ];
     }
 }

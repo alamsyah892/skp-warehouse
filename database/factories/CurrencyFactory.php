@@ -2,10 +2,11 @@
 
 namespace Database\Factories;
 
+use App\Models\Currency;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Currency>
+ * @extends Factory<Currency>
  */
 class CurrencyFactory extends Factory
 {
@@ -17,7 +18,11 @@ class CurrencyFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'code' => fake()->unique()->currencyCode(),
+            'name' => fake()->word(),
+            'description' => fake()->sentence(),
+
+            'is_active' => true,
         ];
     }
 }

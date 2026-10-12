@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PurchaseOrderPolicy
 {
@@ -23,6 +22,24 @@ class PurchaseOrderPolicy
     public function view(User $user, PurchaseOrder $purchaseOrder): bool
     {
         return $user->can('Read Purchase Order');
+    }
+
+    /**
+     * Determine whether the user can print the Konfirmasi Order (KO) document.
+     */
+    public function printKo(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->status === PurchaseOrderStatus::DRAFT
+            && $user->can('Read Purchase Order');
+    }
+
+    /**
+     * Determine whether the user can print the Purchase Order (PO) document.
+     */
+    public function printPo(User $user, PurchaseOrder $purchaseOrder): bool
+    {
+        return $purchaseOrder->status === PurchaseOrderStatus::ORDERED
+            && $user->can('Read Purchase Order');
     }
 
     /**
