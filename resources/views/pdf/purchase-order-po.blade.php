@@ -10,7 +10,7 @@
     $project = $purchaseOrder->project;
     $warehouseAddress = $purchaseOrder->warehouseAddress;
 
-    $idr = fn (float|int|string|null $value): string => number_format((float) $value, 2, '.', ',');
+    $idr = fn(float|int|string|null $value): string => number_format((float) $value, 2, '.', ',');
 
     $qty = function (float|int|string|null $value): string {
         $formatted = number_format((float) $value, 2, '.', ',');
@@ -27,454 +27,468 @@
     $receivingPerson = $purchaseOrder->purchaseRequests->first()?->user?->name ?? '-';
     $deliveryDate = $purchaseOrder->delivery_notes ?: ($purchaseOrder->delivery_date?->translatedFormat('d M Y') ?: '-');
 @endphp
+
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
+
 <head>
-    <meta charset="utf-8">
-    <title>Purchase Order</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Print PO Merah</title>
     <style>
         @page {
             size: A4;
-            margin: 14mm 12mm 16mm 12mm;
+            margin: 1cm 0.5cm;
         }
 
-        * {
-            box-sizing: border-box;
-        }
+        /* .page {
+        width: 21cm;
+        height: 29.7cm;
+				margin: 1cm 0.5cm;
+        border: 1px solid grey;
+      } */
 
         body {
-            font-family: Helvetica, Arial, sans-serif;
-            font-size: 10px;
-            color: #000;
+            font-size: 10pt;
+            font-family: Courier, monospace Courier;
+            line-height: 1.2em;
+            font-weight: bold;
+            /* color: darkblue; */
+        }
+
+        body,
+        h1,
+        p,
+        table,
+        tr,
+        th,
+        td,
+        ul,
+        li {
             margin: 0;
             padding: 0;
         }
 
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .text-bold { font-weight: bold; }
-        .mono { font-family: Courier, monospace; }
-
-        .doc-title {
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 1px;
+        h1 {
             text-align: center;
-            margin: 2px 0 0;
+            font-size: 10pt;
         }
 
-        .doc-subtitle {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        table.parties {
-            width: 100%;
+        table {
+            margin: 0;
+            padding: 0;
             border-collapse: collapse;
+            text-wrap: wrap;
         }
 
-        table.parties td {
+        td,
+        th {
             vertical-align: top;
+            word-wrap: break-word;
         }
 
-        td.party-left {
-            width: 55%;
+        ul {
+            list-style-type: none;
         }
 
-        td.party-right {
-            width: 45%;
+        .row {
+            position: relative;
+            /* padding-bottom: 1em; */
         }
 
-        table.meta {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 6px;
+        .dynamic-row {
+            min-height: 581pt;
         }
 
-        table.meta td {
-            padding: 1px 0;
-            vertical-align: top;
+        .table-item-border {
+            margin-top: -2px;
+            margin-left: -3.5px;
+            width: 47rem;
         }
 
-        table.meta td.meta-label {
-            width: 38%;
+        .table-item-border th {
+            padding: 0 0.5rem;
+            border: 1px solid black;
         }
 
-        table.meta td.meta-colon {
-            width: 4%;
+        .table-item-border td {
+            padding: 0 0.5rem;
+            border-right: 1px solid black;
+            border-left: 1px solid black;
         }
 
-        table.delivery-meta {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 10px;
+        .table-item-border tfoot {
+            border: 1px solid black;
         }
-
-        table.delivery-meta td {
-            padding: 1px 0;
-            vertical-align: top;
-        }
-
-        table.delivery-meta td.delivery-label {
-            width: 20%;
-        }
-
-        table.delivery-meta td.delivery-colon {
-            width: 2%;
-        }
-
-        .intro { margin-bottom: 8px; }
-
-        table.items {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table.items th,
-        table.items td {
-            border: 1px solid #000;
-            padding: 4px 5px;
-            vertical-align: top;
-        }
-
-        table.items th {
-            background-color: #e5e5e5;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .item-name { font-weight: bold; }
-
-        .item-description {
-            margin-top: 3px;
-            color: #333;
-        }
-
-        table.bottom {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table.bottom td {
-            vertical-align: top;
-        }
-
-        td.conditions-cell {
-            width: 52%;
-            padding: 6px 8px 0 0;
-        }
-
-        td.conditions-cell .condition-note {
-            margin-bottom: 6px;
-        }
-
-        td.summary-cell {
-            width: 48%;
-        }
-
-        table.summary {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        table.summary td {
-            border: 1px solid #000;
-            padding: 4px 6px;
-        }
-
-        table.summary td.summary-value {
-            text-align: right;
-        }
-
-        table.summary tr.grand-total td {
-            font-weight: bold;
-            background-color: #e5e5e5;
-        }
-
-        .keterangan {
-            margin-top: 8px;
-            margin-bottom: 10px;
-        }
-
-        table.delivery {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 8px;
-        }
-
-        table.delivery td {
-            padding: 1px 0;
-            vertical-align: top;
-        }
-
-        table.delivery td.delivery-label {
-            width: 20%;
-        }
-
-        table.delivery td.delivery-colon {
-            width: 2%;
-        }
-
-        table.signatures {
-            width: 100%;
-            margin-top: 14px;
-            border-collapse: collapse;
-        }
-
-        table.signatures td {
-            width: 50%;
-            text-align: center;
-            vertical-align: top;
-            padding: 0 6px;
-        }
-
-        .signature-space { height: 60px; }
-
-        .signature-line {
-            border-top: 1px solid #000;
-            margin: 0 8px;
-            padding-top: 3px;
-        }
-
-        .legend {
-            margin-top: 16px;
-            font-size: 8px;
-        }
-
-        .legend span {
-            margin-right: 10px;
-        }
-
-        .legend .c-white { color: #555; }
-        .legend .c-red { color: #c00000; }
-        .legend .c-green { color: #1b7a1b; }
-        .legend .c-blue { color: #0033a0; }
-        .legend .c-yellow { color: #b8860b; }
 
         .footer {
             position: fixed;
-            bottom: -11mm;
+            bottom: 9.5px;
             left: 0;
             right: 0;
-            font-family: Courier, monospace;
-            font-size: 7px;
-            color: #000;
         }
 
-        .footer .page-number:before { content: counter(page); }
+        .footer-page {
+            position: fixed;
+            bottom: -0.4in;
+            left: 0;
+            right: 0;
+            font-size: 7pt;
+        }
+
+        .footer-page .page-number:before {
+            content: counter(page);
+        }
+
+        .text-end {
+            text-align: right;
+        }
     </style>
 </head>
+
 <body>
-    <div class="doc-title">PURCHASE ORDER</div>
-    <div class="doc-subtitle">(SURAT PESANAN)</div>
+    <div class="page">
+        <div class="dynamic-row">
+            <!-- TITLE -->
+            <div class="row">
+                <h1>
+                    <u>PURCHASE ORDER</u><br />
+                    (SURAT PESANAN)
+                </h1>
+            </div>
+            <br />
 
-    <table class="parties">
-        <tr>
-            <td class="party-left">
-                <div>Kepada:</div>
-                <div class="text-bold">{{ $vendor?->name }}</div>
-                <div>{{ $vendor?->address }}</div>
-                <div>{{ $vendor?->city }}</div>
-                <div>Phone : {{ $vendor?->phone ?: '-' }}</div>
-                <div>Fax : {{ $vendor?->fax ?: '-' }}</div>
-                <div>Up : {{ $vendor?->contact_person ?: '-' }}</div>
-            </td>
-            <td class="party-right">
-                <table class="meta">
+            <!-- PURPOSE -->
+            <div class="row">
+                <table>
                     <tr>
-                        <td class="meta-label">Tanggal</td>
-                        <td class="meta-colon">:</td>
-                        <td>{{ strtoupper($purchaseOrder->created_at?->translatedFormat('d M y') ?? '') }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">No. PO</td>
-                        <td class="meta-colon">:</td>
-                        <td class="mono">{{ $purchaseOrder->number }}</td>
-                    </tr>
-                    <tr>
-                        <td class="meta-label">PR/BPPB</td>
-                        <td class="meta-colon">:</td>
-                        <td class="mono">{{ $purchaseOrderNumbers ?: '-' }}</td>
+                        <td style="min-width: 24rem; max-width: 24rem; padding-right: 0.5rem">
+                            <table>
+                                <tr>
+                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Kepada:</td>
+                                </tr>
+                                <tr>
+                                    <td style="padding-left: 2rem; min-width: 22rem; max-width: 22rem">
+                                        <strong>
+                                            {{ strtoupper($vendor?->name) }}<br />
+                                            {{ strtoupper($vendor?->address) }}<br />
+                                            {{ strtoupper($vendor?->city) }}<br />
+                                        </strong>
+                                        <table>
+                                            <tr>
+                                                <td style="min-width: 2.5rem; max-width: 2.5rem">Phone</td>
+                                                <td style="width: 1rem">:</td>
+                                                <td style="min-width: 18.5rem; max-width: 18.5rem">
+                                                    <strong>{{ $vendor?->phone ?: '-' }}</strong>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="min-width: 2.5rem; max-width: 2.5rem">Fax</td>
+                                                <td style="width: 1rem">:</td>
+                                                <td style="min-width: 18.5rem; max-width: 18.5rem">
+                                                    <strong>{{ $vendor?->fax ?: '-' }}</strong>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="min-width: 2.5rem; max-width: 2.5rem">UP</td>
+                                                <td style="width: 1rem">:</td>
+                                                <td style="min-width: 18.5rem; max-width: 18.5rem">
+                                                    <strong>{{ strtoupper($vendor?->contact_person ?: '-') }}</strong>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+
+                        <td style="padding-left: 0.5rem; min-width: 22rem; max-width: 22rem">
+                            <table>
+                                <tr>
+                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Tanggal</td>
+                                    <td style="width: 1rem">:</td>
+                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
+                                        <strong>{{ strtoupper($purchaseOrder->created_at?->translatedFormat('d M y') ?? '') }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="min-width: 3.5rem; max-width: 3.5rem">No. PO</td>
+                                    <td style="width: 1rem">:</td>
+                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
+                                        <strong>{{ $purchaseOrder->number }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="min-width: 3.5rem; max-width: 3.5rem">PR/BPPB</td>
+                                    <td style="width: 1rem">:</td>
+                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
+                                        <strong>{{ $purchaseOrderNumbers ?: '-' }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="min-width: 3.5rem; max-width: 3.5rem">&nbsp;</td>
+                                    <td style="width: 1rem">&nbsp;</td>
+                                    <td style="min-width: 17.5rem; max-width: 17.5rem">&nbsp;</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="3">
+                                        <table>
+                                            <tr>
+                                                <td style="min-width: 9rem; max-width: 9rem">Syarat Pembayaran</td>
+                                                <td style="width: 1rem">:</td>
+                                                <td style="min-width: 12rem; max-width: 12rem">
+                                                    <strong>{{ $purchaseOrder->terms ?: '-' }}</strong>
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <td style="min-width: 9rem; max-width: 9rem">Tanggal Pengiriman</td>
+                                                <td style="width: 1rem">:</td>
+                                                <td style="min-width: 12rem; max-width: 12rem">
+                                                    <strong>{{ $deliveryDate }}</strong>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
                     </tr>
                 </table>
-            </td>
-        </tr>
-    </table>
+            </div>
+            <br />
 
-    <table class="delivery-meta">
-        <tr>
-            <td class="delivery-label">Syarat Pembayaran</td>
-            <td class="delivery-colon">:</td>
-            <td>{{ $purchaseOrder->terms ?: '-' }}</td>
-        </tr>
-        <tr>
-            <td class="delivery-label">Tanggal Pengiriman</td>
-            <td class="delivery-colon">:</td>
-            <td>{{ $deliveryDate }}</td>
-        </tr>
-    </table>
+            <!-- OPENING -->
+            <div class="row">
+                <p>
+                    Sesuai dengan penawaran harga yang telah diberikan, pesanan barang-barang tersebut dibawah ini agar
+                    dikirim kepada bagian penerimaan barang (Receiving Section) dengan mengikuti ketentuan-ketentuan
+                    yang tertera dibawah ini.
+                </p>
+            </div>
+            <br />
 
-    <div class="intro">
-        Sesuai dengan penawaran harga yang telah diberikan, pesanan barang-barang tersebut dibawah ini
-        agar dikirim kepada bagian penerimaan barang (Receiving Section) dengan mengikuti
-        ketentuan-ketentuan yang tertera dibawah ini.
+            <!-- ITEM TABLE -->
+            <div class="row">
+
+                <table class="table-item-border">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">No</th>
+                            <th rowspan="2">&nbsp;Jumlah</th>
+                            <th rowspan="2">Satuan</th>
+                            <th rowspan="2">Nama Barang</th>
+                            <th colspan="2">Harga</th>
+                        </tr>
+                        <tr>
+                            <th>Satuan (Rp)</th>
+                            <th>Jumlah (Rp)</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @forelse ($purchaseOrder->purchaseOrderItems as $index => $item)
+
+                            <tr>
+                                <td class="text-end" style="min-width: 1rem; max-width: 1rem;">
+                                    <strong>{{ $index + 1 }}</strong>
+                                </td>
+                                <td class="text-end" style="min-width: 4.5rem; max-width: 4.5rem;">
+                                    <strong>{{ $qty($item->qty) }}</strong>
+                                </td>
+                                <td style="min-width: 3rem; max-width: 3rem;">
+                                    <strong>{{ $item->item?->unit }}</strong>
+                                </td>
+                                <td style="min-width: 16.5rem; max-width: 16.5rem;">
+                                    <strong>{{ $item->item?->name }}</strong>
+                                    @if (filled($item->description))
+                                        <strong>
+                                            @foreach (collect(explode("\n", $item->description))->filter() as $line)
+                                                {{ trim($line) }}<br>
+                                            @endforeach
+                                        </strong>
+                                    @endif
+                                </td>
+                                <td class="text-end" style="min-width: 8rem; max-width: 8rem;">
+                                    <strong>{{ $idr($item->price) }}</strong>
+                                </td>
+                                <td class="text-end" style="min-width: 8rem; max-width: 8rem;">
+                                    <strong>{{ $idr($item->getSubtotalAmount()) }}</strong>
+                                </td>
+                            </tr>
+
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center">-</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+
+                <table class="table-item-border">
+                    <tbody>
+                        <tr>
+                            <td class="text-end" style="min-width: 1rem; max-width: 1rem;">&nbsp;</td>
+                            <td class="text-end" style="min-width: 4.5rem; max-width: 4.5rem;">&nbsp;</td>
+                            <td style="min-width: 3rem; max-width: 3rem;">&nbsp;</td>
+                            <td style="min-width: 16.5rem; max-width: 16.5rem;">
+                                &nbsp;
+                            </td>
+                            <td class="text-end" style="min-width: 8rem; max-width: 8rem;">&nbsp;</td>
+                            <td class="text-end" style="min-width: 8rem; max-width: 8rem;">&nbsp;</td>
+                        </tr>
+                    </tbody>
+
+                    <tfoot>
+                        <tr>
+                            <td colspan="4" style="min-width: 28rem; max-width: 28rem">
+                                <ul>
+                                    <li>PO ini bisa dibatalkan sewaktu-waktu oleh kedua belah pihak.</li>
+                                    <li>
+                                        Apabila ada uang muka, maka PO ini belum mengikat dan
+                                        dapat dibatalkan jika uang muka belum dibayarkan. Jika
+                                        uang muka tersebut telah dibayarkan, maka PO tidak dapat
+                                        dibatalkan.
+                                    </li>
+                                </ul>
+                            </td>
+
+                            <td style="min-width: 8rem; max-width: 8rem;">
+                                <strong>Subtotal</strong><br />
+                                <strong>Diskon</strong>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<br />
+                                <strong>Subtotal-2</strong><br />
+                                <strong>PPN</strong>&nbsp;&nbsp;&nbsp;<strong>{{ $taxPercentage + 0 }}%</strong><br />
+                                <strong>Grand Total</strong>
+                            </td>
+                            <td class="text-end" style="min-width: 8rem; max-width: 8rem;">
+                                <strong>{{ $idr($summary['subtotal']) }}<br /></strong>
+                                <strong>{{ $idr($summary['discount']) }}<br /></strong>
+                                <strong>{{ $idr($summary['subtotal_after_discount']) }}<br /></strong>
+                                <strong>{{ $idr($summary['tax_amount']) }}<br /></strong>
+                                <strong>{{ $idr($summary['grand_total']) }}</strong>
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <br />
+
+            <!-- DESCRIPTION -->
+            <div class="row">
+                <p>Keterangan:</p>
+                <p style="padding-left: 2rem">
+                    <strong>{{ strtoupper($terbilang) }}.</strong>
+                </p>
+            </div>
+            <br />
+        </div>
+
+        <div style="page-break-inside: avoid">
+            <!-- NOTES -->
+            <div class="row">
+                <table>
+                    <tr>
+                        <td style="min-width: 12rem; max-width: 12rem">Barang segera dikirim ke</td>
+                        <td style="width: 1rem">:</td>
+                        <td style="min-width: 34rem; max-width: 34rem">
+                            <div class="text-bold">{{ $project?->name ? 'Proyek ' . $project->name : '-' }}</div>
+                            @if ($warehouseAddress?->address)
+                                <div>{{ $warehouseAddress->address }}</div>
+                            @endif
+                            @if ($warehouseAddress?->city)
+                                <div>{{ $warehouseAddress->city }}</div>
+                            @endif
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-width: 12rem; max-width: 12rem">Penerima Barang</td>
+                        <td style="width: 1rem">:</td>
+                        <td style="min-width: 34rem; max-width: 34rem">
+                            <strong>{{ $receivingPerson }}</strong>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="min-width: 12rem; max-width: 12rem">DO/Faktur/Kwitansi a.n.</td>
+                        <td style="width: 1rem">:</td>
+                        <td style="min-width: 34rem; max-width: 34rem">
+                            <div class="text-bold">{{ $company?->name }}</div>
+                            @if ($company?->address)
+                                <div>{{ $company->address }}</div>
+                            @endif
+                            @if ($company?->tax_number)
+                                <div>NPWP/NPPKP: {{ $company->tax_number }}</div>
+                            @endif
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <br />
+
+            <!-- SIGNATURE -->
+            <div class="row">
+                <table>
+                    <tr>
+                        <td style="min-width: 17rem; max-width: 17rem; text-align: center">
+                            Hormat Kami,
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <u><strong>{{ $company?->contact_person ?: 'Staff Purchasing' }}</strong></u><br />
+                            <strong>
+                                {{ $company?->contact_person_position }}
+                            </strong>
+                        </td>
+
+                        <td style="min-width: 13rem; max-width: 13rem; text-align: center">&nbsp;</td>
+
+                        <td style="min-width: 17rem; max-width: 17rem; text-align: center">
+                            Menyetujui,&nbsp;
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <br />
+                            <u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u><br />
+                            <strong>Supplier</strong>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <br />
+
+            <br />
+
+            <div class="row footer">
+                <table style="min-width: 47rem; max-width: 47rem">
+                    <tr>
+                        <td style="min-width: 10rem; max-width: 10rem; text-align: center">White: Supplier&nbsp;</td>
+                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">Red: Finance</td>
+                        <td style="min-width: 11rem; max-width: 11rem; text-align: center">Green: Purchasing&nbsp;</td>
+                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">Blue: Audit&nbsp;</td>
+                        <td style="min-width: 10rem; max-width: 10rem; text-align: center">Yellow: Logistik</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
     </div>
 
-    <table class="items">
-        <thead>
+    <div class="footer-page">
+        <table style="width: 100%; border-collapse: collapse;">
             <tr>
-                <th style="width: 6%;">No</th>
-                <th style="width: 9%;">Jumlah</th>
-                <th style="width: 9%;">Satuan</th>
-                <th style="width: 40%;">Nama Barang</th>
-                <th style="width: 18%;">Harga (IDR) Satuan</th>
-                <th style="width: 18%;">Jumlah</th>
+                <td style="text-align: left; vertical-align: bottom;">
+                    Printed at: {{ $printedAt->translatedFormat('d M Y - H:i') }} | PO No. {{ $purchaseOrder->number }}
+                </td>
+                <td style="text-align: right; vertical-align: bottom;">
+                    Page: <span class="page-number"></span>/{{ $pageCount ?? 1 }}
+                </td>
             </tr>
-        </thead>
-        <tbody>
-            @forelse ($purchaseOrder->purchaseOrderItems as $index => $item)
-                <tr>
-                    <td class="text-center">{{ $index + 1 }}</td>
-                    <td class="text-center mono">{{ $qty($item->qty) }}</td>
-                    <td class="text-center">{{ $item->item?->unit }}</td>
-                    <td>
-                        <div class="item-name">{{ $item->item?->name }}</div>
-                        @if (filled($item->description))
-                            <div class="item-description">
-                                @foreach (collect(explode("\n", $item->description))->filter() as $line)
-                                    {{ trim($line) }}<br>
-                                @endforeach
-                            </div>
-                        @endif
-                    </td>
-                    <td class="text-right mono">{{ $idr($item->price) }}</td>
-                    <td class="text-right mono">{{ $idr($item->getSubtotalAmount()) }}</td>
-                </tr>
-            @empty
-                <tr>
-                    <td colspan="6" class="text-center">-</td>
-                </tr>
-            @endforelse
-        </tbody>
-    </table>
-
-    <table class="bottom">
-        <tr>
-            <td class="conditions-cell">
-                <div class="condition-note">
-                    PO ini bisa dibatalkan sewaktu-waktu oleh kedua belah pihak.
-                </div>
-                <div class="condition-note">
-                    Apabila ada uang muka, maka PO ini belum mengikat dan dapat dibatalkan jika uang muka
-                    belum dibayarkan. Jika uang muka tersebut telah dibayarkan, maka PO tidak dapat dibatalkan.
-                </div>
-            </td>
-            <td class="summary-cell">
-                <table class="summary">
-                    <tr>
-                        <td>Subtotal</td>
-                        <td class="summary-value mono">{{ $idr($summary['subtotal']) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Diskon ({{ $discountPercentage + 0 }}%)</td>
-                        <td class="summary-value mono">{{ $idr($summary['discount']) }}</td>
-                    </tr>
-                    <tr>
-                        <td>Subtotal-2</td>
-                        <td class="summary-value mono">{{ $idr($summary['subtotal_after_discount']) }}</td>
-                    </tr>
-                    @if ($taxPercentage > 0)
-                        <tr>
-                            <td>PPN ({{ $taxPercentage + 0 }}%)</td>
-                            <td class="summary-value mono">{{ $idr($summary['tax_amount']) }}</td>
-                        </tr>
-                    @endif
-                    @if ((float) $summary['rounding'] != 0)
-                        <tr>
-                            <td>Pembulatan</td>
-                            <td class="summary-value mono">{{ $idr($summary['rounding']) }}</td>
-                        </tr>
-                    @endif
-                    <tr class="grand-total">
-                        <td>Grand Total</td>
-                        <td class="summary-value mono">{{ $idr($summary['grand_total']) }}</td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-
-    <div class="keterangan">
-        <span class="text-bold">Keterangan:</span> {{ strtoupper($terbilang) }}.
-    </div>
-
-    <table class="delivery">
-        <tr>
-            <td class="delivery-label">Barang segera dikirim ke</td>
-            <td class="delivery-colon">:</td>
-            <td>
-                <div class="text-bold">{{ $project?->name ? 'Proyek ' . $project->name : '-' }}</div>
-                @if ($warehouseAddress?->address)
-                    <div>{{ $warehouseAddress->address }}</div>
-                @endif
-                @if ($warehouseAddress?->city)
-                    <div>{{ $warehouseAddress->city }}</div>
-                @endif
-            </td>
-        </tr>
-        <tr>
-            <td class="delivery-label">Penerima Barang</td>
-            <td class="delivery-colon">:</td>
-            <td>{{ $receivingPerson }}</td>
-        </tr>
-        <tr>
-            <td class="delivery-label">DO/Faktur/Kwitansi a.n.</td>
-            <td class="delivery-colon">:</td>
-            <td>
-                <div class="text-bold">{{ $company?->name }}</div>
-                @if ($company?->address)
-                    <div>{{ $company->address }}</div>
-                @endif
-                @if ($company?->tax_number)
-                    <div>NPWP/NPPKP: {{ $company->tax_number }}</div>
-                @endif
-            </td>
-        </tr>
-    </table>
-
-    <table class="signatures">
-        <tr>
-            <td>
-                <div>Hormat Kami,</div>
-                <div class="signature-space"></div>
-                <div class="signature-line">
-                    {{ $company?->contact_person ?: 'Staff Purchasing' }}
-                    @if ($company?->contact_person_position)
-                        <br>{{ $company->contact_person_position }}
-                    @endif
-                </div>
-            </td>
-            <td>
-                <div>Menyetujui,</div>
-                <div class="signature-space"></div>
-                <div class="signature-line">Supplier</div>
-            </td>
-        </tr>
-    </table>
-
-    <div class="legend">
-        <span class="c-white">White: Supplier</span>
-        <span class="c-red">Red: Finance</span>
-        <span class="c-green">Green: Purchasing</span>
-        <span class="c-blue">Blue: Audit</span>
-        <span class="c-yellow">Yellow: Logistik</span>
-    </div>
-
-    <div class="footer">
-        Page <span class="page-number"></span> of {{ $pageCount ?? 1 }} |
-        PO: {{ $purchaseOrder->number }} |
-        Printed at: {{ $printedAt->translatedFormat('d M Y - H:i') }}
+        </table>
     </div>
 </body>
+
 </html>

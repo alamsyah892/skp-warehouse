@@ -84,7 +84,7 @@ return new class extends Migration {
                 ->nullable()
                 ->default(null)
             ;
-            $table->string('delivery_notes', 512);
+            $table->string('delivery_notes', 1024);
             $table->decimal('shipping_cost', 15, 2)
                 ->default(0)
             ;
