@@ -91,29 +91,4 @@ class VendorResource extends Resource
             SoftDeletingScope::class,
         ]);
     }
-
-    public static function canViewAny(): bool
-    {
-        return auth()->user()->can('Read Vendor');
-    }
-
-    public static function canCreate(): bool
-    {
-        return auth()->user()->can('Create Vendor');
-    }
-
-    public static function canView($record): bool
-    {
-        return auth()->user()->can('Read Vendor', $record);
-    }
-
-    public static function canEdit($record): bool
-    {
-        return auth()->user()->can('Update Vendor', $record);
-    }
-
-    public static function canDelete($record): bool
-    {
-        return auth()->user()->can('Delete Vendor', $record);
-    }
 }
