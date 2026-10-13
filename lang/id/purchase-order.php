@@ -53,31 +53,50 @@ return [
         'helper' => 'Contoh: PO material struktur tahap pertama',
     ],
 
-    'terms' => [
+    'opening_letter' => [
+        'label' => 'Pembukaan Surat',
+        'placeholder' => 'Tuliskan pembukaan surat',
+        'helper' => 'Contoh: Dengan ini kami mengajukan permintaan pembelian barang.',
+    ],
+
+    'payment_terms' => [
+        'label' => 'Cara Pembayaran',
+        'placeholder' => 'Cara pembayaran',
+        'helper' => 'Contoh: Termin 14 hari setelah barang diterima.',
+    ],
+
+    'payment_conditions' => [
+        'label' => 'Syarat Pembayaran',
         'placeholder' => 'Termin pembayaran',
-        'helper' => 'Contoh: Termin 30 hari setelah barang diterima',
+        'helper' => 'Contoh: Uang Muka 50% dibayarkan setelah PO diterima dan ditandangani.',
     ],
 
     'delivery_date' => [
         'label' => 'Tanggal Pengiriman',
     ],
 
-    'shipping_method' => [
-        'label' => 'Metode Pengiriman',
-        'placeholder' => 'Tuliskan metode pengiriman yang digunakan',
-        'helper' => 'Contoh: Pickup',
-    ],
-
     'delivery_notes' => [
         'label' => 'Catatan Pengiriman',
         'placeholder' => 'Tuliskan catatan pengiriman',
-        'helper' => 'Contoh: Dikirim langsung oleh vendor',
+        'helper' => 'Contoh: Segera.',
     ],
+
+    'po_terms' => [
+        'label' => 'Ketentuan',
+        'placeholder' => 'Tuliskan ketentuan PO',
+        'helper' => 'Contoh: Apabila spesifikasi barang yang dikirim tidak sesuai dengan PO, maka PT. Sanbe Farma berhak untuk mengembalikan/menolak barang tersebut.',
+    ],
+
+    // 'shipping_method' => [
+    //     'label' => 'Metode Pengiriman',
+    //     'placeholder' => 'Tuliskan metode pengiriman yang digunakan',
+    //     'helper' => 'Contoh: Pickup',
+    // ],
 
     'notes' => [
         'label' => 'Catatan',
         'placeholder' => 'Catatan tambahan',
-        'helper' => 'Contoh: Sertakan sertifikat mutu',
+        'helper' => 'Contoh: PO ini dibuat untuk pengajuan tambahan.',
     ],
 
     'info' => [

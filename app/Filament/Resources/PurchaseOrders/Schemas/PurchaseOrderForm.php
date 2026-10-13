@@ -189,18 +189,6 @@ class PurchaseOrderForm
                     ->compact()
                     ->contained(false)
                     ->schema([
-                        Select::make('vendor_id')
-                            ->label(__('vendor.model.label'))
-                            ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
-                            ->searchable(['name', 'code'])
-                            ->preload()
-                            ->live()
-                            ->required()
-                            ->disabled(fn($record): bool|null => $record?->goodsReceives()->exists())
-                            ->dehydrated()
-                            ->columnSpanFull()
-                        ,
-
                         Section::make(__('purchase-order.fieldset.warehouse_project.label'))
                             // ->icon(Heroicon::HomeModern)
                             // ->iconColor('primary')
@@ -260,7 +248,7 @@ class PurchaseOrderForm
                                     ->required()
                                     ->disabled(
                                         fn($get, string $operation) =>
-                                        $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
+                                            $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated()
                                 ,
@@ -287,7 +275,7 @@ class PurchaseOrderForm
                                     ->required()
                                     ->disabled(
                                         fn($get, string $operation) =>
-                                        $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
+                                            $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated()
                                 ,
@@ -329,7 +317,7 @@ class PurchaseOrderForm
                                     ->required()
                                     ->disabled(
                                         fn($get, string $operation) =>
-                                        $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id')) || filled($get('purchaseRequests'))
+                                            $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated()
                                 ,
@@ -414,14 +402,26 @@ class PurchaseOrderForm
                             ->columnSpanFull()
                         ,
 
-                        Textarea::make('description')
-                            ->label(__('common.description.label'))
-                            ->placeholder(__('purchase-order.description.placeholder'))
-                            ->helperText(__('purchase-order.description.helper'))
-                            ->autosize()
-                            ->live(debounce: 500)
+                        Select::make('vendor_id')
+                            ->label(__('vendor.model.label'))
+                            ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
+                            ->searchable(['name', 'code'])
+                            ->preload()
+                            ->live()
+                            ->required()
+                            ->disabled(fn($record): bool|null => $record?->goodsReceives()->exists())
+                            ->dehydrated()
                             ->columnSpanFull()
                         ,
+
+                        // Textarea::make('description')
+                        //     ->label(__('common.description.label'))
+                        //     ->placeholder(__('purchase-order.description.placeholder'))
+                        //     ->helperText(__('purchase-order.description.helper'))
+                        //     ->autosize()
+                        //     ->live(debounce: 500)
+                        //     ->columnSpanFull()
+                        // ,
                     ])
                 ,
                 Section::make(__('purchase-order.fieldset.main_info.label'))
@@ -437,6 +437,36 @@ class PurchaseOrderForm
                     ->compact()
                     ->contained(false)
                     ->schema([
+                        TextArea::make('opening_letter')
+                            ->label(__('purchase-order.opening_letter.label'))
+                            ->placeholder(__('purchase-order.opening_letter.placeholder'))
+                            ->helperText(__('purchase-order.opening_letter.helper'))
+                            ->live(debounce: 500)
+                            ->columnSpanFull()
+                            ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser())
+                            ->autosize()
+                        ,
+
+                        TextArea::make('payment_terms')
+                            ->label(__('purchase-order.payment_terms.label'))
+                            ->placeholder(__('purchase-order.payment_terms.placeholder'))
+                            ->helperText(__('purchase-order.payment_terms.helper'))
+                            ->live(debounce: 500)
+                            ->columnSpanFull()
+                            ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser())
+                            ->autosize()
+                        ,
+
+                        TextArea::make('payment_conditions')
+                            ->label(__('purchase-order.payment_conditions.label'))
+                            ->placeholder(__('purchase-order.payment_conditions.placeholder'))
+                            ->helperText(__('purchase-order.payment_conditions.helper'))
+                            ->live(debounce: 500)
+                            ->columnSpanFull()
+                            ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser())
+                            ->autosize()
+                        ,
+
                         Select::make('warehouse_address_id')
                             ->label(__('purchase-order.warehouse_address.label'))
                             ->relationship(
@@ -455,27 +485,26 @@ class PurchaseOrderForm
 
                         DatePicker::make('delivery_date')
                             ->label(__('purchase-order.delivery_date.label'))
+                            ->columnSpanFull()
                             ->live()
                         ,
-                        TextInput::make('shipping_method')
-                            ->label(__('purchase-order.shipping_method.label'))
-                            ->placeholder(__('purchase-order.shipping_method.placeholder'))
-                            ->helperText(__('purchase-order.shipping_method.helper'))
-                            ->live(debounce: 500)
-                        ,
+
                         TextArea::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
                             ->placeholder(__('purchase-order.delivery_notes.placeholder'))
                             ->helperText(__('purchase-order.delivery_notes.helper'))
                             ->live(debounce: 500)
                             ->columnSpanFull()
+                            ->autosize()
                         ,
-                        TextArea::make('terms')
-                            ->placeholder(__('purchase-order.terms.placeholder'))
-                            ->helperText(__('purchase-order.terms.helper'))
+
+                        TextArea::make('po_terms')
+                            ->label(__('purchase-order.po_terms.label'))
+                            ->placeholder(__('purchase-order.po_terms.placeholder'))
+                            ->helperText(__('purchase-order.po_terms.helper'))
                             ->live(debounce: 500)
                             ->columnSpanFull()
-                            ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser())
+                            ->autosize()
                         ,
                     ])
                 ,

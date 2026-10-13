@@ -202,6 +202,8 @@
                                     {{ $item->item?->name }}
                                     @if (filled($item->description))
 
+                                        <br>
+
                                         @foreach (collect(explode("\n", $item->description))->filter() as $line)
                                             &bull; {{ trim($line) }}<br>
                                         @endforeach

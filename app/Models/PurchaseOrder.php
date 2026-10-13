@@ -45,20 +45,28 @@ class PurchaseOrder extends Model
         'description',
         'status',
 
-        'vendor_id',
         'company_id',
         'warehouse_id',
         'division_id',
         'project_id',
+
+        'vendor_id',
+
         'warehouse_address_id',
+
         'user_id',
+
+        'opening_letter',
+
+        'payment_terms',
+        'payment_conditions',
 
         'delivery_date',
         'delivery_notes',
-        'shipping_method',
+
+        'po_terms',
 
         'notes',
-        'terms',
         'info',
 
         'discount',
@@ -72,11 +80,16 @@ class PurchaseOrder extends Model
         'number',
         'description',
 
+        'opening_letter',
+
+        'payment_terms',
+        'payment_conditions',
+
         'delivery_notes',
-        'shipping_method',
+
+        'po_terms',
 
         'notes',
-        'terms',
         'info',
 
         'tax_type',
@@ -365,11 +378,15 @@ class PurchaseOrder extends Model
             'vendor_id',
             'warehouse_address_id',
 
+            'opening_letter',
+
+            'payment_terms',
+            'payment_conditions',
+
             'delivery_date',
-            'shipping_method',
             'delivery_notes',
 
-            'terms',
+            'po_terms',
 
             'tax_type',
             'tax_percentage',
