@@ -234,10 +234,10 @@ class PurchaseOrderInfolist
                             ->iconColor('primary')
                             ->formatStateUsing(
                                 fn($state, $record) =>
-                                // $state . "</br>" . $record->warehouseAddress?->city
-                                collect([$state, $record->warehouseAddress?->city])
-                                    ->filter()
-                                    ->join(' - ') ?: '-'
+                                    // $state . "</br>" . $record->warehouseAddress?->city
+                                    collect([$state, $record->warehouseAddress?->city])
+                                        ->filter()
+                                        ->join(' - ') ?: '-'
                             )
                             ->html()
                             ->placeholder('-')
@@ -250,11 +250,11 @@ class PurchaseOrderInfolist
                             ->color('gray')
                             ->placeholder('-')
                         ,
-                        TextEntry::make('shipping_method')
-                            ->label(__('purchase-order.shipping_method.label'))
-                            ->placeholder('-')
-                            ->color('gray')
-                        ,
+                        // TextEntry::make('shipping_method')
+                        //     ->label(__('purchase-order.shipping_method.label'))
+                        //     ->placeholder('-')
+                        //     ->color('gray')
+                        // ,
                         TextEntry::make('delivery_notes')
                             ->label(__('purchase-order.delivery_notes.label'))
                             ->formatStateUsing(fn($state) => nl2br($state))
@@ -325,7 +325,7 @@ class PurchaseOrderInfolist
 
             $hasRemainingQty = $record->purchaseOrderItems->contains(
                 fn($item): bool =>
-                $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
+                    $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
             );
 
             return $hasNotConfirmedGR || $hasRemainingQty;
