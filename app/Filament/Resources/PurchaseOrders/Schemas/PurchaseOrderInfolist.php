@@ -61,8 +61,9 @@ class PurchaseOrderInfolist
                             static::tabSection(), // 1.2
 
                             static::summaryTotalSection(), // 1.3
-                        ])
-                    ,
+
+                            static::letterSection(), // 1.4
+                        ]),
 
                     Grid::make() // right / 2
                         ->columnSpan([
@@ -80,10 +81,8 @@ class PurchaseOrderInfolist
                             static::purchaseRequestInfoSection(), // 2.3
 
                             StatusTimelineSection::make(), // 2.4
-                        ])
-                    ,
-                ])
-            ,
+                        ]),
+                ]),
         ]);
     }
 
@@ -119,18 +118,15 @@ class PurchaseOrderInfolist
                             ->columnSpan([
                                 'default' => 2,
                                 'lg' => 2,
-                            ])
-                        ,
+                            ]),
                         TextEntry::make('type')
                             ->hiddenLabel()
                             ->icon(fn($state) => $state?->icon())
                             ->formatStateUsing(fn($state) => $state?->label())
                             ->size(TextSize::Large)
                             ->color(fn($state) => $state?->color())
-                            ->badge()
-                        ,
-                    ])
-                ,
+                            ->badge(),
+                    ]),
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
@@ -151,24 +147,21 @@ class PurchaseOrderInfolist
                             ->columnSpan([
                                 'default' => 2,
                                 'lg' => 2,
-                            ])
-                        ,
+                            ]),
                         TextEntry::make('created_at')
                             ->hiddenLabel()
                             ->icon(Heroicon::CalendarDays)
                             ->iconColor('primary')
                             ->date()
-                            ->alignEnd()
-                        ,
-                    ])
-                ,
+                            ->alignEnd(),
+                    ]),
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
                         'lg' => 7,
                     ])
                     ->columns([
-                        'default' => 2
+                        'default' => 2,
                     ])
                     ->schema([
                         TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
@@ -176,23 +169,19 @@ class PurchaseOrderInfolist
                         TextEntry::make('warehouse.name')
                             ->hiddenLabel()
                             ->icon(Heroicon::HomeModern)
-                            ->iconColor('primary')
-                        ,
+                            ->iconColor('primary'),
                         TextEntry::make('company.alias')
                             ->hiddenLabel()
                             ->icon(Heroicon::BuildingOffice2)
-                            ->iconColor('primary')
-                        ,
+                            ->iconColor('primary'),
                         TextEntry::make('division.name')
                             ->hiddenLabel()
                             ->icon(Heroicon::Briefcase)
-                            ->iconColor('primary')
-                        ,
+                            ->iconColor('primary'),
                         TextEntry::make('project.name')
                             ->hiddenLabel()
                             ->icon(Heroicon::Square3Stack3d)
-                            ->iconColor('primary')
-                        ,
+                            ->iconColor('primary'),
                         RepeatableEntry::make('purchaseRequests')
                             ->label(__('purchase-request.model.plural_label'))
                             ->schema([
@@ -207,18 +196,15 @@ class PurchaseOrderInfolist
                                 ,
                             ])
                             ->columnSpanFull()
-                            ->contained(false)
-                        ,
+                            ->contained(false),
                         TextEntry::make('description')
                             ->label(__('common.description.label'))
                             ->columnSpanFull()
                             ->color('gray')
                             ->placeholder('-')
                             ->formatStateUsing(fn($state) => nl2br($state))
-                            ->html()
-                        ,
-                    ])
-                ,
+                            ->html(),
+                    ]),
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
@@ -242,38 +228,24 @@ class PurchaseOrderInfolist
                             ->html()
                             ->placeholder('-')
                             ->color('gray')
-                            ->columnSpanFull()
-                        ,
-                        TextEntry::make('delivery_date')
-                            ->label(__('purchase-order.delivery_date.label'))
-                            ->date()
-                            ->color('gray')
-                            ->placeholder('-')
-                        ,
-                        // TextEntry::make('shipping_method')
-                        //     ->label(__('purchase-order.shipping_method.label'))
-                        //     ->placeholder('-')
-                        //     ->color('gray')
-                        // ,
-                        TextEntry::make('delivery_notes')
-                            ->label(__('purchase-order.delivery_notes.label'))
-                            ->formatStateUsing(fn($state) => nl2br($state))
-                            ->html()
-                            ->placeholder('-')
-                            ->color('gray')
-                            ->columnSpanFull()
-                        ,
-                        TextEntry::make('terms')
-                            ->formatStateUsing(fn($state) => nl2br($state))
-                            ->html()
-                            ->placeholder('-')
-                            ->color('gray')
-                            ->columnSpanFull()
-                        ,
-                    ])
-                ,
-            ])
-        ;
+                            ->columnSpanFull(),
+                        static::poTextEntry('po_payment_terms'),
+                        static::poTextEntry('po_payment_method'),
+                        static::poTextEntry('po_billing_method'),
+                        static::poTextEntry('po_processing_date'),
+                        static::poTextEntry('po_processing_time'),
+                        static::poTextEntry('po_location'),
+                        static::poTextEntry('po_terms'),
+                        static::poTextEntry('po_opname_method'),
+                        static::poTextEntry('po_warranty'),
+                        static::poTextEntry('po_opening_letter'),
+                        static::poTextEntry('po_description'),
+                        static::poTextEntry('po_duration_info'),
+                        static::poTextEntry('po_miscellaneous'),
+                        static::poTextEntry('po_carbon_copy'),
+                        static::poTextEntry('po_footnote'),
+                    ]),
+            ]);
     }
 
     protected static function dataSectionFooter($record): array
@@ -297,8 +269,7 @@ class PurchaseOrderInfolist
                             ->send();
 
                         return redirect(request()->header('Referer'));
-                    })
-                ;
+                    });
             })
             ->values()
             ->all();
@@ -308,7 +279,7 @@ class PurchaseOrderInfolist
     {
         if ($status === PurchaseOrderStatus::CANCELED) {
             $hasNotCanceledGR = $record->goodsReceives()->whereNotIn('status', [
-                GoodsReceiveStatus::CANCELED
+                GoodsReceiveStatus::CANCELED,
             ])->exists();
             // ->whereNot('status', GoodsReceiveStatus::CANCELED)->exists();
 
@@ -319,13 +290,12 @@ class PurchaseOrderInfolist
             $hasNotConfirmedGR = $record->goodsReceives()->whereNotIn('status', [
                 GoodsReceiveStatus::CANCELED,
                 GoodsReceiveStatus::RETURNED,
-                GoodsReceiveStatus::CONFIRMED
+                GoodsReceiveStatus::CONFIRMED,
             ])->exists();
             // ->whereNot('status', GoodsReceiveStatus::CONFIRMED)->exists();
 
             $hasRemainingQty = $record->purchaseOrderItems->contains(
-                fn($item): bool =>
-                    $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
+                fn($item): bool => $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
             );
 
             return $hasNotConfirmedGR || $hasRemainingQty;
@@ -350,25 +320,21 @@ class PurchaseOrderInfolist
                         //     ->color(null),
 
                         Livewire::make(PurchaseOrderItemsTable::class),
-                    ])
-                ,
+                    ]),
 
                 Tab::make(__('goods-receive.model.plural_label'))
                     ->icon(Heroicon::InboxArrowDown)
-                    ->badge(fn($record) =>
-                        $record->goodsReceives?->whereNotIn('status', [
-                            GoodsReceiveStatus::CANCELED,
-                            GoodsReceiveStatus::RETURNED
-                        ])->count() ?: null)
+                    ->badge(fn($record) => $record->goodsReceives?->whereNotIn('status', [
+                        GoodsReceiveStatus::CANCELED,
+                        GoodsReceiveStatus::RETURNED,
+                    ])->count() ?: null)
                     ->schema([
                         Livewire::make(PurchaseOrderGoodsReceivesTable::class),
                     ])
-                    ->visible(fn($record) => $record && $record->goodsReceives()->exists())
-                ,
+                    ->visible(fn($record) => $record && $record->goodsReceives()->exists()),
 
                 ActivityLogTab::make(__('common.log_activity.label')),
-            ])
-        ;
+            ]);
     }
 
     protected static function summaryTotalSection(): Section
@@ -380,7 +346,7 @@ class PurchaseOrderInfolist
             ->visible(fn(): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
             ->columns([
                 'default' => 1,
-                'lg' => 12
+                'lg' => 12,
             ])
             ->compact()
             ->schema([
@@ -395,27 +361,23 @@ class PurchaseOrderInfolist
                             ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
                             ->placeholder('-')
                             ->color('gray')
-                            ->columnSpanFull()
-                        ,
+                            ->columnSpanFull(),
                         TextEntry::make('tax_percentage')
                             ->label(__('purchase-order.tax_percentage.label'))
                             ->formatStateUsing(fn($state) => filled($state) ? ($state + 0) . '%' : '-')
                             ->placeholder('-')
                             ->color('gray')
-                            ->columnSpanFull()
-                        ,
+                            ->columnSpanFull(),
                         TextEntry::make('tax_description')
                             ->label(__('purchase-order.tax_description.label'))
                             ->placeholder('-')
                             ->color('gray')
-                            ->columnSpanFull()
-                        ,
-                    ])
-                ,
+                            ->columnSpanFull(),
+                    ]),
                 Fieldset::make(__('purchase-order.fieldset.detail_total.label'))
                     ->columns([
                         'default' => 1,
-                        'lg' => 1
+                        'lg' => 1,
                     ])
                     ->columnSpan([
                         'default' => 1,
@@ -427,23 +389,20 @@ class PurchaseOrderInfolist
                             ->label(__('purchase-order.subtotal.label'))
                             ->state(fn($record) => static::getSummary($record)['subtotal'] ?? 0)
                             ->numeric()
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('total_discount')
                             ->label(__('purchase-order.discount.label'))
                             ->state(fn($record) => '-' . static::getSummary($record)['discount'] ?? 0)
                             ->numeric()
                             ->color('danger')
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('total_after_discount')
                             ->label(__('purchase-order.after_discount.label'))
                             ->state(fn($record) => static::getSummary($record)['subtotal_after_discount'] ?? 0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
 
                         View::make('components.divider'),
 
@@ -451,29 +410,25 @@ class PurchaseOrderInfolist
                             ->label(__('purchase-order.tax_base.label'))
                             ->state(fn($record) => static::getSummary($record)['dpp'] ?? 0)
                             ->numeric()
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('total_ppn')
                             ->label(fn($get) => __('purchase-order.tax.label', ['percentage' => $get('tax_percentage') > 0 ? "({$get('tax_percentage')}%)" : '']))
                             ->state(fn($record) => static::getSummary($record)['tax_amount'] ?? 0)
                             ->numeric()
                             ->color('warning')
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('total_before_rounding')
                             ->label(__('purchase-order.total.label'))
                             ->state(fn($record) => static::getSummary($record)['total_before_rounding'] ?? 0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('summary_rounding')
                             ->label(__('purchase-order.rounding.label'))
                             ->state(fn($record) => $record->rounding ?? 0)
                             ->numeric()
-                            ->alignEnd()
-                        ,
+                            ->alignEnd(),
                         TextEntry::make('total_grand_total')
                             ->label(__('purchase-order.grand_total.label'))
                             ->state(fn($record) => static::getSummary($record)['grand_total'] ?? 0)
@@ -481,12 +436,9 @@ class PurchaseOrderInfolist
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->color('primary')
-                            ->alignEnd()
-                        ,
-                    ])
-                ,
-            ])
-        ;
+                            ->alignEnd(),
+                    ]),
+            ]);
     }
 
     protected static function getSummary($record): array
@@ -510,6 +462,179 @@ class PurchaseOrderInfolist
         return $summaries[$record->id];
     }
 
+
+    protected static function letterSection(): Section
+    {
+        return Section::make(__('purchase-order.section.main_info.label'))
+            ->icon(Heroicon::ShoppingCart)
+            ->iconColor('primary')
+            ->compact()
+            ->columns([
+                'default' => 1,
+                'lg' => 12,
+            ])
+            ->schema([
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->columns([
+                        'default' => 3,
+                        'lg' => 3,
+                    ])
+                    ->schema([
+                        TextEntry::make('number')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Hashtag)
+                            ->iconColor('primary')
+                            ->fontFamily(FontFamily::Mono)
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
+                            ]),
+                        TextEntry::make('type')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
+                            ->badge(),
+                    ]),
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 3,
+                        'lg' => 3,
+                    ])
+                    ->schema([
+                        TextEntry::make('status')
+                            ->hiddenLabel()
+                            ->icon(fn($state) => $state?->icon())
+                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->size(TextSize::Large)
+                            ->color(fn($state) => $state?->color())
+                            ->badge()
+                            ->columnSpan([
+                                'default' => 2,
+                                'lg' => 2,
+                            ]),
+                        TextEntry::make('created_at')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::CalendarDays)
+                            ->iconColor('primary')
+                            ->date()
+                            ->alignEnd(),
+                    ]),
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
+                        TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
+
+                        TextEntry::make('warehouse.name')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::HomeModern)
+                            ->iconColor('primary'),
+                        TextEntry::make('company.alias')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::BuildingOffice2)
+                            ->iconColor('primary'),
+                        TextEntry::make('division.name')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Briefcase)
+                            ->iconColor('primary'),
+                        TextEntry::make('project.name')
+                            ->hiddenLabel()
+                            ->icon(Heroicon::Square3Stack3d)
+                            ->iconColor('primary'),
+                        RepeatableEntry::make('purchaseRequests')
+                            ->label(__('purchase-request.model.plural_label'))
+                            ->schema([
+                                TextEntry::make('number')
+                                    ->hiddenLabel()
+                                    ->icon(Heroicon::Hashtag)
+                                    ->iconColor('primary')
+                                    ->fontFamily(FontFamily::Mono)
+                                    ->badge()
+                                    ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
+                                // ->openUrlInNewTab()
+                                ,
+                            ])
+                            ->columnSpanFull()
+                            ->contained(false),
+                        TextEntry::make('description')
+                            ->label(__('common.description.label'))
+                            ->columnSpanFull()
+                            ->color('gray')
+                            ->placeholder('-')
+                            ->formatStateUsing(fn($state) => nl2br($state))
+                            ->html(),
+                    ]),
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
+                        TextEntry::make('warehouseAddress.address')
+                            ->label(__('purchase-request.warehouse_address.label'))
+                            ->icon(Heroicon::MapPin)
+                            ->iconColor('primary')
+                            ->formatStateUsing(
+                                fn($state, $record) =>
+                                    // $state . "</br>" . $record->warehouseAddress?->city
+                                    collect([$state, $record->warehouseAddress?->city])
+                                        ->filter()
+                                        ->join(' - ') ?: '-'
+                            )
+                            ->html()
+                            ->placeholder('-')
+                            ->color('gray')
+                            ->columnSpanFull(),
+                        static::poTextEntry('po_payment_terms'),
+                        static::poTextEntry('po_payment_method'),
+                        static::poTextEntry('po_billing_method'),
+                        static::poTextEntry('po_processing_date'),
+                        static::poTextEntry('po_processing_time'),
+                        static::poTextEntry('po_location'),
+                        static::poTextEntry('po_terms'),
+                        static::poTextEntry('po_opname_method'),
+                        static::poTextEntry('po_warranty'),
+                        static::poTextEntry('po_opening_letter'),
+                        static::poTextEntry('po_description'),
+                        static::poTextEntry('po_duration_info'),
+                        static::poTextEntry('po_miscellaneous'),
+                        static::poTextEntry('po_carbon_copy'),
+                        static::poTextEntry('po_footnote'),
+                    ]),
+            ]);
+    }
+
+    protected static function poTextEntry(string $field): TextEntry
+    {
+        return TextEntry::make($field)
+            ->label(__("purchase-order.{$field}.label"))
+            ->formatStateUsing(fn($state) => nl2br((string) $state))
+            ->html()
+            ->placeholder('-')
+            ->color('gray')
+            ->columnSpanFull();
+    }
+
     protected static function infoSection(): Section
     {
         return Section::make(__('purchase-order.section.other_info.label'))
@@ -523,33 +648,27 @@ class PurchaseOrderInfolist
                     ->formatStateUsing(fn($state) => nl2br($state))
                     ->html()
                     ->placeholder('-')
-                    ->color('gray')
-                ,
+                    ->color('gray'),
                 UserEntry::make('user')
                     ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
-                    ->color('gray')
-                ,
+                    ->color('gray'),
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
                     ->size(TextSize::Small)
-                    ->color('gray')
-                ,
+                    ->color('gray'),
                 TextEntry::make('deleted_at')->date()
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
                     ->color('danger')
-                    ->visible(fn($state) => $state != null)
-                ,
+                    ->visible(fn($state) => $state != null),
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => "• " . $line)->implode('<br>'))
+                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => '• ' . $line)->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT))
-                ,
-            ])
-        ;
+                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT)),
+            ]);
     }
 
     protected static function vendorInfoSection(): Section
@@ -565,15 +684,13 @@ class PurchaseOrderInfolist
                     ->hiddenLabel()
                     ->icon(Heroicon::BuildingStorefront)
                     ->iconColor('primary')
-                    ->weight(FontWeight::Bold)
-                ,
+                    ->weight(FontWeight::Bold),
                 TextEntry::make('vendor.address')
                     ->hiddenLabel()
                     ->icon(Heroicon::MapPin)
                     ->iconColor('primary')
                     ->state(fn($record) => collect([$record->vendor?->address, $record->vendor?->city])->filter()->join(' - '))
-                    ->color('gray')
-                ,
+                    ->color('gray'),
                 Grid::make()
                     ->schema([
                         TextEntry::make('vendor.phone')
@@ -581,40 +698,33 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::Phone)
                             ->iconColor('primary')
                             ->color('gray')
-                            ->visible(fn($state) => $state != null)
-                        ,
+                            ->visible(fn($state) => $state != null),
                         TextEntry::make('vendor.fax')
                             ->hiddenLabel()
                             ->icon(Heroicon::DocumentText)
                             ->iconColor('primary')
                             ->color('gray')
-                            ->visible(fn($state) => $state != null)
-                        ,
-                    ])
-                ,
+                            ->visible(fn($state) => $state != null),
+                    ]),
                 TextEntry::make('vendor.contact_person')
                     ->hiddenLabel()
                     ->icon(Heroicon::UserCircle)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null)
-                ,
+                    ->visible(fn($state) => $state != null),
                 TextEntry::make('vendor.email')
                     ->hiddenLabel()
                     ->icon(Heroicon::Envelope)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null)
-                ,
+                    ->visible(fn($state) => $state != null),
                 TextEntry::make('vendor.website')
                     ->hiddenLabel()
                     ->icon(Heroicon::GlobeAlt)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null)
-                ,
-            ])
-        ;
+                    ->visible(fn($state) => $state != null),
+            ]);
     }
 
     protected static function purchaseRequestInfoSection(): Section|string
@@ -649,23 +759,20 @@ class PurchaseOrderInfolist
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
                                     ->url(fn(): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id]))
-                                    ->columnSpanFull()
-                                ,
+                                    ->columnSpanFull(),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_status")
                                     ->hiddenLabel()
                                     ->icon($purchaseRequest->status->icon())
                                     ->state($purchaseRequest->status->label())
                                     ->badge()
-                                    ->color($purchaseRequest->status->color())
-                                ,
+                                    ->color($purchaseRequest->status->color()),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_created_at")
                                     ->hiddenLabel()
                                     ->state($purchaseRequest->created_at)
                                     ->icon(Heroicon::CalendarDays)
                                     ->iconColor('primary')
                                     ->date()
-                                    ->alignEnd()
-                                ,
+                                    ->alignEnd(),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_warehouse_address")
                                     ->hiddenLabel()
                                     ->icon(Heroicon::MapPin)
@@ -677,8 +784,7 @@ class PurchaseOrderInfolist
                                     ->placeholder('-')
                                     ->color('gray')
                                     ->columnSpanFull()
-                                    ->visible(fn($state) => filled($state))
-                                ,
+                                    ->visible(fn($state) => filled($state)),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                                     ->hiddenLabel()
                                     ->columnSpanFull()
@@ -686,19 +792,15 @@ class PurchaseOrderInfolist
                                     ->placeholder('-')
                                     ->state(nl2br($purchaseRequest->description))
                                     ->html()
-                                    ->visible(fn($state) => filled($state))
-                                ,
+                                    ->visible(fn($state) => filled($state)),
                                 UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                                     ->hiddenLabel()
                                     ->state($purchaseRequest->user)
                                     ->color('gray')
-                                    ->columnSpanFull()
-                                ,
+                                    ->columnSpanFull(),
                             ]);
                     })
-                    ->all()
-                ;
-            })
-        ;
+                    ->all();
+            });
     }
 }

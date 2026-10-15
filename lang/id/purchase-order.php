@@ -53,38 +53,64 @@ return [
         'helper' => 'Contoh: PO material struktur tahap pertama',
     ],
 
-    'opening_letter' => [
+    'po_opening_letter' => [
         'label' => 'Pembukaan Surat',
-        'placeholder' => 'Tuliskan pembukaan surat',
-        'helper' => 'Contoh: Dengan ini kami mengajukan permintaan pembelian barang.',
     ],
 
-    'payment_terms' => [
-        'label' => 'Cara Pembayaran',
-        'placeholder' => 'Cara pembayaran',
-        'helper' => 'Contoh: Termin 14 hari setelah barang diterima.',
-    ],
-
-    'payment_conditions' => [
+    'po_payment_terms' => [
         'label' => 'Syarat Pembayaran',
-        'placeholder' => 'Termin pembayaran',
-        'helper' => 'Contoh: Uang Muka 50% dibayarkan setelah PO diterima dan ditandangani.',
     ],
 
-    'delivery_date' => [
-        'label' => 'Tanggal Pengiriman',
+    'po_processing_date' => [
+        'label' => 'Tanggal Pengiriman / Pengerjaan',
     ],
 
-    'delivery_notes' => [
-        'label' => 'Catatan Pengiriman',
-        'placeholder' => 'Tuliskan catatan pengiriman',
-        'helper' => 'Contoh: Segera.',
+    'po_payment_method' => [
+        'label' => 'Cara Pembayaran',
+    ],
+
+    'po_description' => [
+        'label' => 'Keterangan',
     ],
 
     'po_terms' => [
-        'label' => 'Ketentuan',
-        'placeholder' => 'Tuliskan ketentuan PO',
-        'helper' => 'Contoh: Apabila spesifikasi barang yang dikirim tidak sesuai dengan PO, maka PT. Sanbe Farma berhak untuk mengembalikan/menolak barang tersebut.',
+        'label' => 'Ketentuan-ketentuan',
+    ],
+
+    'po_billing_method' => [
+        'label' => 'Tata Cara Pengajuan Penagihan',
+    ],
+
+    'po_opname_method' => [
+        'label' => 'Tata Cara Pengajuan Opname',
+    ],
+
+    'po_processing_time' => [
+        'label' => 'Waktu Pengiriman / Pengerjaan',
+    ],
+
+    'po_location' => [
+        'label' => 'Lokasi Pengiriman / Pengerjaan',
+    ],
+
+    'po_miscellaneous' => [
+        'label' => 'Lain-lain',
+    ],
+
+    'po_warranty' => [
+        'label' => 'Garansi',
+    ],
+
+    'po_duration_info' => [
+        'label' => 'Periode Sewa / Lama Pengadaan / Lama Pengerjaan',
+    ],
+
+    'po_carbon_copy' => [
+        'label' => 'Tembusan',
+    ],
+
+    'po_footnote' => [
+        'label' => 'Catatan Kaki',
     ],
 
     // 'shipping_method' => [
@@ -242,6 +268,18 @@ return [
         ],
         'main_info' => [
             'label' => 'Informasi Utama',
+        ],
+        'payment' => [
+            'label' => 'Pembayaran',
+        ],
+        'delivery' => [
+            'label' => 'Pengiriman',
+        ],
+        'terms' => [
+            'label' => 'Ketentuan',
+        ],
+        'other' => [
+            'label' => 'Lainnya',
         ],
         'detail_total' => [
             'label' => 'Rincian Total',

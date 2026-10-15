@@ -22,9 +22,9 @@ select
     ifnull (`po_payment_terms`.`content`, '') as `po_payment_terms`, -- 1
     COALESCE(
         NULLIF(`po`.`delivery`, ''),
-        NULLIF(`po_delivery_date`.`content`, ''),
+        NULLIF(`po_processing_date`.`content`, ''),
         ''
-    ) as `po_delivery_date`, -- 2
+    ) as `po_processing_date`, -- 2
     COALESCE(
         NULLIF(`po`.`payment`, ''),
         NULLIF(`po_payment_method`.`content`, ''),
@@ -35,12 +35,18 @@ select
         NULLIF(`po_description`.`content`, ''),
         ''
     ) as `po_description`, -- 4
-    ifnull (`po_terms`.`content`, '') as `po_terms`, -- 5
+    COALESCE(
+        NULLIF(`po_terms`.`content`, ''),
+        NULLIF(`po_conditions`.`content`, ''),
+        ''
+    ) as `po_terms`, -- 5
     ifnull (`po_billing_method`.`content`, '') as `po_billing_method`, -- 6
-    ifnull (`po_conditions`.`content`, '') as `po_conditions`, -- 7
     ifnull (`po_opname_method`.`content`, '') as `po_opname_method`, -- 8
-    ifnull (`po_processing_time`.`content`, '') as `po_processing_time`, -- 9
-    ifnull (`po_delivery_time`.`content`, '') as `po_delivery_time`, -- 10
+    COALESCE(
+        NULLIF(`po_processing_time`.`content`, ''),
+        NULLIF(`po_delivery_time`.`content`, ''),
+        ''
+    ) as `po_processing_time`, -- 9
     ifnull (`po_location`.`content`, '') as `po_location`, -- 11  
     ifnull (`po_miscellaneous`.`content`, '') as `po_miscellaneous`, -- 12
     ifnull (`po_warranty`.`content`, '') as `po_warranty`, -- 13
@@ -97,9 +103,9 @@ from
                                                                                                 -- 1
                                                                                             )
                                                                                         )
-                                                                                        left join `skp_warehouse`.`purchase_content_letters` `po_delivery_date` on (
-                                                                                            `po_delivery_date`.`purchase_id` = `po`.`id`
-                                                                                            and `po_delivery_date`.`title` = 'Tanggal Pengiriman'
+                                                                                        left join `skp_warehouse`.`purchase_content_letters` `po_processing_date` on (
+                                                                                            `po_processing_date`.`purchase_id` = `po`.`id`
+                                                                                            and `po_processing_date`.`title` = 'Tanggal Pengiriman'
                                                                                             -- 2
                                                                                         )
                                                                                     )

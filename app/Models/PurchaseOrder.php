@@ -3,15 +3,16 @@
 namespace App\Models;
 
 use App\Enums\GoodsReceiveStatus;
-use App\Enums\PurchaseOrderType;
 use App\Enums\PurchaseOrderStatus;
 use App\Enums\PurchaseOrderTaxType;
+use App\Enums\PurchaseOrderType;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\HasDocumentNumber;
 use App\Models\Concerns\HasDocumentRevision;
 use App\Models\Concerns\HasStateMachine;
 use App\Models\Concerns\LogsAllFillable;
+use Database\Factories\PurchaseOrderFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,21 +24,19 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property PurchaseOrderStatus $status
  */
-
 class PurchaseOrder extends Model
 {
-    /** @use HasFactory<\Database\Factories\PurchaseOrderFactory> */
-    use HasFactory;
+    use DefaultEmptyString, HasDocumentNumber, HasDocumentRevision, LogsAllFillable;
 
-    use SoftDeletes;
-    use LogsAllFillable, DefaultEmptyString, HasDocumentNumber, HasDocumentRevision;
+    /** @use HasFactory<PurchaseOrderFactory> */
+    use HasFactory;
     use HasStateMachine {
         changeStatus as protected changeStateStatus;
     }
+    use SoftDeletes;
 
-
-    /** 
-     * Properties & Casts 
+    /**
+     * Properties & Casts
      */
     protected $fillable = [
         'number',
@@ -56,15 +55,21 @@ class PurchaseOrder extends Model
 
         'user_id',
 
-        'opening_letter',
-
-        'payment_terms',
-        'payment_conditions',
-
-        'delivery_date',
-        'delivery_notes',
-
+        'po_opening_letter',
+        'po_payment_terms',
+        'po_processing_date',
+        'po_payment_method',
+        'po_description',
         'po_terms',
+        'po_billing_method',
+        'po_opname_method',
+        'po_processing_time',
+        'po_location',
+        'po_miscellaneous',
+        'po_warranty',
+        'po_duration_info',
+        'po_carbon_copy',
+        'po_footnote',
 
         'notes',
         'info',
@@ -74,20 +79,28 @@ class PurchaseOrder extends Model
         'tax_percentage',
         'tax_description',
         'rounding',
+        'total_amount',
     ];
 
     protected array $defaultEmptyStringFields = [
         'number',
         'description',
 
-        'opening_letter',
-
-        'payment_terms',
-        'payment_conditions',
-
-        'delivery_notes',
-
+        'po_opening_letter',
+        'po_payment_terms',
+        'po_processing_date',
+        'po_payment_method',
+        'po_description',
         'po_terms',
+        'po_billing_method',
+        'po_opname_method',
+        'po_processing_time',
+        'po_location',
+        'po_miscellaneous',
+        'po_warranty',
+        'po_duration_info',
+        'po_carbon_copy',
+        'po_footnote',
 
         'notes',
         'info',
@@ -100,24 +113,23 @@ class PurchaseOrder extends Model
         'type' => PurchaseOrderType::class,
         'status' => PurchaseOrderStatus::class,
 
-        'delivery_date' => 'datetime:Y-m-d',
-
         'discount' => 'decimal:2',
         'tax_type' => PurchaseOrderTaxType::class,
         'rounding' => 'decimal:2',
+        'total_amount' => 'decimal:2',
     ];
-
 
     /**
      * Constants
      */
     public const MODEL_ALIAS = 'PO';
+
     public const DEFAULT_TAX_PERCENTAGE = 11;
+
     public const SELECTABLE_PURCHASE_REQUEST_STATUSES = [
         PurchaseRequestStatus::REVIEWED,
         PurchaseRequestStatus::ORDERED,
     ];
-
 
     /**
      * Booted / Events
@@ -151,7 +163,6 @@ class PurchaseOrder extends Model
             $record->setStatusLog(PurchaseOrderStatus::DRAFT, note: (string) $record->number);
         });
     }
-
 
     /**
      * Relationships
@@ -220,7 +231,6 @@ class PurchaseOrder extends Model
     {
         return $this->hasMany(PurchaseOrderStatusLog::class);
     }
-
 
     /**
      * Public Helpers
@@ -322,7 +332,6 @@ class PurchaseOrder extends Model
             );
     }
 
-
     /**
      * for HasStateMachine
      */
@@ -337,7 +346,7 @@ class PurchaseOrder extends Model
             $this->hasStatus(PurchaseOrderStatus::DRAFT) &&
             in_array($newStatus, [
                 PurchaseOrderStatus::CANCELED,
-                PurchaseOrderStatus::ORDERED
+                PurchaseOrderStatus::ORDERED,
             ], true) &&
             $this->user_id === $user->id
         ) {
@@ -366,7 +375,6 @@ class PurchaseOrder extends Model
             });
     }
 
-
     /**
      * for HasDocumentRevision
      */
@@ -378,15 +386,21 @@ class PurchaseOrder extends Model
             'vendor_id',
             'warehouse_address_id',
 
-            'opening_letter',
-
-            'payment_terms',
-            'payment_conditions',
-
-            'delivery_date',
-            'delivery_notes',
-
+            'po_opening_letter',
+            'po_payment_terms',
+            'po_processing_date',
+            'po_payment_method',
+            'po_description',
             'po_terms',
+            'po_billing_method',
+            'po_opname_method',
+            'po_processing_time',
+            'po_location',
+            'po_miscellaneous',
+            'po_warranty',
+            'po_duration_info',
+            'po_carbon_copy',
+            'po_footnote',
 
             'tax_type',
             'tax_percentage',
@@ -425,19 +439,13 @@ class PurchaseOrder extends Model
         ];
     }
 
-
-
-
-
-
     public static function calculateSubtotal(array $items): float
     {
         $normalizedItems = self::normalizeSummaryItems($items);
 
         return round(
             collect($normalizedItems)->sum(
-                fn(array $item): float =>
-                    max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0)
+                fn(array $item): float => max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0)
             ),
             2
         );
@@ -465,8 +473,7 @@ class PurchaseOrder extends Model
             ->mapWithKeys(fn(int $percentage): array => [
                 (int) $percentage => "{$percentage}%",
             ])
-            ->all()
-        ;
+            ->all();
     }
 
     public static function calculateTaxAmount(
@@ -501,7 +508,6 @@ class PurchaseOrder extends Model
 
         return PurchaseOrderTaxType::tryFrom((string) $taxType);
     }
-
 
     /**
      * @param  array<int, array<string, mixed>>  $items

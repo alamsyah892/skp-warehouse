@@ -79,15 +79,13 @@ return new class extends Migration {
 
             $table->text('po_opening_letter'); // 0
             $table->text('po_payment_terms'); // 1
-            $table->text('po_delivery_date'); // 2
+            $table->text('po_processing_date'); // 2
             $table->text('po_payment_method'); // 3
             $table->text('po_description'); // 4
             $table->text('po_terms'); // 5
             $table->text('po_billing_method'); // 6
-            $table->text('po_conditions'); // 7
             $table->text('po_opname_method'); // 8
             $table->text('po_processing_time'); // 9
-            $table->text('po_delivery_time'); // 10
             $table->text('po_location'); // 11
             $table->text('po_miscellaneous'); // 12
             $table->text('po_warranty'); // 13
