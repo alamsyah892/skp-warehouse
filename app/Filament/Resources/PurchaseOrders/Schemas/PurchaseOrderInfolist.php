@@ -164,8 +164,6 @@ class PurchaseOrderInfolist
                         'default' => 2,
                     ])
                     ->schema([
-                        TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
-
                         TextEntry::make('warehouse.name')
                             ->hiddenLabel()
                             ->icon(Heroicon::HomeModern)
@@ -182,6 +180,16 @@ class PurchaseOrderInfolist
                             ->hiddenLabel()
                             ->icon(Heroicon::Square3Stack3d)
                             ->iconColor('primary'),
+                    ]),
+                Grid::make()
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 5,
+                    ])
+                    ->columns([
+                        'default' => 2,
+                    ])
+                    ->schema([
                         RepeatableEntry::make('purchaseRequests')
                             ->label(__('purchase-request.model.plural_label'))
                             ->schema([
@@ -197,53 +205,8 @@ class PurchaseOrderInfolist
                             ])
                             ->columnSpanFull()
                             ->contained(false),
-                        TextEntry::make('description')
-                            ->label(__('common.description.label'))
-                            ->columnSpanFull()
-                            ->color('gray')
-                            ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br($state))
-                            ->html(),
-                    ]),
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 5,
-                    ])
-                    ->columns([
-                        'default' => 2,
-                    ])
-                    ->schema([
-                        TextEntry::make('warehouseAddress.address')
-                            ->label(__('purchase-request.warehouse_address.label'))
-                            ->icon(Heroicon::MapPin)
-                            ->iconColor('primary')
-                            ->formatStateUsing(
-                                fn($state, $record) =>
-                                    // $state . "</br>" . $record->warehouseAddress?->city
-                                    collect([$state, $record->warehouseAddress?->city])
-                                        ->filter()
-                                        ->join(' - ') ?: '-'
-                            )
-                            ->html()
-                            ->placeholder('-')
-                            ->color('gray')
-                            ->columnSpanFull(),
-                        static::poTextEntry('po_payment_terms'),
-                        static::poTextEntry('po_payment_method'),
-                        static::poTextEntry('po_billing_method'),
-                        static::poTextEntry('po_processing_date'),
-                        static::poTextEntry('po_processing_time'),
-                        static::poTextEntry('po_location'),
-                        static::poTextEntry('po_terms'),
-                        static::poTextEntry('po_opname_method'),
-                        static::poTextEntry('po_warranty'),
-                        static::poTextEntry('po_opening_letter'),
-                        static::poTextEntry('po_description'),
-                        static::poTextEntry('po_duration_info'),
-                        static::poTextEntry('po_miscellaneous'),
-                        static::poTextEntry('po_carbon_copy'),
-                        static::poTextEntry('po_footnote'),
+
+                        TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
                     ]),
             ]);
     }
@@ -465,161 +428,84 @@ class PurchaseOrderInfolist
 
     protected static function letterSection(): Section
     {
-        return Section::make(__('purchase-order.section.main_info.label'))
-            ->icon(Heroicon::ShoppingCart)
+        return Section::make('Surat Pesanan Pembelian')
+            ->icon(Heroicon::ClipboardDocumentList)
             ->iconColor('primary')
             ->compact()
+            // ->footer(fn($record) => self::dataSectionFooter($record))
             ->columns([
                 'default' => 1,
                 'lg' => 12,
             ])
             ->schema([
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 7,
-                    ])
-                    ->columns([
-                        'default' => 3,
-                        'lg' => 3,
-                    ])
-                    ->schema([
-                        TextEntry::make('number')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::Hashtag)
-                            ->iconColor('primary')
-                            ->fontFamily(FontFamily::Mono)
-                            ->weight(FontWeight::Bold)
-                            ->size(TextSize::Large)
-                            ->columnSpan([
-                                'default' => 2,
-                                'lg' => 2,
-                            ]),
-                        TextEntry::make('type')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
-                            ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
-                            ->badge(),
-                    ]),
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 5,
-                    ])
-                    ->columns([
-                        'default' => 3,
-                        'lg' => 3,
-                    ])
-                    ->schema([
-                        TextEntry::make('status')
-                            ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
-                            ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
-                            ->badge()
-                            ->columnSpan([
-                                'default' => 2,
-                                'lg' => 2,
-                            ]),
-                        TextEntry::make('created_at')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::CalendarDays)
-                            ->iconColor('primary')
-                            ->date()
-                            ->alignEnd(),
-                    ]),
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 7,
-                    ])
-                    ->columns([
-                        'default' => 2,
-                    ])
-                    ->schema([
-                        TextEntry::make('vendor.name')->hiddenLabel()->icon(Heroicon::BuildingStorefront)->iconColor('primary')->columnSpanFull(),
+                static::poTextEntry('po_opening_letter'),
 
-                        TextEntry::make('warehouse.name')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::HomeModern)
-                            ->iconColor('primary'),
-                        TextEntry::make('company.alias')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::BuildingOffice2)
-                            ->iconColor('primary'),
-                        TextEntry::make('division.name')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::Briefcase)
-                            ->iconColor('primary'),
-                        TextEntry::make('project.name')
-                            ->hiddenLabel()
-                            ->icon(Heroicon::Square3Stack3d)
-                            ->iconColor('primary'),
-                        RepeatableEntry::make('purchaseRequests')
-                            ->label(__('purchase-request.model.plural_label'))
-                            ->schema([
-                                TextEntry::make('number')
-                                    ->hiddenLabel()
-                                    ->icon(Heroicon::Hashtag)
-                                    ->iconColor('primary')
-                                    ->fontFamily(FontFamily::Mono)
-                                    ->badge()
-                                    ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
-                                // ->openUrlInNewTab()
-                                ,
-                            ])
-                            ->columnSpanFull()
-                            ->contained(false),
-                        TextEntry::make('description')
-                            ->label(__('common.description.label'))
-                            ->columnSpanFull()
-                            ->color('gray')
-                            ->placeholder('-')
-                            ->formatStateUsing(fn($state) => nl2br($state))
-                            ->html(),
-                    ]),
-                Grid::make()
+                Section::make('Terms & Conditions')
+                    // ->icon(Heroicon::ClipboardDocumentList)
+                    // ->iconColor('primary')
                     ->columnSpan([
-                        'default' => 1,
-                        'lg' => 5,
+                        'default' => 12,
+                        'lg' => 12,
                     ])
                     ->columns([
                         'default' => 2,
                     ])
+                    ->compact()
+                    ->contained(false)
                     ->schema([
-                        TextEntry::make('warehouseAddress.address')
-                            ->label(__('purchase-request.warehouse_address.label'))
-                            ->icon(Heroicon::MapPin)
-                            ->iconColor('primary')
-                            ->formatStateUsing(
-                                fn($state, $record) =>
-                                    // $state . "</br>" . $record->warehouseAddress?->city
-                                    collect([$state, $record->warehouseAddress?->city])
-                                        ->filter()
-                                        ->join(' - ') ?: '-'
-                            )
-                            ->html()
-                            ->placeholder('-')
-                            ->color('gray')
-                            ->columnSpanFull(),
-                        static::poTextEntry('po_payment_terms'),
-                        static::poTextEntry('po_payment_method'),
-                        static::poTextEntry('po_billing_method'),
-                        static::poTextEntry('po_processing_date'),
-                        static::poTextEntry('po_processing_time'),
-                        static::poTextEntry('po_location'),
-                        static::poTextEntry('po_terms'),
-                        static::poTextEntry('po_opname_method'),
-                        static::poTextEntry('po_warranty'),
-                        static::poTextEntry('po_opening_letter'),
-                        static::poTextEntry('po_description'),
-                        static::poTextEntry('po_duration_info'),
-                        static::poTextEntry('po_miscellaneous'),
-                        static::poTextEntry('po_carbon_copy'),
-                        static::poTextEntry('po_footnote'),
+
+                        Fieldset::make(__('purchase-order.fieldset.payment.label'))
+                            ->columns(['default' => 1])
+                            ->schema([
+                                static::poTextEntry('po_payment_terms'),
+                                static::poTextEntry('po_payment_method'),
+                                static::poTextEntry('po_billing_method'),
+                            ]),
+
+
+
+                        Fieldset::make('Pengiriman / Pengerjaan')
+                            ->columns(['default' => 1])
+                            ->schema([
+                                TextEntry::make('warehouseAddress.address')
+                                    ->label(__('purchase-request.warehouse_address.label'))
+                                    ->icon(Heroicon::MapPin)
+                                    ->iconColor('primary')
+                                    ->formatStateUsing(
+                                        fn($state, $record) =>
+                                            // $state . "</br>" . $record->warehouseAddress?->city
+                                            collect([$state, $record->warehouseAddress?->city])
+                                                ->filter()
+                                                ->join(' - ') ?: '-'
+                                    )
+                                    ->html()
+                                    ->placeholder('-')
+                                    ->color('gray')
+                                    ->columnSpanFull(),
+
+                                static::poTextEntry('po_location'),
+                                static::poTextEntry('po_processing_date'),
+                                static::poTextEntry('po_processing_time'),
+                                static::poTextEntry('po_duration_info'),
+                            ]),
+
+                        Fieldset::make(__('purchase-order.fieldset.terms.label'))
+                            ->columns(['default' => 1])
+                            ->schema([
+                                static::poTextEntry('po_opname_method'),
+                                static::poTextEntry('po_terms'),
+                                static::poTextEntry('po_warranty'),
+                            ]),
+
+                        Fieldset::make(__('purchase-order.fieldset.other.label'))
+                            ->columns(['default' => 1])
+                            ->schema([
+                                static::poTextEntry('po_description'),
+                                static::poTextEntry('po_miscellaneous'),
+                                static::poTextEntry('po_carbon_copy'),
+                                static::poTextEntry('po_footnote'),
+                            ]),
+
                     ]),
             ]);
     }
