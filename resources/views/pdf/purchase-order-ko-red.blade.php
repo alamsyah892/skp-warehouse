@@ -293,7 +293,15 @@
                         <td style="width: 24%">Syarat Pembayaran</td>
                         <td style="width: 2%">:</td>
                         <td style="width: 74%; text-align: justify;">
-                            {{ $purchaseOrder->terms ?: '-' }}
+                            {{ $purchaseOrder->po_payment_terms ?: '-' }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="width: 24%">Cara Pembayaran </td>
+                        <td style="width: 2%">:</td>
+                        <td style="width: 74%; text-align: justify;">
+                            {{ $purchaseOrder->po_payment_method ?: '-' }}
                         </td>
                     </tr>
 
@@ -301,11 +309,35 @@
                         <td style="width: 24%">Tanggal Pengiriman</td>
                         <td style="width: 2%">:</td>
                         <td style="width: 74%; text-align: justify;">
-                            {{ $purchaseOrder->delivery_date ? \Illuminate\Support\Carbon::parse($purchaseOrder->delivery_date)->format('d M Y') : '-' }}
+                            {{ $purchaseOrder->po_processing_date ?: '-' }}
                         </td>
                     </tr>
 
                     <tr>
+                        <td style="width: 24%">Waktu Pengiriman / Pengerjaan</td>
+                        <td style="width: 2%">:</td>
+                        <td style="width: 74%; text-align: justify;">
+                            {{ $purchaseOrder->po_processing_time ?: '-' }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="width: 24%">Keterangan</td>
+                        <td style="width: 2%">:</td>
+                        <td style="width: 74%; text-align: justify;">
+                            {{ $purchaseOrder->po_description ?: '-' }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="width: 24%">Lain-lain</td>
+                        <td style="width: 2%">:</td>
+                        <td style="width: 74%; text-align: justify;">
+                            {{ $purchaseOrder->po_miscellaneous ?: '-' }}
+                        </td>
+                    </tr>
+
+                    {{-- <tr>
                         <td style="width: 24%">Metode Pengiriman</td>
                         <td style="width: 2%">:</td>
                         <td style="width: 74%; text-align: justify;">
@@ -319,7 +351,7 @@
                         <td style="width: 74%; text-align: justify;">
                             {{ $purchaseOrder->delivery_notes ?: '-' }}
                         </td>
-                    </tr>
+                    </tr> --}}
                 </table>
             </div>
             <br />

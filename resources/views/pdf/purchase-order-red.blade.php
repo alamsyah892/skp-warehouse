@@ -25,7 +25,6 @@
 
     $purchaseOrderNumbers = $purchaseOrder->purchaseRequests->pluck('number')->filter()->implode(', ');
     $receivingPerson = $purchaseOrder->purchaseRequests->first()?->user?->name ?? '-';
-    $deliveryDate = $purchaseOrder->delivery_notes ?: ($purchaseOrder->delivery_date?->translatedFormat('d M Y') ?: '-');
 @endphp
 
 <!DOCTYPE html>
@@ -237,14 +236,14 @@
                                                 <td style="min-width: 9rem; max-width: 9rem">Syarat Pembayaran</td>
                                                 <td style="width: 1rem">:</td>
                                                 <td style="min-width: 12rem; max-width: 12rem">
-                                                    <strong>{{ $purchaseOrder->terms ?: '-' }}</strong>
+                                                    <strong>{{ $purchaseOrder->po_payment_terms ?: '-' }}</strong>
                                                 </td>
                                             </tr>
                                             <tr>
                                                 <td style="min-width: 9rem; max-width: 9rem">Tanggal Pengiriman</td>
                                                 <td style="width: 1rem">:</td>
                                                 <td style="min-width: 12rem; max-width: 12rem">
-                                                    <strong>{{ $deliveryDate }}</strong>
+                                                    <strong>{{ $purchaseOrder->po_processing_date ?: '-' }}</strong>
                                                 </td>
                                             </tr>
                                         </table>

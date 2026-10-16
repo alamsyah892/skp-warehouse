@@ -18,7 +18,7 @@ class PrintPurchaseOrderKoController extends PurchaseOrderPrintController
 
     protected function pdfView(): string
     {
-        return 'pdf.purchase-order-ko';
+        return 'pdf.purchase-order-ko-red';
     }
 
     protected function filenamePrefix(): string
