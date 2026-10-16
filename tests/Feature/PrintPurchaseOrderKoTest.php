@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderType;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\User;
@@ -23,6 +24,25 @@ test('draft purchase order is downloaded as confirmation order pdf', function ()
     $response->assertOk()
         ->assertHeader('content-type', 'application/pdf')
         ->assertDownload('KO_004_10_26_PO-M_CMR-BXPCG.pdf');
+});
+
+test('draft white purchase order is downloaded as white confirmation order pdf', function (): void {
+    $user = createUserWithReadPurchaseOrderPermission();
+    $this->actingAs($user);
+
+    $purchaseOrder = PurchaseOrder::factory()->create([
+        'type' => PurchaseOrderType::WHITE,
+    ]);
+    $purchaseOrder->update(['number' => '005/10/26/PO-P/CMR-BXPCG']);
+    PurchaseOrderItem::factory()
+        ->for($purchaseOrder)
+        ->create(['purchase_request_item_id' => null]);
+
+    $response = $this->get(route('purchase-orders.print-ko', $purchaseOrder));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertDownload('KO_005_10_26_PO-P_CMR-BXPCG.pdf');
 });
 
 test('non draft purchase order is not downloadable', function (): void {

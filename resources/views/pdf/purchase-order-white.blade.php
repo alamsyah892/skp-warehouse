@@ -18,11 +18,6 @@
         return rtrim(rtrim($formatted, '0'), '.') ?: '0';
     };
 
-    $taxPercentage = (float) ($purchaseOrder->tax_percentage ?? 0);
-    $discountPercentage = $summary['subtotal'] > 0
-        ? round($summary['discount'] / $summary['subtotal'] * 100, 2)
-        : 0;
-
     $purchaseOrderNumbers = $purchaseOrder->purchaseRequests->pluck('number')->filter()->implode(', ');
     $receivingPerson = $purchaseOrder->purchaseRequests->first()?->user?->name ?? '-';
 @endphp
@@ -146,9 +141,9 @@
             Kepada:<br>
             <strong>{{ $vendor?->name }}</strong><br>
             {{ $vendor?->address }}<br>
-            {{ $vendor?->city }}<br>
+            {{ $vendor->city }}<br>
             Telp: {{ $vendor?->phone }}, Fax: {{ $vendor?->fax }}<br>
-            Up: {{ $vendor?->contact }}
+            Up: {{ $vendor?->contact_person }}
         </p>
     </div>
 
@@ -158,7 +153,7 @@
     </div>
 
     <div class="row">
-        <p>{{ nl2br($purchaseOrder->beginning) }}</p>
+        <p>{{ nl2br($purchaseOrder->po_opening_letter ?: '') }}</p>
 
         <table class="table-item">
             <thead>
@@ -167,24 +162,37 @@
                     <th rowspan="2" style="width: 44%;">Item</th>
                     <th rowspan="2" style="width: 8%;">Qty</th>
                     <th rowspan="2" style="width: 8%;">Satuan</th>
-                    <th colspan="2">Harga (<?= $data->vendor->currency->name ?>)</th>
+                    <th colspan="2">Harga</th>
                 </tr>
                 <tr>
-                    <th style="width: 16%;">Satuan</th>
-                    <th style="width: 20%;">Jumlah</th>
+                    <th style="width: 16%;">Satuan (Rp)</th>
+                    <th style="width: 20%;">Jumlah (Rp)</th>
                 </tr>
             </thead>
             <tbody>
-                @foreach ($purchaseOrder->items as $index => $item)
+                @forelse ($purchaseOrder->purchaseOrderItems as $index => $item)
+
                     <tr>
                         <td align="center">{{ $index + 1 }}</td>
-                        <td>{{ $item->name }}</td>
-                        <td align="right">{{ $qty($item->quantity) }}</td>
-                        <td align="center">{{ $item->unit }}</td>
-                        <td align="right">{{ $idr($item->unit_price) }}</td>
-                        <td align="right">{{ $idr($item->total_price) }}</td>
+                        <td>
+                            {{ $item->item?->name }}
+                            @if (filled($item->description))
+                                <br>
+                                @foreach (collect(explode("\n", $item->description))->filter() as $line)
+                                    {{ trim($line) }}<br>
+                                @endforeach
+                            @endif
+                        </td>
+                        <td align="right">{{ $qty($item->qty) }}</td>
+                        <td align="center">{{ $item->item?->unit }}</td>
+                        <td align="right">{{ $idr($item->price) }}</td>
+                        <td align="right">{{ $idr($item->getSubtotalAmount()) }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr>
+                        <td colspan="6" class="text-center">-</td>
+                    </tr>
+                @endforelse
             </tbody>
             <tfoot>
                 <tr>
@@ -197,13 +205,12 @@
                                 <td align="right" style="width: 100%">Subtotal</td>
                             </tr>
                             <tr>
-                                <td align="right">Diskon ({{ $purchaseOrder->discount }})<br>&nbsp;</td>
+                                <td align="right">Diskon<br>&nbsp;</td>
                             </tr>
                             <tr>
                                 <td align="right">Subtotal 2</td>
                             </tr>
                             <tr>
-                                <!-- <td align="right">PPN (<?= $data->tax ?>%)</td> -->
                                 <td align="right">PPN</td>
                             </tr>
                             <tr>
@@ -214,19 +221,19 @@
                     <td>
                         <table id="amount">
                             <tr>
-                                <td align="right" style="width: 100%">{{ number_format($total, 2) }}</td>
+                                <td align="right" style="width: 100%">{{ $idr($summary['subtotal']) }}</td>
                             </tr>
                             <tr>
-                                <td align="right">{{ number_format($after_discount, 2) }}<br>&nbsp;</td>
+                                <td align="right">{{ $idr($summary['discount']) }}<br>&nbsp;</td>
                             </tr>
                             <tr>
-                                <td align="right">{{ number_format($sub_total_2, 2) }}</td>
+                                <td align="right">{{ $idr($summary['subtotal_after_discount']) }}</td>
                             </tr>
                             <tr>
-                                <td align="right">{{ number_format($after_tax, 2) }}</td>
+                                <td align="right">{{ $idr($summary['tax_amount']) }}</td>
                             </tr>
                             <tr>
-                                <td align="right">{{ number_format($grand_total, 2) }}</td>
+                                <td align="right">{{ $idr($summary['grand_total']) }}</td>
                             </tr>
                         </table>
                     </td>
@@ -243,39 +250,40 @@
                 <td style="width: 22%">Harga Total</td>
                 <td style="width: 2%">:</td>
                 <td style="width: 76%; line-height: 120%;">
-                    {{ $data->vendor->currency->name }} {{ number_format($grand_total, 2) }}<br>
-                    ({{ ucwords($terbilang) }} {{ $data->vendor->currency->description }} )
+                    {{ number_format((float) $summary['grand_total'], 2) }}<br>
+                    ({{ ucwords($terbilang) }} Rupiah)
                 </td>
             </tr>
 
-
             <tr>
-                <td>Barang dikirim ke</td>
+                <td>Syarat Pembayaran</td>
                 <td>:</td>
-                <td>
-                    Proyek {{ $data->request->warehouse_name_print }}<br>
-                    {{ $data->request->wh1_address }}<br>
-                    {{ $data->request->wh1_city }}
-                </td>
+                <td>{{ $purchaseOrder->po_payment_terms ?: '-' }}</td>
             </tr>
             <tr>
-                <td>Penerima Barang</td>
+                <td>Cara Pembayaran</td>
                 <td>:</td>
-                <td>{{ $data->request->user_fullname ? $data->request->user_fullname : $data->request->username }}</td>
+                <td>{{ $purchaseOrder->po_payment_method ?: '-' }}</td>
             </tr>
             <tr>
-                <td>No. BPPB</td>
+                <td>Tanggal Pengiriman</td>
                 <td>:</td>
-                <td>{{ $data->request->number }}</td>
+                <td>{{ $purchaseOrder->po_processing_date ?: '-' }}</td>
             </tr>
             <tr>
-                <td>Faktur dan Kwitansi a.n.</td>
+                <td>Waktu Pengiriman / Pengerjaan</td>
                 <td>:</td>
-                <td>
-                    {{ $data->request->warehouse_2_department_name }}<br>
-                    {{ $data->request->warehouse_2_address }}<br>
-                    NPWP/NPPKP : {{ $data->request->warehouse_2_tax_number }}
-                </td>
+                <td>{{ $purchaseOrder->po_processing_time ?: '-' }}</td>
+            </tr>
+            <tr>
+                <td>Keterangan</td>
+                <td>:</td>
+                <td>{{ $purchaseOrder->po_description ?: '-' }}</td>
+            </tr>
+            <tr>
+                <td>Lain-lain</td>
+                <td>:</td>
+                <td>{{ $purchaseOrder->po_miscellaneous ?: '-' }}</td>
             </tr>
         </table>
 
@@ -285,20 +293,17 @@
     <div class="row">
         <table class="table table-centered">
             <tr>
-                <td style="width: 30%; height: 100px;">&nbsp;<br><strong>{{ $data->vendor->name }}</strong></td>
+                <td style="width: 30%; height: 100px;">
+                    &nbsp;<br><strong>{{ $company?->contact_person ?: 'Staff Purchasing' }}</strong></td>
                 <td style="width: 40%">&nbsp;</td>
-                <td style="width: 30%; height: 100px;">Hormat
-                    Kami,<br><strong>{{ $data->request->warehouse_2_department_name }}</strong></td>
+                <td style="width: 30%; height: 100px;">
+                    Menyetujui,<br /><strong>{{ $company?->contact_person_position }}</strong></td>
             </tr>
             <tr>
-                <td><strong><u>{{ $data->vendor->contact }}</u></strong></td>
+                <td><strong><u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></strong>
+                </td>
                 <td>&nbsp;</td>
-                <td><strong><u>{{ $data->request->warehouse_2_contact_name }}</u></strong></td>
-            </tr>
-            <tr>
-                <td>Supplier</td>
-                <td>&nbsp;</td>
-                <td>{{ $data->request->warehouse_2_position }}</td>
+                <td><strong><u>Supplier</u></strong></td>
             </tr>
         </table>
     </div>
@@ -306,7 +311,7 @@
     <div class="row">
         <p>
             <strong>CC:</strong><br>
-            {{ nl2br($data->cc) }}
+            {{ nl2br($purchaseOrder->po_carbon_copy ?: '-') }}
         </p>
     </div>
 

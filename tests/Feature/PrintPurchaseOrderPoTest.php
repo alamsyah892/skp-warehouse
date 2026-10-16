@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\PurchaseOrderStatus;
+use App\Enums\PurchaseOrderType;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\User;
@@ -26,6 +27,28 @@ test('ordered purchase order is downloaded as purchase order pdf', function (): 
     $response->assertOk()
         ->assertHeader('content-type', 'application/pdf')
         ->assertDownload('PO_043_10_26_PO-M_RSKP-BU.pdf');
+});
+
+test('ordered white purchase order is downloaded as white purchase order pdf', function (): void {
+    $user = createUserWithReadPurchaseOrderPermission();
+    $this->actingAs($user);
+
+    $purchaseOrder = PurchaseOrder::factory()->create([
+        'type' => PurchaseOrderType::WHITE,
+    ]);
+    $purchaseOrder->update([
+        'number' => '044/10/26/PO-P/RSKP-BU',
+        'status' => PurchaseOrderStatus::ORDERED,
+    ]);
+    PurchaseOrderItem::factory()
+        ->for($purchaseOrder)
+        ->create(['purchase_request_item_id' => null]);
+
+    $response = $this->get(route('purchase-orders.print-po', $purchaseOrder));
+
+    $response->assertOk()
+        ->assertHeader('content-type', 'application/pdf')
+        ->assertDownload('PO_044_10_26_PO-P_RSKP-BU.pdf');
 });
 
 test('non ordered purchase order is not downloadable', function (): void {

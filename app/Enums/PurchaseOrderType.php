@@ -46,13 +46,25 @@ enum PurchaseOrderType: int
         };
     }
 
+    /**
+     * Suffix used to resolve the print view of this purchase order type,
+     * e.g. "red" for the purchase-order-red view.
+     */
+    public function viewSuffix(): string
+    {
+        return match ($this) {
+            self::RED => 'red',
+            self::WHITE => 'white',
+            self::WORK_ORDER => 'work_order',
+        };
+    }
+
     public static function options(): array
     {
         return collect(self::cases())
-            ->mapWithKeys(fn(self $type): array => [
+            ->mapWithKeys(fn (self $type): array => [
                 $type->value => $type->label(),
             ])
-            ->all()
-        ;
+            ->all();
     }
 }

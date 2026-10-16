@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\PurchaseOrderStatus;
+use App\Models\PurchaseOrder;
 
 class PrintPurchaseOrderKoController extends PurchaseOrderPrintController
 {
@@ -16,9 +17,9 @@ class PrintPurchaseOrderKoController extends PurchaseOrderPrintController
         return 'printKo';
     }
 
-    protected function pdfView(): string
+    protected function pdfView(PurchaseOrder $purchaseOrder): string
     {
-        return 'pdf.purchase-order-ko-red';
+        return 'pdf.purchase-order-ko-'.$purchaseOrder->type->viewSuffix();
     }
 
     protected function filenamePrefix(): string

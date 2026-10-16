@@ -30,7 +30,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Print KO Merah</title>
+    <title>Print KO Putih</title>
     <style type="text/css">
         @page {
             size: A4;

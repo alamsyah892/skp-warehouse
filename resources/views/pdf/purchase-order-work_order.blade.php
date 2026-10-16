@@ -33,7 +33,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Print PO Merah</title>
+    <title>Print PO Work Order</title>
     <style>
         @page {
             size: A4;

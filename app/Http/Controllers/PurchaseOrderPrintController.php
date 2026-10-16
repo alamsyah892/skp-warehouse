@@ -49,9 +49,9 @@ abstract class PurchaseOrderPrintController extends Controller
             'printedAt' => now(),
         ];
 
-        $pageCount = $this->countPages($this->makePdf($viewData)->generatePdfContent());
+        $pageCount = $this->countPages($this->makePdf($purchaseOrder, $viewData)->generatePdfContent());
 
-        return $this->makePdf([...$viewData, 'pageCount' => $pageCount])
+        return $this->makePdf($purchaseOrder, [...$viewData, 'pageCount' => $pageCount])
             ->name($this->filename($purchaseOrder))
             ->download();
     }
@@ -60,7 +60,7 @@ abstract class PurchaseOrderPrintController extends Controller
 
     abstract protected function printAbility(): string;
 
-    abstract protected function pdfView(): string;
+    abstract protected function pdfView(PurchaseOrder $purchaseOrder): string;
 
     abstract protected function filenamePrefix(): string;
 
@@ -72,10 +72,10 @@ abstract class PurchaseOrderPrintController extends Controller
     /**
      * @param  array<string, mixed>  $viewData
      */
-    private function makePdf(array $viewData): PdfBuilder
+    private function makePdf(PurchaseOrder $purchaseOrder, array $viewData): PdfBuilder
     {
         return pdf()
-            ->view($this->pdfView(), $viewData)
+            ->view($this->pdfView($purchaseOrder), $viewData)
             ->driver('dompdf')
             ->format('a4');
     }
