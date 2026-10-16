@@ -20,6 +20,18 @@
 
     $purchaseOrderNumbers = $purchaseOrder->purchaseRequests->pluck('number')->filter()->implode(', ');
     $receivingPerson = $purchaseOrder->purchaseRequests->first()?->user?->name ?? '-';
+
+    $conditionRows = collect([
+        'Syarat Pembayaran' => $purchaseOrder->po_payment_terms,
+        'Cara Pembayaran' => $purchaseOrder->po_payment_method,
+        'Tanggal Pengiriman' => $purchaseOrder->po_processing_date,
+        'Waktu Pengiriman / Pengerjaan' => $purchaseOrder->po_processing_time,
+        'Garansi' => $purchaseOrder->po_warranty,
+        'Keterangan' => $purchaseOrder->po_description,
+        'Lain-lain' => $purchaseOrder->po_miscellaneous,
+    ])
+        ->filter(fn(string $value): bool => filled($value))
+        ->all();
 @endphp
 
 <!DOCTYPE html>
@@ -153,7 +165,9 @@
     </div>
 
     <div class="row">
-        <p>{{ nl2br($purchaseOrder->po_opening_letter ?: '') }}</p>
+        @if (filled($purchaseOrder->po_opening_letter))
+            <p>{!! nl2br($purchaseOrder->po_opening_letter) !!}</p>
+        @endif
 
         <table class="table-item">
             <thead>
@@ -240,8 +254,6 @@
                 </tr>
             </tfoot>
         </table>
-
-        <p><strong><u>Kondisi Pembelian:</u></strong></p>
     </div>
 
     <div class="row">
@@ -251,39 +263,60 @@
                 <td style="width: 2%">:</td>
                 <td style="width: 76%; line-height: 120%;">
                     {{ number_format((float) $summary['grand_total'], 2) }}<br>
-                    ({{ ucwords($terbilang) }} Rupiah)
+                    ({{ ucwords($terbilang) }})
                 </td>
             </tr>
+        </table>
 
+        @if ($conditionRows !== [])
+            <p><strong><u>Kondisi Pembelian:</u></strong></p>
+            <table class="table">
+                @foreach ($conditionRows as $condition => $value)
+                    <tr>
+                        <td style="width: 22%">{{ $condition }}</td>
+                        <td style="width: 2%">:</td>
+                        <td style="width: 76%; text-align: justify;">{!! nl2br($value) !!}</td>
+                    </tr>
+                @endforeach
+            </table>
+        @endif
+
+        <table class="table">
             <tr>
-                <td>Syarat Pembayaran</td>
-                <td>:</td>
-                <td>{{ $purchaseOrder->po_payment_terms ?: '-' }}</td>
+                <td style="width: 22%">Barang dikirim ke</td>
+                <td style="width: 2%">:</td>
+                <td style="width: 76%; line-height: 120%;">
+                    <div>{{ $project?->name ? 'Proyek ' . $project->name : '-' }}</div>
+                    @if ($warehouseAddress?->address)
+                        <div>{{ $warehouseAddress->address }}</div>
+                    @endif
+                    @if ($warehouseAddress?->city)
+                        <div>{{ $warehouseAddress->city }}</div>
+                    @endif
+                </td>
             </tr>
             <tr>
-                <td>Cara Pembayaran</td>
+                <td>Penerima Barang</td>
                 <td>:</td>
-                <td>{{ $purchaseOrder->po_payment_method ?: '-' }}</td>
+                <td>{{ $receivingPerson }}</td>
             </tr>
             <tr>
-                <td>Tanggal Pengiriman</td>
+                <td>No. BPPB</td>
                 <td>:</td>
-                <td>{{ $purchaseOrder->po_processing_date ?: '-' }}</td>
+                <td>{{ $purchaseOrderNumbers }}</td>
             </tr>
             <tr>
-                <td>Waktu Pengiriman / Pengerjaan</td>
+                <td>Faktur dan Kwitansi a.n.</td>
                 <td>:</td>
-                <td>{{ $purchaseOrder->po_processing_time ?: '-' }}</td>
-            </tr>
-            <tr>
-                <td>Keterangan</td>
-                <td>:</td>
-                <td>{{ $purchaseOrder->po_description ?: '-' }}</td>
-            </tr>
-            <tr>
-                <td>Lain-lain</td>
-                <td>:</td>
-                <td>{{ $purchaseOrder->po_miscellaneous ?: '-' }}</td>
+                <td>
+                    <div>{{ $company?->name }}</div>
+                    @if ($company?->address)
+                        <div>{{ $company->address }}</div>
+                    @endif
+                    @if ($company?->tax_number)
+                        <div>NPWP/NPPKP: {{ $company->tax_number }}</div>
+                    @endif
+                </td>
             </tr>
         </table>
 
@@ -293,26 +326,30 @@
     <div class="row">
         <table class="table table-centered">
             <tr>
-                <td style="width: 30%; height: 100px;">
-                    &nbsp;<br><strong>{{ $company?->contact_person ?: 'Staff Purchasing' }}</strong></td>
+                <td style="width: 30%; height: 100px;">&nbsp;<br><strong>{{ $vendor->name }}</strong></td>
                 <td style="width: 40%">&nbsp;</td>
-                <td style="width: 30%; height: 100px;">
-                    Menyetujui,<br /><strong>{{ $company?->contact_person_position }}</strong></td>
+                <td style="width: 30%; height: 100px;">Hormat Kami,<br><strong>{{ $company->name }}</strong></td>
             </tr>
             <tr>
-                <td><strong><u>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</u></strong>
-                </td>
+                <td><strong><u>{{ $vendor->contact }}</u></strong></td>
                 <td>&nbsp;</td>
-                <td><strong><u>Supplier</u></strong></td>
+                <td><strong><u>{{ $company->contact_person }}</u></strong></td>
+            </tr>
+            <tr>
+                <td>Supplier</td>
+                <td>&nbsp;</td>
+                <td>{{ $company->contact_person_position }}</td>
             </tr>
         </table>
     </div>
 
     <div class="row">
-        <p>
-            <strong>CC:</strong><br>
-            {{ nl2br($purchaseOrder->po_carbon_copy ?: '-') }}
-        </p>
+        @if (filled($purchaseOrder->po_carbon_copy))
+            <p>
+                <strong>CC:</strong><br>
+                {{ nl2br($purchaseOrder->po_carbon_copy) }}
+            </p>
+        @endif
     </div>
 
     <div class="footer">
