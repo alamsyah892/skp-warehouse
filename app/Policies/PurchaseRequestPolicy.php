@@ -5,7 +5,6 @@ namespace App\Policies;
 use App\Enums\PurchaseRequestStatus;
 use App\Models\PurchaseRequest;
 use App\Models\User;
-use Illuminate\Auth\Access\Response;
 
 class PurchaseRequestPolicy
 {
@@ -21,6 +20,14 @@ class PurchaseRequestPolicy
      * Determine whether the user can view the model.
      */
     public function view(User $user, PurchaseRequest $purchaseRequest): bool
+    {
+        return $user->can('Read Purchase Request');
+    }
+
+    /**
+     * Determine whether the user can print the model.
+     */
+    public function print(User $user, PurchaseRequest $purchaseRequest): bool
     {
         return $user->can('Read Purchase Request');
     }
