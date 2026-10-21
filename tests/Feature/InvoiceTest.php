@@ -10,9 +10,10 @@ use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\Vendor;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use App\Services\OrderCalculationService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-uses(RefreshDatabase::class);
+uses(DatabaseTransactions::class);
 
 test('invoice resource is configured correctly', function (): void {
     expect(InvoiceResource::getModel())
@@ -25,8 +26,8 @@ test('invoice resource is configured correctly', function (): void {
         ->toBe(['number', 'vendor.name', 'goodsReceive.number', 'purchaseOrder.number']);
 });
 
-test('invoice summary follows purchase order tax discount and rounding rules', function (): void {
-    $summary = Invoice::calculateSummary(
+test('invoice summary follows tax discount and rounding rules', function (): void {
+    $summary = OrderCalculationService::calculateSummary(
         [
             ['qty' => 2, 'price' => 1000],
             ['qty' => 3, 'price' => 500],
@@ -79,7 +80,7 @@ test('invoice stores goods receive item price subtotal and total amount', functi
             'qty' => 3,
         ]);
 
-    $summary = Invoice::calculateSummary(
+    $summary = OrderCalculationService::calculateSummary(
         [
             ['qty' => $goodsReceiveItem->qty, 'price' => $purchaseOrderItem->price],
         ],

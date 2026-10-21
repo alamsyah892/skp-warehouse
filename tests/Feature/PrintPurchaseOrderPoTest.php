@@ -5,9 +5,9 @@ use App\Enums\PurchaseOrderType;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseOrderItem;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-uses(RefreshDatabase::class);
+uses(DatabaseTransactions::class);
 
 test('ordered purchase order is downloaded as purchase order pdf', function (): void {
     $user = createUserWithReadPurchaseOrderPermission();

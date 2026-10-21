@@ -30,6 +30,7 @@ class PurchaseOrder extends Model
 
     /** @use HasFactory<PurchaseOrderFactory> */
     use HasFactory;
+
     use HasStateMachine {
         changeStatus as protected changeStateStatus;
     }
@@ -147,7 +148,7 @@ class PurchaseOrder extends Model
         });
 
         static::creating(function (self $record) {
-            $record->user_id = auth()->id();
+            $record->user_id = auth()->id() ?? $record->user_id;
             $record->type ??= PurchaseOrderType::RED;
 
             $record->loadMissing([
@@ -273,14 +274,9 @@ class PurchaseOrder extends Model
             ? $newStatus
             : PurchaseOrderStatus::from($newStatus);
 
-        // $previousStatus = $this->status;
-
         $this->changeStateStatus($normalizedStatus, $note);
 
-        if (
-            $normalizedStatus === PurchaseOrderStatus::ORDERED
-            // && $previousStatus !== PurchaseOrderStatus::ORDERED
-        ) {
+        if ($normalizedStatus === PurchaseOrderStatus::ORDERED) {
             $this->syncPurchaseRequestsToOrdered();
         }
     }
@@ -361,7 +357,6 @@ class PurchaseOrder extends Model
         $this->loadMissing('purchaseRequests');
 
         $this->purchaseRequests
-            // ->filter(fn(PurchaseRequest $purchaseRequest): bool => $purchaseRequest->status === PurchaseRequestStatus::REVIEWED)
             ->each(function (PurchaseRequest $purchaseRequest): void {
                 $purchaseRequest->update([
                     'status' => PurchaseRequestStatus::ORDERED,
@@ -436,121 +431,6 @@ class PurchaseOrder extends Model
             'price' => (float) ($item['price'] ?? 0),
             'description' => trim((string) ($item['description'] ?? '')),
             'sort' => (int) ($item['sort'] ?? 0),
-        ];
-    }
-
-    public static function calculateSubtotal(array $items): float
-    {
-        $normalizedItems = self::normalizeSummaryItems($items);
-
-        return round(
-            collect($normalizedItems)->sum(
-                fn(array $item): float => max((float) ($item['qty'] ?? 0) * (float) ($item['price'] ?? 0), 0.0)
-            ),
-            2
-        );
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array<int, array{qty: float, price: float}>
-     */
-    public static function normalizeSummaryItems(array $items): array
-    {
-        return collect($items)
-            ->filter(fn(mixed $item): bool => is_array($item))
-            ->map(fn(array $item): array => [
-                'qty' => max((float) ($item['qty'] ?? 0), 0.0),
-                'price' => max((float) ($item['price'] ?? 0), 0.0),
-            ])
-            ->values()
-            ->all();
-    }
-
-    public static function getTaxPercentageOptions(): array
-    {
-        return collect([0, 10, 11, 12])
-            ->mapWithKeys(fn(int $percentage): array => [
-                (int) $percentage => "{$percentage}%",
-            ])
-            ->all();
-    }
-
-    public static function calculateTaxAmount(
-        float|int|string|null $netSubtotal,
-        PurchaseOrderTaxType|string|null $taxType,
-        float|int|string|null $taxPercentage,
-    ): float {
-        $taxableAmount = max((float) $netSubtotal, 2);
-        // $rate = self::resolveIndonesianVatRate($taxPercentage);
-        $rate = $taxPercentage;
-        $normalizedTaxType = self::normalizeTaxType($taxType);
-
-        if ($taxableAmount <= 0 || $rate <= 0 || !$normalizedTaxType) {
-            return 0.0;
-        }
-
-        return match ($normalizedTaxType) {
-            PurchaseOrderTaxType::EXCLUDE => ($taxableAmount * ($rate / 100)),
-            PurchaseOrderTaxType::INCLUDE => ($taxableAmount - ($taxableAmount / (1 + ($rate / 100)))),
-        };
-    }
-
-    public static function normalizeTaxType(PurchaseOrderTaxType|string|null $taxType): ?PurchaseOrderTaxType
-    {
-        if ($taxType instanceof PurchaseOrderTaxType) {
-            return $taxType;
-        }
-
-        if (blank($taxType)) {
-            return null;
-        }
-
-        return PurchaseOrderTaxType::tryFrom((string) $taxType);
-    }
-
-    /**
-     * @param  array<int, array<string, mixed>>  $items
-     * @return array{
-     *     subtotal: float,
-     *     discount: float,
-     *     subtotal_after_discount: float,
-     *     tax_base: float,
-     *     tax_amount: float,
-     *     total_before_rounding: float,
-     *     rounding: float,
-     *     grand_total: float
-     * }
-     */
-    public static function calculateOrderSummary(
-        array $items,
-        float|int|string|null $orderDiscount = 0,
-        PurchaseOrderTaxType|string|null $taxType = null,
-        float|int|string|null $taxPercentage = null,
-        float|int|string|null $rounding = 0,
-    ): array {
-        $subtotal = self::calculateSubtotal($items);
-        $discount = min(max(round((float) $orderDiscount, 2), 0.0), $subtotal);
-        $subtotalAfterDiscount = max(round($subtotal - $discount, 2), 0.0);
-        $normalizedTaxType = self::normalizeTaxType($taxType);
-        $taxAmount = self::calculateTaxAmount($subtotalAfterDiscount, $normalizedTaxType, $taxPercentage);
-        $tax_base = $normalizedTaxType === PurchaseOrderTaxType::INCLUDE
-            ? max(round($subtotalAfterDiscount - $taxAmount, 2), 0.0)
-            : $subtotalAfterDiscount;
-        $totalBeforeRounding = $normalizedTaxType === PurchaseOrderTaxType::EXCLUDE
-            ? round($tax_base + $taxAmount, 2)
-            : $subtotalAfterDiscount;
-        $rounding = round((float) $rounding, 2);
-
-        return [
-            'subtotal' => $subtotal,
-            'discount' => $discount,
-            'subtotal_after_discount' => $subtotalAfterDiscount,
-            'tax_base' => $tax_base,
-            'tax_amount' => $taxAmount,
-            'total_before_rounding' => $totalBeforeRounding,
-            'rounding' => $rounding,
-            'grand_total' => max(round($totalBeforeRounding + $rounding, 2), 0.0),
         ];
     }
 }

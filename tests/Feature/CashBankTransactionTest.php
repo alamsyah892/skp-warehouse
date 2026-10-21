@@ -8,10 +8,10 @@ use App\Models\Company;
 use App\Models\Currency;
 use App\Models\Project;
 use App\Rules\BelongsToCompany;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Validator;
 
-uses(RefreshDatabase::class);
+uses(DatabaseTransactions::class);
 
 function createCompanyForCashBankTest(): Company
 {

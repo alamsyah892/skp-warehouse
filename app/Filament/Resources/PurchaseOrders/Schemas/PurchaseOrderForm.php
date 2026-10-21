@@ -13,6 +13,7 @@ use App\Models\PurchaseRequest;
 use App\Models\PurchaseRequestItem;
 use App\Models\Role;
 use App\Models\Vendor;
+use App\Services\OrderCalculationService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -122,10 +123,10 @@ class PurchaseOrderForm
                             ->visibleOn('edit'),
                         TextEntry::make('type')
                             ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->icon(fn ($state) => $state?->icon())
+                            ->formatStateUsing(fn ($state) => $state?->label())
                             ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
+                            ->color(fn ($state) => $state?->color())
                             ->badge()
                             ->visibleOn('edit'),
 
@@ -150,10 +151,10 @@ class PurchaseOrderForm
                     ->schema([
                         TextEntry::make('status')
                             ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->icon(fn ($state) => $state?->icon())
+                            ->formatStateUsing(fn ($state) => $state?->label())
                             ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
+                            ->color(fn ($state) => $state?->color())
                             ->badge()
                             ->columnSpan([
                                 'default' => 2,
@@ -196,9 +197,9 @@ class PurchaseOrderForm
                                     ->relationship(
                                         'warehouse',
                                         'name',
-                                        fn($query) => $query->when(
+                                        fn ($query) => $query->when(
                                             auth()->user()->warehouses()->exists(),
-                                            fn($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id')),
+                                            fn ($q) => $q->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id')),
                                         )->orderBy('name')->orderBy('code'),
                                     )
                                     ->searchable(['name', 'code'])
@@ -211,7 +212,7 @@ class PurchaseOrderForm
                                         $set('warehouse_address_id', null);
                                     })
                                     ->required()
-                                    ->disabled(fn($get, $operation) => $operation === 'edit' || filled($get('purchaseRequests')))
+                                    ->disabled(fn ($get, $operation) => $operation === 'edit' || filled($get('purchaseRequests')))
                                     ->dehydrated(),
                                 Select::make('company_id')
                                     ->label(__('purchase-order.company.label'))
@@ -222,9 +223,9 @@ class PurchaseOrderForm
                                             $warehouseId = $get('warehouse_id');
 
                                             $query
-                                                ->when($warehouseId, fn($q) => $q->whereHas(
+                                                ->when($warehouseId, fn ($q) => $q->whereHas(
                                                     'warehouses',
-                                                    fn($qq) => $qq->where('warehouses.id', $warehouseId),
+                                                    fn ($qq) => $qq->where('warehouses.id', $warehouseId),
                                                 ))
                                                 ->orderBy('alias')
                                                 ->orderBy('code');
@@ -233,10 +234,10 @@ class PurchaseOrderForm
                                     ->searchable(['alias', 'code'])
                                     ->preload()
                                     ->live()
-                                    ->afterStateUpdated(fn($set) => $set('project_id', null))
+                                    ->afterStateUpdated(fn ($set) => $set('project_id', null))
                                     ->required()
                                     ->disabled(
-                                        fn($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
+                                        fn ($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated(),
                                 Select::make('division_id')
@@ -248,9 +249,9 @@ class PurchaseOrderForm
                                             $companyId = $get('company_id');
 
                                             $query
-                                                ->when($companyId, fn($q) => $q->whereHas(
+                                                ->when($companyId, fn ($q) => $q->whereHas(
                                                     'companies',
-                                                    fn($qq) => $qq->where('companies.id', $companyId),
+                                                    fn ($qq) => $qq->where('companies.id', $companyId),
                                                 ))
                                                 ->orderBy('name')
                                                 ->orderBy('code');
@@ -260,7 +261,7 @@ class PurchaseOrderForm
                                     ->preload()
                                     ->required()
                                     ->disabled(
-                                        fn($get, string $operation) => $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
+                                        fn ($get, string $operation) => $operation === 'edit' || blank($get('company_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated(),
                                 Select::make('project_id')
@@ -275,30 +276,30 @@ class PurchaseOrderForm
                                             $query
                                                 ->when(
                                                     $companyId && $warehouseId,
-                                                    fn($q) => $q->where(function ($qq) use ($companyId, $warehouseId) {
+                                                    fn ($q) => $q->where(function ($qq) use ($companyId, $warehouseId) {
                                                         $qq
-                                                            ->whereHas('companies', fn($q2) => $q2->where('companies.id', $companyId))
-                                                            ->orWhereHas('warehouses', fn($q2) => $q2->where('warehouses.id', $warehouseId));
+                                                            ->whereHas('companies', fn ($q2) => $q2->where('companies.id', $companyId))
+                                                            ->orWhereHas('warehouses', fn ($q2) => $q2->where('warehouses.id', $warehouseId));
                                                     }),
                                                 )
                                                 ->when(
                                                     $companyId && blank($warehouseId),
-                                                    fn($q) => $q->whereHas('companies', fn($qq) => $qq->where('companies.id', $companyId)),
+                                                    fn ($q) => $q->whereHas('companies', fn ($qq) => $qq->where('companies.id', $companyId)),
                                                 )
                                                 ->when(
                                                     $warehouseId && blank($companyId),
-                                                    fn($q) => $q->whereHas('warehouses', fn($qq) => $qq->where('warehouses.id', $warehouseId)),
+                                                    fn ($q) => $q->whereHas('warehouses', fn ($qq) => $qq->where('warehouses.id', $warehouseId)),
                                                 )
                                                 ->where('allow_po', true)
                                                 ->orderBy('name')->orderBy('code');
                                         }
                                     )
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->code} / {$record->po_code} | {$record->name}")
+                                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->code} / {$record->po_code} | {$record->name}")
                                     ->searchable(['name', 'code', 'po_code'])
                                     ->preload()
                                     ->required()
                                     ->disabled(
-                                        fn($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id')) || filled($get('purchaseRequests'))
+                                        fn ($get, string $operation) => $operation === 'edit' || blank($get('warehouse_id')) || blank($get('company_id')) || filled($get('purchaseRequests'))
                                     )
                                     ->dehydrated(),
                             ]),
@@ -344,7 +345,7 @@ class PurchaseOrderForm
 
                                     $query->when(
                                         auth()->user()->warehouses()->exists(),
-                                        fn(Builder $builder) => $builder->whereIn(
+                                        fn (Builder $builder) => $builder->whereIn(
                                             'purchase_requests.warehouse_id',
                                             auth()->user()->warehouses->pluck('id'),
                                         ),
@@ -399,17 +400,17 @@ class PurchaseOrderForm
                             })
                             ->dehydrated()
                             ->required()
-                            ->disabled(fn($record): ?bool => $record?->goodsReceives()->exists())
+                            ->disabled(fn ($record): ?bool => $record?->goodsReceives()->exists())
                             ->columnSpanFull(),
 
                         Select::make('vendor_id')
                             ->label(__('vendor.model.label'))
-                            ->relationship('vendor', 'name', fn($query) => $query->orderBy('name')->orderBy('code'))
+                            ->relationship('vendor', 'name', fn ($query) => $query->orderBy('name')->orderBy('code'))
                             ->searchable(['name', 'code'])
                             ->preload()
                             ->live()
                             ->required()
-                            ->disabled(fn($record): ?bool => $record?->goodsReceives()->exists())
+                            ->disabled(fn ($record): ?bool => $record?->goodsReceives()->exists())
                             ->dehydrated()
                             ->columnSpanFull(),
                     ]),
@@ -418,7 +419,7 @@ class PurchaseOrderForm
 
     protected static function itemSection(): Section|string
     {
-        return Section::make('Form ' . __('purchase-order.section.purchase_order_items.label'))
+        return Section::make('Form '.__('purchase-order.section.purchase_order_items.label'))
             ->icon(Heroicon::Cube)
             ->iconColor('primary')
             ->columnSpanFull()
@@ -464,7 +465,7 @@ class PurchaseOrderForm
                             })
                             ->live()
                             ->afterStateUpdated(function ($state, $set, $record): void {
-                                if (!$state) {
+                                if (! $state) {
                                     $set('item_id', null);
                                     $set('qty', null);
                                     $set('price', null);
@@ -475,7 +476,7 @@ class PurchaseOrderForm
 
                                 $source = PurchaseRequestItem::findWithDetail((int) $state);
 
-                                if (!$source) {
+                                if (! $source) {
                                     $set('item_id', null);
                                     $set('qty', null);
                                     $set('price', null);
@@ -491,7 +492,7 @@ class PurchaseOrderForm
                                 // $set('qty', $source->getRemainingQty());
                                 $set('description', $source->description);
                             })
-                            ->disabled(fn($record): bool => $record?->getReceivedQty() ?? 0 > 0)
+                            ->disabled(fn ($record): bool => $record?->getReceivedQty() ?? 0 > 0)
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
                             ->dehydrated()
                             ->columnSpanFull(),
@@ -503,12 +504,12 @@ class PurchaseOrderForm
                             ->columns(1)
                             ->schema([
                                 Select::make('item_id')
-                                    ->label(__('item.code.label') . ' | ' . __('item.name.label'))
+                                    ->label(__('item.code.label').' | '.__('item.name.label'))
                                     ->relationship('item', 'name')
-                                    ->getOptionLabelFromRecordUsing(fn($record): string => "{$record->code} | {$record->name}")
+                                    ->getOptionLabelFromRecordUsing(fn ($record): string => "{$record->code} | {$record->name}")
                                     ->searchable(['code', 'name'])
                                     ->required()
-                                    ->disabled(fn($record, $get): bool => ($record?->getReceivedQty() ?? 0 > 0) || filled($get('purchase_request_item_id')))
+                                    ->disabled(fn ($record, $get): bool => ($record?->getReceivedQty() ?? 0 > 0) || filled($get('purchase_request_item_id')))
                                     ->live()
                                     ->dehydrated(),
                                 Textarea::make('description')
@@ -530,8 +531,8 @@ class PurchaseOrderForm
                                 TextInput::make('qty')
                                     ->numeric()
                                     ->placeholder(0.01)
-                                    ->hint(fn($get): ?string => Item::query()->whereKey($get('item_id'))->value('unit'))
-                                    ->minValue(fn($record): float => $record?->getReceivedQty() > 0 ? (float) $record?->getReceivedQty() : 0.01)
+                                    ->hint(fn ($get): ?string => Item::query()->whereKey($get('item_id'))->value('unit'))
+                                    ->minValue(fn ($record): float => $record?->getReceivedQty() > 0 ? (float) $record?->getReceivedQty() : 0.01)
                                     ->required()
                                     ->live(debounce: 500)
                                     ->rule(function ($get, $record) {
@@ -544,7 +545,7 @@ class PurchaseOrderForm
 
                                             $source = PurchaseRequestItem::findWithDetail($sourceId);
 
-                                            if (!$source) {
+                                            if (! $source) {
                                                 return;
                                             }
 
@@ -560,12 +561,12 @@ class PurchaseOrderForm
                                     }),
                                 TextEntry::make('received_qty')
                                     ->label(__('purchase-order.purchase_order_item.received_qty.label'))
-                                    ->state(fn($record): float => $record?->getReceivedQty() ?? 0)
+                                    ->state(fn ($record): float => $record?->getReceivedQty() ?? 0)
                                     ->numeric()
-                                    ->color(fn($record): string => $record?->getReceivedQtyColor() ?? 'gray'),
+                                    ->color(fn ($record): string => $record?->getReceivedQtyColor() ?? 'gray'),
                                 TextInput::make('price')
                                     ->label(function ($get): string {
-                                        return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE ->value
+                                        return $get('../../tax_type') === PurchaseOrderTaxType::INCLUDE->value
                                             ? __('purchase-order.purchase_order_item.price.include_label')
                                             : __('purchase-order.purchase_order_item.price.label');
                                     })
@@ -574,7 +575,7 @@ class PurchaseOrderForm
                                     ->placeholder(0)
                                     ->required()
                                     ->live(debounce: 500)
-                                    ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser()),
+                                    ->visible(fn ($operation): bool => $operation !== 'edit' || ! static::isLogisticUser()),
                                 TextEntry::make('subtotal')
                                     ->label(__('purchase-order.subtotal.label'))
                                     ->state(function ($get): string {
@@ -584,7 +585,7 @@ class PurchaseOrderForm
                                         return $price * $qty;
                                     })
                                     ->numeric()
-                                    ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser()),
+                                    ->visible(fn ($operation): bool => $operation !== 'edit' || ! static::isLogisticUser()),
                             ]),
                     ])
                     ->collapsible()
@@ -593,7 +594,7 @@ class PurchaseOrderForm
                     ->itemLabel('#')
                     ->itemNumbers()
                     ->deleteAction(
-                        fn(Action $action) => $action
+                        fn (Action $action) => $action
                             ->requiresConfirmation()
                             ->visible(function (array $arguments, Repeater $component): bool {
                                 $itemState = $component->getRawState()[$arguments['item']] ?? [];
@@ -621,7 +622,7 @@ class PurchaseOrderForm
                 'lg' => 12,
             ])
             ->compact()
-            ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser())
+            ->visible(fn ($operation): bool => $operation !== 'edit' || ! static::isLogisticUser())
             ->schema([
                 Grid::make()
                     ->columnSpan([
@@ -635,11 +636,11 @@ class PurchaseOrderForm
                             ->native(false)
                             ->default(PurchaseOrderTaxType::EXCLUDE->value)
                             ->live()
-                            ->afterStateHydrated(fn($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
+                            ->afterStateHydrated(fn ($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
                             ->required(),
                         Select::make('tax_percentage')
                             ->label(__('purchase-order.tax_percentage.label'))
-                            ->options(PurchaseOrder::getTaxPercentageOptions())
+                            ->options(OrderCalculationService::getTaxPercentageOptions())
                             ->native(false)
                             ->live()
                             ->afterStateHydrated(function ($component, $state): void {
@@ -658,14 +659,14 @@ class PurchaseOrderForm
                             ->numeric()
                             ->placeholder(0)
                             ->live(debounce: 500)
-                            ->dehydrateStateUsing(fn($state) => $state ?? 0)
+                            ->dehydrateStateUsing(fn ($state) => $state ?? 0)
                             ->columnSpanFull(),
                         TextInput::make('rounding')
                             ->label(__('purchase-order.rounding.label'))
                             ->numeric()
                             ->placeholder(0)
                             ->live(debounce: 500)
-                            ->dehydrateStateUsing(fn($state) => $state ?? 0)
+                            ->dehydrateStateUsing(fn ($state) => $state ?? 0)
                             ->columnSpanFull(),
                     ]),
                 Fieldset::make(__('purchase-order.fieldset.detail_total.label'))
@@ -682,18 +683,18 @@ class PurchaseOrderForm
                     ->schema([
                         TextEntry::make('total_subtotal')
                             ->label(__('purchase-order.subtotal.label'))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['subtotal'] ?? 0.0)
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['subtotal'] ?? 0.0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_discount')
                             ->label(__('purchase-order.discount.label'))
-                            ->state(fn($get): string => '-' . static::getSummaryTotals($get)['discount'] ?? 0.0)
+                            ->state(fn ($get): string => '-'.static::getSummaryTotals($get)['discount'] ?? 0.0)
                             ->numeric()
                             ->color('danger')
                             ->alignEnd(),
                         TextEntry::make('total_after_discount')
                             ->label(__('purchase-order.after_discount.label'))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['subtotal_after_discount'] ?? 0.0)
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['subtotal_after_discount'] ?? 0.0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -703,41 +704,39 @@ class PurchaseOrderForm
 
                         TextEntry::make('total_tax_base')
                             ->label(__('purchase-order.tax_base.label'))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['tax_base'] ?? 0.0)
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['tax_base'] ?? 0.0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_ppn')
-                            ->label(fn($get) => __('purchase-order.tax.label', ['percentage' => filled($get('tax_percentage')) ? "({$get('tax_percentage')}%)" : '']))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['tax_amount'] ?? 0.0)
+                            ->label(fn ($get) => __('purchase-order.tax.label', ['percentage' => filled($get('tax_percentage')) ? "({$get('tax_percentage')}%)" : '']))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['tax_amount'] ?? 0.0)
                             ->numeric()
                             ->color('warning')
                             ->alignEnd(),
                         TextEntry::make('total')
                             ->label(__('purchase-order.total.label'))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['total_before_rounding'] ?? 0.0)
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['total_before_rounding'] ?? 0.0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->alignEnd(),
                         TextEntry::make('total_rounding')
                             ->label(__('purchase-order.rounding.label'))
-                            ->state(fn($get): string => $get('rounding') ?? 0)
+                            ->state(fn ($get): string => $get('rounding') ?? 0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_grand_total')
                             ->label(__('purchase-order.grand_total.label'))
-                            ->state(fn($get): string => static::getSummaryTotals($get)['grand_total'] ?? 0.0)
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['grand_total'] ?? 0.0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->color('primary')
                             ->alignEnd(),
                     ])
-                    ->visible(fn($operation): bool => $operation !== 'edit' || !static::isLogisticUser()),
+                    ->visible(fn ($operation): bool => $operation !== 'edit' || ! static::isLogisticUser()),
             ]);
     }
-
-
 
     protected static function letterSection(): Section|string
     {
@@ -783,13 +782,13 @@ class PurchaseOrderForm
                                     ->relationship(
                                         'warehouseAddress',
                                         'address',
-                                        fn($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
+                                        fn ($query, $get) => $query->where('warehouse_id', $get('warehouse_id'))
                                     )
-                                    ->getOptionLabelFromRecordUsing(fn($record) => "{$record->address} - {$record->city}")
+                                    ->getOptionLabelFromRecordUsing(fn ($record) => "{$record->address} - {$record->city}")
                                     ->searchable()
                                     ->preload()
                                     ->default(null)
-                                    ->disabled(fn($get) => blank($get('warehouse_id')))
+                                    ->disabled(fn ($get) => blank($get('warehouse_id')))
                                     ->live()
                                     ->columnSpanFull(),
 
@@ -834,7 +833,7 @@ class PurchaseOrderForm
                     ->helperText(__('purchase-order.notes.helper'))
                     ->autosize(),
                 UserEntry::make('user')
-                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->label(__('common.log_activity.created.label').' '.__('common.log_activity.by'))
                     ->color('gray')
                     ->visibleOn('edit'),
                 TextEntry::make('updated_at')->date()
@@ -846,29 +845,29 @@ class PurchaseOrderForm
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
                     ->color('gray')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn ($state) => $state != null),
                 Textarea::make('info')
                     ->label(__('purchase-order.info.label'))
                     ->placeholder(__('purchase-order.info.placeholder'))
                     ->helperText(__('purchase-order.info.helper'))
                     ->autosize()
-                    ->required(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
-                    ->disabled(fn($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
-                    ->afterStateHydrated(fn($component) => $component->state(null))
+                    ->required(fn ($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
+                    ->disabled(fn ($record, $livewire) => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true)
+                    ->afterStateHydrated(fn ($component) => $component->state(null))
                     ->afterStateUpdated(function ($set, $record, $livewire): void {
                         if ($record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) !== true) {
                             $set('info', null);
                         }
                     })
-                    ->dehydrated(fn($record, $livewire): bool => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
-                    ->visible(fn($record, $operation) => $operation === 'edit' && !$record?->hasStatus(PurchaseOrderStatus::DRAFT)),
+                    ->dehydrated(fn ($record, $livewire): bool => $record?->hasWatchedFieldChangesFromState((array) ($livewire->data ?? [])) === true)
+                    ->visible(fn ($record, $operation) => $operation === 'edit' && ! $record?->hasStatus(PurchaseOrderStatus::DRAFT)),
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => '• ' . e($line))->implode('<br>'))
+                    ->formatStateUsing(fn ($state) => collect(explode("\n", $state))->map(fn ($line) => '• '.e($line))->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT)),
+                    ->visible(fn ($state, $record) => filled($state) && ! $record?->hasStatus(PurchaseOrderStatus::DRAFT)),
             ]);
     }
 
@@ -880,12 +879,12 @@ class PurchaseOrderForm
             ->collapsible()
             ->compact()
             ->dense()
-            ->visible(fn($get) => filled($get('vendor_id')))
+            ->visible(fn ($get) => filled($get('vendor_id')))
             ->schema(function ($get) {
                 $vendorId = $get('vendor_id');
                 $vendor = Vendor::find($vendorId);
 
-                if (!$vendor) {
+                if (! $vendor) {
                     return [];
                 }
 
@@ -903,7 +902,7 @@ class PurchaseOrderForm
                         ->state(collect([$vendor->address, $vendor->city])->filter()->join(' - '))
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => filled($state)),
+                        ->visible(fn ($state) => filled($state)),
                     Grid::make()
                         ->columns([
                             'default' => 2,
@@ -917,7 +916,7 @@ class PurchaseOrderForm
                                 ->state($vendor->phone)
                                 ->size(TextSize::Small)
                                 ->color('gray')
-                                ->visible(fn($state) => filled($state)),
+                                ->visible(fn ($state) => filled($state)),
                             TextEntry::make('vendor_fax')
                                 ->hiddenLabel()
                                 ->icon(Heroicon::DocumentText)
@@ -925,7 +924,7 @@ class PurchaseOrderForm
                                 ->state($vendor->fax)
                                 ->size(TextSize::Small)
                                 ->color('gray')
-                                ->visible(fn($state) => filled($state)),
+                                ->visible(fn ($state) => filled($state)),
                         ]),
                     TextEntry::make('vendor_contact_person')
                         ->hiddenLabel()
@@ -934,7 +933,7 @@ class PurchaseOrderForm
                         ->state($vendor->contact_person)
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => filled($state)),
+                        ->visible(fn ($state) => filled($state)),
                     TextEntry::make('vendor_email')
                         ->hiddenLabel()
                         ->icon(Heroicon::Envelope)
@@ -942,7 +941,7 @@ class PurchaseOrderForm
                         ->state($vendor->email)
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => filled($state)),
+                        ->visible(fn ($state) => filled($state)),
                     TextEntry::make('vendor_website')
                         ->hiddenLabel()
                         ->icon(Heroicon::GlobeAlt)
@@ -950,7 +949,7 @@ class PurchaseOrderForm
                         ->state($vendor->website)
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state) => filled($state)),
+                        ->visible(fn ($state) => filled($state)),
                 ];
             });
     }
@@ -963,7 +962,7 @@ class PurchaseOrderForm
             ->collapsible()
             ->compact()
             ->dense()
-            ->visible(fn($get) => filled($get('purchaseRequests')))
+            ->visible(fn ($get) => filled($get('purchaseRequests')))
             ->schema(function ($get) {
                 $purchaseRequestIds = PurchaseRequest::normalizeIds((array) ($get('purchaseRequests') ?? []));
 
@@ -988,7 +987,7 @@ class PurchaseOrderForm
                                     ->state($purchaseRequest->number)
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
-                                    ->url(fn(): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id])),
+                                    ->url(fn (): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id])),
                                 Grid::make()
                                     ->columns([
                                         'default' => 2,
@@ -1019,14 +1018,14 @@ class PurchaseOrderForm
                                     ->html()
                                     ->size(TextSize::Small)
                                     ->color('gray')
-                                    ->visible(fn($state) => filled($state)),
+                                    ->visible(fn ($state) => filled($state)),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                                     ->hiddenLabel()
                                     ->state(nl2br(e($purchaseRequest->description)))
                                     ->html()
                                     ->size(TextSize::Small)
                                     ->color('gray')
-                                    ->visible(fn($state) => filled($state)),
+                                    ->visible(fn ($state) => filled($state)),
 
                                 UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                                     ->hiddenLabel()
@@ -1063,7 +1062,7 @@ class PurchaseOrderForm
 
         $firstPurchaseRequest = $purchaseRequests->get($selectedIds[0]);
 
-        if (!$firstPurchaseRequest) {
+        if (! $firstPurchaseRequest) {
             return [
                 'ids' => [],
                 'header' => null,
@@ -1071,7 +1070,7 @@ class PurchaseOrderForm
         }
 
         $compatibleIds = collect($selectedIds)
-            ->filter(fn(int $id): bool => static::headersMatch(
+            ->filter(fn (int $id): bool => static::headersMatch(
                 $purchaseRequests->get($id),
                 $firstPurchaseRequest,
             ))
@@ -1091,7 +1090,7 @@ class PurchaseOrderForm
 
     protected static function headersMatch(?PurchaseRequest $current, PurchaseRequest $first): bool
     {
-        if (!$current) {
+        if (! $current) {
             return false;
         }
 
@@ -1113,16 +1112,16 @@ class PurchaseOrderForm
         $allowedPurchaseRequestItemIds = PurchaseRequestItem::query()
             ->when(
                 $selectedPurchaseRequestIds !== [],
-                fn($query) => $query->whereIn('purchase_request_id', $selectedPurchaseRequestIds),
-                fn($query) => $query->whereRaw('1 = 0'),
+                fn ($query) => $query->whereIn('purchase_request_id', $selectedPurchaseRequestIds),
+                fn ($query) => $query->whereRaw('1 = 0'),
             )
             ->pluck('id')
-            ->map(fn(mixed $id): int => (int) $id)
+            ->map(fn (mixed $id): int => (int) $id)
             ->all();
 
         return collect($items)
             ->filter(function (mixed $item) use ($allowedPurchaseRequestItemIds): bool {
-                if (!is_array($item)) {
+                if (! is_array($item)) {
                     return false;
                 }
 
@@ -1143,16 +1142,16 @@ class PurchaseOrderForm
         string $itemsPath = 'purchaseOrderItems',
         string $basePath = '',
     ): array {
-        $resolvePath = static fn(string $field) => $basePath !== ''
+        $resolvePath = static fn (string $field) => $basePath !== ''
             ? "{$basePath}{$field}"
             : $field;
-        $items = PurchaseOrder::normalizeSummaryItems((array) ($get($itemsPath) ?? []));
+        $items = OrderCalculationService::normalizeSummaryItems((array) ($get($itemsPath) ?? []));
         $discount = (float) ($get($resolvePath('discount')) ?? 0);
         $taxType = $get($resolvePath('tax_type'));
         $taxPercentage = ($get($resolvePath('tax_percentage')) ?? 0);
         $rounding = (float) ($get($resolvePath('rounding')) ?? 0);
 
-        return PurchaseOrder::calculateOrderSummary(
+        return OrderCalculationService::calculateSummary(
             $items,
             $discount,
             $taxType,
@@ -1171,7 +1170,7 @@ class PurchaseOrderForm
 
         $item = PurchaseOrderItem::query()->find($itemId);
 
-        if (!$item) {
+        if (! $item) {
             return true;
         }
 
@@ -1185,7 +1184,7 @@ class PurchaseOrderForm
             ->live(debounce: 500)
             ->columnSpanFull()
             ->autosize()
-            ->visible(fn($operation): bool => !$hiddenForLogistic || $operation !== 'edit' || !static::isLogisticUser());
+            ->visible(fn ($operation): bool => ! $hiddenForLogistic || $operation !== 'edit' || ! static::isLogisticUser());
     }
 
     protected static function isLogisticUser(): bool

@@ -9,13 +9,14 @@ use App\Models\Invoice;
 use App\Models\Item;
 use App\Models\PurchaseOrder;
 use App\Models\Vendor;
+use App\Services\OrderCalculationService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -84,7 +85,7 @@ class InvoiceForm
 
                 Select::make('vendor_id')
                     ->label('Vendor')
-                    ->relationship('vendor', 'name', fn(Builder $query) => $query->orderBy('name')->orderBy('code'))
+                    ->relationship('vendor', 'name', fn (Builder $query) => $query->orderBy('name')->orderBy('code'))
                     ->searchable(['name', 'code'])
                     ->preload()
                     ->live()
@@ -114,19 +115,19 @@ class InvoiceForm
                                 })
                                 ->when(
                                     $selectedId,
-                                    fn(Builder $builder): Builder => $builder->orWhere('goods_receives.id', $selectedId),
+                                    fn (Builder $builder): Builder => $builder->orWhere('goods_receives.id', $selectedId),
                                 )
                                 ->orderByDesc('goods_receives.id');
                         },
                     )
-                    ->getOptionLabelFromRecordUsing(fn(GoodsReceive $record): string => "{$record->number} | {$record->purchaseOrder?->number}")
+                    ->getOptionLabelFromRecordUsing(fn (GoodsReceive $record): string => "{$record->number} | {$record->purchaseOrder?->number}")
                     ->searchable(['number', 'delivery_order', 'description'])
                     ->preload()
                     ->live()
                     ->afterStateUpdated(function ($state, $set): void {
                         $goodsReceive = static::getGoodsReceiveRecord((int) $state);
 
-                        if (!$goodsReceive) {
+                        if (! $goodsReceive) {
                             $set('purchase_order_id', null);
                             $set('invoiceItems', []);
 
@@ -136,7 +137,7 @@ class InvoiceForm
                         $set('purchase_order_id', $goodsReceive->purchase_order_id);
                         $set('invoiceItems', static::mapGoodsReceiveItemsForInvoice($goodsReceive));
                     })
-                    ->disabled(fn($get): bool => blank($get('vendor_id')))
+                    ->disabled(fn ($get): bool => blank($get('vendor_id')))
                     ->required()
                     ->dehydrated(),
 
@@ -156,7 +157,7 @@ class InvoiceForm
                 DatePicker::make('invoice_due_date')
                     ->label('Tanggal Jatuh Tempo')
                     ->native(false)
-                    ->minDate(fn($get) => $get('invoice_date'))
+                    ->minDate(fn ($get) => $get('invoice_date'))
                     ->required(),
             ]);
     }
@@ -178,8 +179,8 @@ class InvoiceForm
                     ->schema([
                         Select::make('goods_receive_item_id')
                             ->label('Item Goods Receive')
-                            ->options(fn($get): array => static::getGoodsReceiveItemOptions((int) ($get('../../goods_receive_id') ?? 0)))
-                            ->getSearchResultsUsing(fn(string $search, $get): array => static::getGoodsReceiveItemOptions(
+                            ->options(fn ($get): array => static::getGoodsReceiveItemOptions((int) ($get('../../goods_receive_id') ?? 0)))
+                            ->getSearchResultsUsing(fn (string $search, $get): array => static::getGoodsReceiveItemOptions(
                                 (int) ($get('../../goods_receive_id') ?? 0),
                                 $search,
                             ))
@@ -189,7 +190,7 @@ class InvoiceForm
                             ->afterStateUpdated(function ($state, $set): void {
                                 $source = static::getGoodsReceiveItemRecord((int) $state);
 
-                                if (!$source) {
+                                if (! $source) {
                                     $set('purchase_order_item_id', null);
                                     $set('item_id', null);
                                     $set('qty', null);
@@ -206,14 +207,14 @@ class InvoiceForm
                                 $set('description', $source->description);
                             })
                             ->disableOptionsWhenSelectedInSiblingRepeaterItems()
-                            ->disabled(fn($get): bool => blank($get('../../goods_receive_id')))
+                            ->disabled(fn ($get): bool => blank($get('../../goods_receive_id')))
                             ->required()
                             ->columnSpanFull(),
 
                         Select::make('item_id')
                             ->label('Kode | Nama Item')
                             ->relationship('item', 'name')
-                            ->getOptionLabelFromRecordUsing(fn(Item $record): string => "{$record->code} | {$record->name}")
+                            ->getOptionLabelFromRecordUsing(fn (Item $record): string => "{$record->code} | {$record->name}")
                             ->searchable(['code', 'name'])
                             ->disabled()
                             ->dehydrated()
@@ -228,7 +229,7 @@ class InvoiceForm
                             ->numeric()
                             ->minValue(0.01)
                             ->required()
-                            ->suffix(fn($get): ?string => Item::query()->whereKey($get('item_id'))->value('unit'))
+                            ->suffix(fn ($get): ?string => Item::query()->whereKey($get('item_id'))->value('unit'))
                             ->live(debounce: 500)
                             ->columnSpan([
                                 'default' => 1,
@@ -249,7 +250,7 @@ class InvoiceForm
 
                         TextEntry::make('subtotal')
                             ->label('Subtotal')
-                            ->state(fn($get): float => (float) ($get('qty') ?? 0) * (float) ($get('price') ?? 0))
+                            ->state(fn ($get): float => (float) ($get('qty') ?? 0) * (float) ($get('price') ?? 0))
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->alignEnd()
@@ -268,7 +269,7 @@ class InvoiceForm
                     ->orderColumn('sort')
                     ->itemLabel('#')
                     ->itemNumbers()
-                    ->deleteAction(fn(Action $action) => $action->requiresConfirmation())
+                    ->deleteAction(fn (Action $action) => $action->requiresConfirmation())
                     ->defaultItems(0)
                     ->minItems(1)
                     ->live()
@@ -307,7 +308,7 @@ class InvoiceForm
 
                         Select::make('tax_percentage')
                             ->label('Persentase Pajak')
-                            ->options(PurchaseOrder::getTaxPercentageOptions())
+                            ->options(OrderCalculationService::getTaxPercentageOptions())
                             ->default(0)
                             ->native(false)
                             ->live()
@@ -337,37 +338,37 @@ class InvoiceForm
                     ->schema([
                         TextEntry::make('total_subtotal')
                             ->label('Subtotal')
-                            ->state(fn($get): float => static::getSummaryTotals($get)['subtotal'])
+                            ->state(fn ($get): float => static::getSummaryTotals($get)['subtotal'])
                             ->numeric()
                             ->alignEnd(),
 
                         TextEntry::make('total_discount')
                             ->label('Diskon')
-                            ->state(fn($get): float => static::getSummaryTotals($get)['discount'])
+                            ->state(fn ($get): float => static::getSummaryTotals($get)['discount'])
                             ->numeric()
                             ->alignEnd(),
 
                         TextEntry::make('total_after_discount')
                             ->label('Setelah Diskon')
-                            ->state(fn($get): float => static::getSummaryTotals($get)['subtotal_after_discount'])
+                            ->state(fn ($get): float => static::getSummaryTotals($get)['subtotal_after_discount'])
                             ->numeric()
                             ->alignEnd(),
 
                         TextEntry::make('total_tax')
-                            ->label(fn($get): string => 'Pajak' . (filled($get('tax_percentage')) ? " ({$get('tax_percentage')}%)" : ''))
+                            ->label(fn ($get): string => 'Pajak'.(filled($get('tax_percentage')) ? " ({$get('tax_percentage')}%)" : ''))
                             // ->state(fn ($get): float => static::getSummaryTotals($get)['tax'])
                             ->numeric()
                             ->alignEnd(),
 
                         TextEntry::make('total_rounding')
                             ->label('Pembulatan')
-                            ->state(fn($get): float => (float) ($get('rounding') ?? 0))
+                            ->state(fn ($get): float => (float) ($get('rounding') ?? 0))
                             ->numeric()
                             ->alignEnd(),
 
                         TextEntry::make('total_grand_total')
                             ->label('Grand Total')
-                            ->state(fn($get): float => static::getSummaryTotals($get)['grand_total'])
+                            ->state(fn ($get): float => static::getSummaryTotals($get)['grand_total'])
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -406,7 +407,7 @@ class InvoiceForm
                     ->date()
                     ->size(TextSize::Small)
                     ->color('gray')
-                    ->visible(fn($state): bool => $state !== null),
+                    ->visible(fn ($state): bool => $state !== null),
 
                 Textarea::make('info')
                     ->label('Info')
@@ -422,11 +423,11 @@ class InvoiceForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->visible(fn($get): bool => filled($get('goods_receive_id')))
+            ->visible(fn ($get): bool => filled($get('goods_receive_id')))
             ->schema(function ($get): array {
                 $goodsReceive = static::getGoodsReceiveRecord((int) ($get('goods_receive_id') ?? 0));
 
-                if (!$goodsReceive) {
+                if (! $goodsReceive) {
                     return [];
                 }
 
@@ -463,7 +464,7 @@ class InvoiceForm
                         ->state(nl2br(e($goodsReceive->description)))
                         ->html()
                         ->color('gray')
-                        ->visible(fn($state): bool => filled($state)),
+                        ->visible(fn ($state): bool => filled($state)),
                 ];
             });
     }
@@ -475,11 +476,11 @@ class InvoiceForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->visible(fn($get): bool => filled($get('purchase_order_id')))
+            ->visible(fn ($get): bool => filled($get('purchase_order_id')))
             ->schema(function ($get): array {
                 $purchaseOrder = static::getPurchaseOrderRecord((int) ($get('purchase_order_id') ?? 0));
 
-                if (!$purchaseOrder) {
+                if (! $purchaseOrder) {
                     return [];
                 }
 
@@ -497,7 +498,7 @@ class InvoiceForm
                         ->state(nl2br(e($purchaseOrder->description)))
                         ->html()
                         ->color('gray')
-                        ->visible(fn($state): bool => filled($state)),
+                        ->visible(fn ($state): bool => filled($state)),
                 ];
             });
     }
@@ -509,11 +510,11 @@ class InvoiceForm
             ->iconColor('primary')
             ->collapsible()
             ->compact()
-            ->visible(fn($get): bool => filled($get('vendor_id')))
+            ->visible(fn ($get): bool => filled($get('vendor_id')))
             ->schema(function ($get): array {
                 $vendor = Vendor::query()->find((int) ($get('vendor_id') ?? 0));
 
-                if (!$vendor) {
+                if (! $vendor) {
                     return [];
                 }
 
@@ -532,7 +533,7 @@ class InvoiceForm
                         ->state(collect([$vendor->address, $vendor->city])->filter()->join(' - '))
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state): bool => filled($state)),
+                        ->visible(fn ($state): bool => filled($state)),
 
                     TextEntry::make('vendor_contact_person')
                         ->hiddenLabel()
@@ -541,7 +542,7 @@ class InvoiceForm
                         ->state($vendor->contact_person)
                         ->size(TextSize::Small)
                         ->color('gray')
-                        ->visible(fn($state): bool => filled($state)),
+                        ->visible(fn ($state): bool => filled($state)),
                 ];
             });
     }
@@ -551,7 +552,7 @@ class InvoiceForm
      */
     protected static function getSummaryTotals(callable $get): array
     {
-        return Invoice::calculateSummary(
+        return OrderCalculationService::calculateSummary(
             (array) ($get('invoiceItems') ?? []),
             (float) ($get('discount') ?? 0),
             $get('tax_type'),
@@ -562,13 +563,13 @@ class InvoiceForm
 
     protected static function getGoodsReceiveRecord(?int $goodsReceiveId): ?GoodsReceive
     {
-        if (!$goodsReceiveId) {
+        if (! $goodsReceiveId) {
             return null;
         }
 
         static $cache = [];
 
-        if (!array_key_exists($goodsReceiveId, $cache)) {
+        if (! array_key_exists($goodsReceiveId, $cache)) {
             $cache[$goodsReceiveId] = GoodsReceive::query()
                 ->with(['purchaseOrder.vendor', 'goodsReceiveItems.item', 'goodsReceiveItems.purchaseOrderItem'])
                 ->withTrashed()
@@ -580,13 +581,13 @@ class InvoiceForm
 
     protected static function getPurchaseOrderRecord(?int $purchaseOrderId): ?PurchaseOrder
     {
-        if (!$purchaseOrderId) {
+        if (! $purchaseOrderId) {
             return null;
         }
 
         static $cache = [];
 
-        if (!array_key_exists($purchaseOrderId, $cache)) {
+        if (! array_key_exists($purchaseOrderId, $cache)) {
             $cache[$purchaseOrderId] = PurchaseOrder::query()
                 ->with(['vendor'])
                 ->withTrashed()
@@ -598,13 +599,13 @@ class InvoiceForm
 
     protected static function getGoodsReceiveItemRecord(?int $goodsReceiveItemId): ?GoodsReceiveItem
     {
-        if (!$goodsReceiveItemId) {
+        if (! $goodsReceiveItemId) {
             return null;
         }
 
         static $cache = [];
 
-        if (!array_key_exists($goodsReceiveItemId, $cache)) {
+        if (! array_key_exists($goodsReceiveItemId, $cache)) {
             $cache[$goodsReceiveItemId] = GoodsReceiveItem::query()
                 ->with(['item', 'purchaseOrderItem'])
                 ->find($goodsReceiveItemId);
@@ -632,7 +633,7 @@ class InvoiceForm
             ->orderBy('sort')
             ->limit(50)
             ->get()
-            ->mapWithKeys(fn(GoodsReceiveItem $record): array => [
+            ->mapWithKeys(fn (GoodsReceiveItem $record): array => [
                 $record->id => "{$record->item?->code} | {$record->item?->name} ({$record->qty})",
             ])
             ->all();
@@ -644,7 +645,7 @@ class InvoiceForm
     protected static function mapGoodsReceiveItemsForInvoice(GoodsReceive $goodsReceive): array
     {
         return $goodsReceive->goodsReceiveItems
-            ->map(fn(GoodsReceiveItem $item): array => [
+            ->map(fn (GoodsReceiveItem $item): array => [
                 'goods_receive_item_id' => $item->id,
                 'purchase_order_item_id' => $item->purchase_order_item_id,
                 'item_id' => $item->item_id,

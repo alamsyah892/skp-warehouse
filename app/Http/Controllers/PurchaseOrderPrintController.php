@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\PurchaseOrderStatus;
 use App\Models\PurchaseOrder;
+use App\Services\OrderCalculationService;
 use App\Support\IndonesianNumberToWords;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPdf\PdfBuilder;
@@ -29,7 +30,7 @@ abstract class PurchaseOrderPrintController extends Controller
             'purchaseOrderItems.item',
         ]);
 
-        $summary = PurchaseOrder::calculateOrderSummary(
+        $summary = OrderCalculationService::calculateSummary(
             $purchaseOrder->purchaseOrderItems
                 ->map(fn ($item): array => [
                     'qty' => $item->qty,

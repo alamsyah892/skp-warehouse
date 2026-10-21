@@ -13,6 +13,7 @@ use App\Livewire\PurchaseOrderGoodsReceivesTable;
 use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\PurchaseOrder;
 use App\Models\PurchaseRequest;
+use App\Services\OrderCalculationService;
 use Filament\Actions\Action;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -92,7 +93,7 @@ class PurchaseOrderInfolist
             ->icon(Heroicon::ShoppingCart)
             ->iconColor('primary')
             ->compact()
-            ->footer(fn($record) => self::dataSectionFooter($record))
+            ->footer(fn ($record) => self::dataSectionFooter($record))
             ->columns([
                 'default' => 1,
                 'lg' => 12,
@@ -121,10 +122,10 @@ class PurchaseOrderInfolist
                             ]),
                         TextEntry::make('type')
                             ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->icon(fn ($state) => $state?->icon())
+                            ->formatStateUsing(fn ($state) => $state?->label())
                             ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
+                            ->color(fn ($state) => $state?->color())
                             ->badge(),
                     ]),
                 Grid::make()
@@ -139,10 +140,10 @@ class PurchaseOrderInfolist
                     ->schema([
                         TextEntry::make('status')
                             ->hiddenLabel()
-                            ->icon(fn($state) => $state?->icon())
-                            ->formatStateUsing(fn($state) => $state?->label())
+                            ->icon(fn ($state) => $state?->icon())
+                            ->formatStateUsing(fn ($state) => $state?->label())
                             ->size(TextSize::Large)
-                            ->color(fn($state) => $state?->color())
+                            ->color(fn ($state) => $state?->color())
                             ->badge()
                             ->columnSpan([
                                 'default' => 2,
@@ -199,7 +200,7 @@ class PurchaseOrderInfolist
                                     ->iconColor('primary')
                                     ->fontFamily(FontFamily::Mono)
                                     ->badge()
-                                    ->url(fn(PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
+                                    ->url(fn (PurchaseRequest $record): string => PurchaseRequestResource::getUrl('view', ['record' => $record]))
                                 // ->openUrlInNewTab()
                                 ,
                             ])
@@ -214,14 +215,14 @@ class PurchaseOrderInfolist
     protected static function dataSectionFooter($record): array
     {
         return collect($record->getNextStatuses())
-            ->reject(fn(PurchaseOrderStatus $status): bool => static::shouldHideStatusAction($record, $status))
+            ->reject(fn (PurchaseOrderStatus $status): bool => static::shouldHideStatusAction($record, $status))
             ->map(function ($status) use ($record) {
-                return Action::make('changeStatus' . $status->value)
+                return Action::make('changeStatus'.$status->value)
                     ->label(__($status->actionLabel()))
                     ->color($status->color())
                     ->icon($status->icon())
                     ->requiresConfirmation()
-                    ->modalHeading(__($status->actionLabel()) . ' ' . __('purchase-order.model.label'))
+                    ->modalHeading(__($status->actionLabel()).' '.__('purchase-order.model.label'))
                     ->modalDescription(__('purchase-order.status.action.note', ['status' => __($status->label())]))
                     ->action(function () use ($status, $record) {
                         $record->changeStatus($status);
@@ -258,7 +259,7 @@ class PurchaseOrderInfolist
             // ->whereNot('status', GoodsReceiveStatus::CONFIRMED)->exists();
 
             $hasRemainingQty = $record->purchaseOrderItems->contains(
-                fn($item): bool => $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
+                fn ($item): bool => $item->getRemainingQty() > 0 && $item->purchase_request_item_id != null
             );
 
             return $hasNotConfirmedGR || $hasRemainingQty;
@@ -274,7 +275,7 @@ class PurchaseOrderInfolist
             ->tabs([
                 Tab::make(__('purchase-order.section.purchase_order_items.label'))
                     ->icon(Heroicon::Cube)
-                    ->badge(fn($record) => $record->purchaseOrderItems?->count() ?: null)
+                    ->badge(fn ($record) => $record->purchaseOrderItems?->count() ?: null)
                     ->badgeTooltip(__('purchase-order.purchase_order_items.count_label'))
                     ->schema([
                         // Callout::make()
@@ -287,14 +288,14 @@ class PurchaseOrderInfolist
 
                 Tab::make(__('goods-receive.model.plural_label'))
                     ->icon(Heroicon::InboxArrowDown)
-                    ->badge(fn($record) => $record->goodsReceives?->whereNotIn('status', [
+                    ->badge(fn ($record) => $record->goodsReceives?->whereNotIn('status', [
                         GoodsReceiveStatus::CANCELED,
                         GoodsReceiveStatus::RETURNED,
                     ])->count() ?: null)
                     ->schema([
                         Livewire::make(PurchaseOrderGoodsReceivesTable::class),
                     ])
-                    ->visible(fn($record) => $record && $record->goodsReceives()->exists()),
+                    ->visible(fn ($record) => $record && $record->goodsReceives()->exists()),
 
                 ActivityLogTab::make(__('common.log_activity.label')),
             ]);
@@ -306,7 +307,7 @@ class PurchaseOrderInfolist
             ->icon(Heroicon::Calculator)
             ->iconColor('primary')
             ->columnSpanFull()
-            ->visible(fn(): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
+            ->visible(fn (): bool => PurchaseOrderResource::canViewPriceColumn(auth()->user()))
             ->columns([
                 'default' => 1,
                 'lg' => 12,
@@ -321,13 +322,13 @@ class PurchaseOrderInfolist
                     ->schema([
                         TextEntry::make('tax_type')
                             ->label(__('purchase-order.tax_type.label'))
-                            ->formatStateUsing(fn($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
+                            ->formatStateUsing(fn ($state) => $state instanceof PurchaseOrderTaxType ? $state->label() : (PurchaseOrderTaxType::tryFrom((string) $state)?->label() ?? '-'))
                             ->placeholder('-')
                             ->color('gray')
                             ->columnSpanFull(),
                         TextEntry::make('tax_percentage')
                             ->label(__('purchase-order.tax_percentage.label'))
-                            ->formatStateUsing(fn($state) => filled($state) ? ($state + 0) . '%' : '-')
+                            ->formatStateUsing(fn ($state) => filled($state) ? ($state + 0).'%' : '-')
                             ->placeholder('-')
                             ->color('gray')
                             ->columnSpanFull(),
@@ -350,18 +351,18 @@ class PurchaseOrderInfolist
                     ->schema([
                         TextEntry::make('total_subtotal')
                             ->label(__('purchase-order.subtotal.label'))
-                            ->state(fn($record) => static::getSummary($record)['subtotal'] ?? 0)
+                            ->state(fn ($record) => static::getSummary($record)['subtotal'] ?? 0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_discount')
                             ->label(__('purchase-order.discount.label'))
-                            ->state(fn($record) => '-' . static::getSummary($record)['discount'] ?? 0)
+                            ->state(fn ($record) => '-'.static::getSummary($record)['discount'] ?? 0)
                             ->numeric()
                             ->color('danger')
                             ->alignEnd(),
                         TextEntry::make('total_after_discount')
                             ->label(__('purchase-order.after_discount.label'))
-                            ->state(fn($record) => static::getSummary($record)['subtotal_after_discount'] ?? 0)
+                            ->state(fn ($record) => static::getSummary($record)['subtotal_after_discount'] ?? 0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -371,30 +372,30 @@ class PurchaseOrderInfolist
 
                         TextEntry::make('total_dpp')
                             ->label(__('purchase-order.tax_base.label'))
-                            ->state(fn($record) => static::getSummary($record)['dpp'] ?? 0)
+                            ->state(fn ($record) => static::getSummary($record)['dpp'] ?? 0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_ppn')
-                            ->label(fn($get) => __('purchase-order.tax.label', ['percentage' => $get('tax_percentage') > 0 ? "({$get('tax_percentage')}%)" : '']))
-                            ->state(fn($record) => static::getSummary($record)['tax_amount'] ?? 0)
+                            ->label(fn ($get) => __('purchase-order.tax.label', ['percentage' => $get('tax_percentage') > 0 ? "({$get('tax_percentage')}%)" : '']))
+                            ->state(fn ($record) => static::getSummary($record)['tax_amount'] ?? 0)
                             ->numeric()
                             ->color('warning')
                             ->alignEnd(),
                         TextEntry::make('total_before_rounding')
                             ->label(__('purchase-order.total.label'))
-                            ->state(fn($record) => static::getSummary($record)['total_before_rounding'] ?? 0)
+                            ->state(fn ($record) => static::getSummary($record)['total_before_rounding'] ?? 0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
                             ->alignEnd(),
                         TextEntry::make('summary_rounding')
                             ->label(__('purchase-order.rounding.label'))
-                            ->state(fn($record) => $record->rounding ?? 0)
+                            ->state(fn ($record) => $record->rounding ?? 0)
                             ->numeric()
                             ->alignEnd(),
                         TextEntry::make('total_grand_total')
                             ->label(__('purchase-order.grand_total.label'))
-                            ->state(fn($record) => static::getSummary($record)['grand_total'] ?? 0)
+                            ->state(fn ($record) => static::getSummary($record)['grand_total'] ?? 0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -408,9 +409,9 @@ class PurchaseOrderInfolist
     {
         static $summaries = [];
 
-        if (!isset($summaries[$record->id])) {
-            $summaries[$record->id] = PurchaseOrder::calculateOrderSummary(
-                $record->purchaseOrderItems->map(fn($item) => [
+        if (! isset($summaries[$record->id])) {
+            $summaries[$record->id] = OrderCalculationService::calculateSummary(
+                $record->purchaseOrderItems->map(fn ($item) => [
                     'id' => $item->id,
                     'qty' => $item->qty,
                     'price' => $item->price,
@@ -424,7 +425,6 @@ class PurchaseOrderInfolist
 
         return $summaries[$record->id];
     }
-
 
     protected static function letterSection(): Section
     {
@@ -462,8 +462,6 @@ class PurchaseOrderInfolist
                                 static::poTextEntry('po_billing_method'),
                             ]),
 
-
-
                         Fieldset::make('Pengiriman / Pengerjaan')
                             ->columns(['default' => 1])
                             ->schema([
@@ -472,7 +470,7 @@ class PurchaseOrderInfolist
                                     ->icon(Heroicon::MapPin)
                                     ->iconColor('primary')
                                     ->formatStateUsing(
-                                        fn($state, $record) =>
+                                        fn ($state, $record) =>
                                             // $state . "</br>" . $record->warehouseAddress?->city
                                             collect([$state, $record->warehouseAddress?->city])
                                                 ->filter()
@@ -514,7 +512,7 @@ class PurchaseOrderInfolist
     {
         return TextEntry::make($field)
             ->label(__("purchase-order.{$field}.label"))
-            ->formatStateUsing(fn($state) => nl2br((string) $state))
+            ->formatStateUsing(fn ($state) => nl2br((string) $state))
             ->html()
             ->placeholder('-')
             ->color('gray')
@@ -531,12 +529,12 @@ class PurchaseOrderInfolist
             ->schema([
                 TextEntry::make('notes')
                     ->label(__('purchase-request.notes.label'))
-                    ->formatStateUsing(fn($state) => nl2br($state))
+                    ->formatStateUsing(fn ($state) => nl2br($state))
                     ->html()
                     ->placeholder('-')
                     ->color('gray'),
                 UserEntry::make('user')
-                    ->label(__('common.log_activity.created.label') . ' ' . __('common.log_activity.by'))
+                    ->label(__('common.log_activity.created.label').' '.__('common.log_activity.by'))
                     ->color('gray'),
                 TextEntry::make('updated_at')->date()
                     ->label(__('common.updated_at.label'))
@@ -546,14 +544,14 @@ class PurchaseOrderInfolist
                     ->label(__('common.deleted_at.label'))
                     ->size(TextSize::Small)
                     ->color('danger')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn ($state) => $state != null),
                 TextEntry::make('info')
                     ->label(__('purchase-order.revision_history.label'))
-                    ->formatStateUsing(fn($state) => collect(explode("\n", $state))->map(fn($line) => '• ' . $line)->implode('<br>'))
+                    ->formatStateUsing(fn ($state) => collect(explode("\n", $state))->map(fn ($line) => '• '.$line)->implode('<br>'))
                     ->html()
                     ->placeholder('-')
                     ->color('gray')
-                    ->visible(fn($state, $record) => filled($state) && !$record?->hasStatus(PurchaseOrderStatus::DRAFT)),
+                    ->visible(fn ($state, $record) => filled($state) && ! $record?->hasStatus(PurchaseOrderStatus::DRAFT)),
             ]);
     }
 
@@ -575,7 +573,7 @@ class PurchaseOrderInfolist
                     ->hiddenLabel()
                     ->icon(Heroicon::MapPin)
                     ->iconColor('primary')
-                    ->state(fn($record) => collect([$record->vendor?->address, $record->vendor?->city])->filter()->join(' - '))
+                    ->state(fn ($record) => collect([$record->vendor?->address, $record->vendor?->city])->filter()->join(' - '))
                     ->color('gray'),
                 Grid::make()
                     ->schema([
@@ -584,32 +582,32 @@ class PurchaseOrderInfolist
                             ->icon(Heroicon::Phone)
                             ->iconColor('primary')
                             ->color('gray')
-                            ->visible(fn($state) => $state != null),
+                            ->visible(fn ($state) => $state != null),
                         TextEntry::make('vendor.fax')
                             ->hiddenLabel()
                             ->icon(Heroicon::DocumentText)
                             ->iconColor('primary')
                             ->color('gray')
-                            ->visible(fn($state) => $state != null),
+                            ->visible(fn ($state) => $state != null),
                     ]),
                 TextEntry::make('vendor.contact_person')
                     ->hiddenLabel()
                     ->icon(Heroicon::UserCircle)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn ($state) => $state != null),
                 TextEntry::make('vendor.email')
                     ->hiddenLabel()
                     ->icon(Heroicon::Envelope)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn ($state) => $state != null),
                 TextEntry::make('vendor.website')
                     ->hiddenLabel()
                     ->icon(Heroicon::GlobeAlt)
                     ->iconColor('primary')
                     ->color('gray')
-                    ->visible(fn($state) => $state != null),
+                    ->visible(fn ($state) => $state != null),
             ]);
     }
 
@@ -644,7 +642,7 @@ class PurchaseOrderInfolist
                                     ->iconColor('primary')
                                     ->fontFamily(FontFamily::Mono)
                                     ->weight(FontWeight::Bold)
-                                    ->url(fn(): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id]))
+                                    ->url(fn (): string => PurchaseRequestResource::getUrl('view', ['record' => $purchaseRequest->id]))
                                     ->columnSpanFull(),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_status")
                                     ->hiddenLabel()
@@ -670,7 +668,7 @@ class PurchaseOrderInfolist
                                     ->placeholder('-')
                                     ->color('gray')
                                     ->columnSpanFull()
-                                    ->visible(fn($state) => filled($state)),
+                                    ->visible(fn ($state) => filled($state)),
                                 TextEntry::make("purchase_request_{$purchaseRequest->id}_description")
                                     ->hiddenLabel()
                                     ->columnSpanFull()
@@ -678,7 +676,7 @@ class PurchaseOrderInfolist
                                     ->placeholder('-')
                                     ->state(nl2br($purchaseRequest->description))
                                     ->html()
-                                    ->visible(fn($state) => filled($state)),
+                                    ->visible(fn ($state) => filled($state)),
                                 UserEntry::make("purchase_request_{$purchaseRequest->id}_user")
                                     ->hiddenLabel()
                                     ->state($purchaseRequest->user)

@@ -4,7 +4,7 @@ namespace App\Filament\Resources\Invoices\Pages;
 
 use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\GoodsReceive;
-use App\Models\Invoice;
+use App\Services\OrderCalculationService;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
@@ -30,7 +30,7 @@ class EditInvoice extends EditRecord
     {
         $goodsReceive = GoodsReceive::query()->find($data['goods_receive_id'] ?? null);
         $data['purchase_order_id'] = $goodsReceive?->purchase_order_id ?? $data['purchase_order_id'] ?? null;
-        $data['total_amount'] = Invoice::calculateSummary(
+        $data['total_amount'] = OrderCalculationService::calculateSummary(
             (array) ($data['invoiceItems'] ?? []),
             (float) ($data['discount'] ?? 0),
             $data['tax_type'] ?? null,

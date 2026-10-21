@@ -3,9 +3,9 @@
 use App\Livewire\PurchaseOrderItemsTable;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 
-uses(RefreshDatabase::class);
+uses(DatabaseTransactions::class);
 
 test('price column is visible only to allowed roles', function (string $roleName, bool $canViewPriceColumn) {
     Role::create(['name' => $roleName]);

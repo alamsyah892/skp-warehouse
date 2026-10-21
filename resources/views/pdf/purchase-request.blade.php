@@ -1,7 +1,6 @@
 @php
     /** @var \App\Models\PurchaseRequest $purchaseRequest */
-    /** @var \Illuminate\Support\Carbon $printedAt */
-    /** @var \App\Models\User|null $printedBy */
+    /** @var \Illuminate\Support\Carbon|null $printedAt */
     /** @var int|null $pageCount */
 
     $company = $purchaseRequest->company;
@@ -9,24 +8,12 @@
     $warehouseAddress = $purchaseRequest->warehouseAddress;
     $division = $purchaseRequest->division;
     $project = $purchaseRequest->project;
-    $user = $purchaseRequest->user;
     $items = $purchaseRequest->purchaseRequestItems;
+    $printedAt ??= now();
+    $pageCount ??= 1;
 
-    $qty = function (float|int|string|null $value): string {
-        $formatted = number_format((float) $value, 2, '.', ',');
-        return rtrim(rtrim($formatted, '0'), '.') ?: '0';
-    };
-
-    $totalQty = $items->sum('qty');
-
-    $statusLogs = $purchaseRequest->statusLogs->keyBy(fn($log) => $log->to_status?->value);
-    $creatorName = $user?->name ?? '-';
-    $checkedUser = $statusLogs->get(\App\Enums\PurchaseRequestStatus::CHECKED->value)?->user?->name;
-    $approvedUser = $statusLogs->get(\App\Enums\PurchaseRequestStatus::APPROVED->value)?->user?->name;
-    $reviewedUser = $statusLogs->get(\App\Enums\PurchaseRequestStatus::REVIEWED->value)?->user?->name;
+    $qty = fn(float|int|string|null $val): string => rtrim(rtrim(number_format((float) $val, 2, '.', ','), '0'), '.') ?: '0';
 @endphp
-
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,19 +27,10 @@
             margin: 1cm 0.5cm;
         }
 
-        /* .page {
-		width: 21cm;
-		height: 29.7cm;
-				margin: 1cm 0.5cm;
-		border: 1px solid grey;
-	  } */
-
         body {
             font-size: 10pt;
-            font-family: Courier, monospace Courier;
+            font-family: Courier, monospace;
             line-height: 1.2em;
-            /* font-weight: bold; */
-            /* color: darkblue; */
         }
 
         body,
@@ -90,20 +68,60 @@
             list-style-type: none;
         }
 
+        /* Generic Utilities */
+        .w-full {
+            width: 100%;
+        }
+
+        .text-end {
+            text-align: right;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
         .row {
             position: relative;
-            /* padding-bottom: 1em; */
         }
 
-        .dynamic-row {
-            min-height: 581pt;
+        /* Metadata Section */
+        .meta-col-left {
+            min-width: 22rem;
+            max-width: 22rem;
+            padding-right: 0.5rem;
         }
 
+        .meta-col-right {
+            min-width: 24rem;
+            max-width: 24rem;
+            padding-left: 0.5rem;
+        }
+
+        .meta-lbl-left {
+            min-width: 3.5rem;
+            max-width: 3.5rem;
+        }
+
+        .meta-lbl-right {
+            min-width: 5.5rem;
+            max-width: 5.5rem;
+        }
+
+        .meta-sep {
+            width: 1rem;
+        }
+
+        .meta-val {
+            min-width: 17.5rem;
+            max-width: 17.5rem;
+        }
+
+        /* Items Table */
         .table-item-border {
             margin-top: -2px;
             margin-left: -3.5px;
             width: 47rem;
-
             border: 1px solid black;
         }
 
@@ -123,302 +141,375 @@
             border: 1px solid black;
         }
 
+        .col-no {
+            min-width: 1rem;
+            max-width: 1rem;
+            text-align: right;
+        }
+
+        .col-code {
+            min-width: 3rem;
+            max-width: 3rem;
+        }
+
+        .col-name {
+            min-width: 15rem;
+            max-width: 15rem;
+        }
+
+        .col-qty {
+            min-width: 4.5rem;
+            max-width: 4.5rem;
+            text-align: right;
+        }
+
+        .col-unit {
+            min-width: 3rem;
+            max-width: 3rem;
+        }
+
+        .col-desc {
+            min-width: 14.5rem;
+            max-width: 14.5rem;
+        }
+
+        .item-empty {
+            padding: 8px;
+            text-align: center;
+        }
+
+        /* Signatures Section */
         .table-signature {
             width: 47rem;
         }
 
-        .table-signature th {
-            padding: 0 0.5rem;
-        }
-
+        .table-signature th,
         .table-signature td {
             padding: 0 0.5rem;
+            text-align: center;
+        }
+
+        .sig-space-1 td {
+            height: 50.7pt;
+        }
+
+        .sig-space-2 td {
+            height: 50.5pt;
+        }
+
+        .sig-w-2 {
+            min-width: 2rem;
+            max-width: 2rem;
+        }
+
+        .sig-w-8 {
+            min-width: 8rem;
+            max-width: 8rem;
+        }
+
+        .sig-w-8-5 {
+            min-width: 8.5rem;
+            max-width: 8.5rem;
+        }
+
+        .sig-w-9-5 {
+            min-width: 9.5rem;
+            max-width: 9.5rem;
+        }
+
+        .sig-w-10 {
+            min-width: 10rem;
+            max-width: 10rem;
+        }
+
+        .sig-w-10-5 {
+            min-width: 10.5rem;
+            max-width: 10.5rem;
+        }
+
+        /* Distribution & Pagination Footers */
+        .signature-space {
+            height: 215pt;
+            page-break-inside: avoid;
+        }
+
+        .signature-section {
+            position: absolute;
+            bottom: 7pt;
+            left: 0;
+            right: 0;
+            page-break-inside: avoid;
         }
 
         .footer {
-            position: fixed;
-            bottom: 9.5px;
-            left: 0;
-            right: 0;
+            margin-top: 15pt;
         }
 
-        .text-end {
-            text-align: right;
+        .footer-page {
+            position: fixed;
+            bottom: -0.4in;
+            left: 0;
+            right: 0;
+            font-size: 7.5pt;
+        }
+
+        .footer-page table {
+            width: 100%;
+        }
+
+        .footer-page td {
+            vertical-align: bottom;
+        }
+
+        .footer-page .page-number:before {
+            content: counter(page);
         }
     </style>
 </head>
 
 <body>
     <div class="page">
-        <div class="dynamic-row">
-            <!-- TITLE -->
+        <!-- COMPANY & HEADER -->
             <div class="row">
-                <h1>
-                    PURCHASE REQUEST
-                </h1>
-            </div>
-            <br />
-
-            <!-- FROM -->
-            <div class="row">
-                <p>
-                    <strong>{{ $company?->name ?? 'PERUSAHAAN' }}</strong><br>
-                    @if ($company?->address)
-                        {{ $company->address }}<br>
-                    @endif
-                    @if ($company?->city)
-                        {{ $company->city }}
-                        @if ($company?->post_code) - {{ $company->post_code }} @endif
-                    @endif
-                    @if ($company?->phone)
-                        | Tel: {{ $company->phone }}
-                    @endif
-                    @if ($company?->fax)
-                        | Fax: {{ $company->fax }}
-                    @endif
-                </p>
-            </div>
-            <br />
-
-            <!-- PURPOSE -->
-            <div class="row">
-                <table>
+                <table class="w-full">
                     <tr>
-
-                        <td style="padding-right: 0.5rem; min-width: 22rem; max-width: 22rem">
-                            <!-- 123456789 123456789 123456789 123456789 1234 -->
-                            <table>
-                                <!-- <tr>
-								<td style="min-width: 3.5rem; max-width: 3.5rem">1234567</td>
-								<td style="width: 1rem">:</td>
-								<td style="min-width: 17.5rem; max-width: 17.5rem">
-									<strong>0123456789 123456789 123456789 1234</strong>
-								</td>
-							</tr> -->
-
-                                <tr>
-                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Nomor</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ $purchaseRequest->number }}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Tanggal</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ $purchaseRequest->created_at?->translatedFormat('d F Y') ?? '-' }}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Proyek</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ $warehouse?->name ?? '-' }}-{{ $division?->name ?? '-' }}-{{ $project?->name ?? '-' }}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 3.5rem; max-width: 3.5rem">Alamat</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ collect([$warehouseAddress?->address, $warehouseAddress?->city])->filter()->join(', ') ?: '-' }}</strong>
-                                    </td>
-                                </tr>
-                            </table>
+                        <td>
+                            <strong>{{ $company?->name ?? 'PERUSAHAAN' }}</strong><br>
+                            @if ($company?->address)
+                                {{ $company->address }}<br>
+                            @endif
+                            @if ($company?->city)
+                                {{ $company->city }}@if ($company?->post_code) - {{ $company->post_code }}@endif
+                            @endif
+                            @if ($company?->phone)
+                                | Tel: {{ $company->phone }}
+                            @endif
+                            @if ($company?->fax)
+                                | Fax: {{ $company->fax }}
+                            @endif
                         </td>
-
-                        <td style="min-width: 24rem; max-width: 24rem; padding-left: 0.5rem">
-                            <!-- 789 123456789 123456789 123456789 123456789 1234 -->
-                            <table>
-                                <!-- <tr>
-								<td style="min-width: 5.5rem; max-width: 5.5rem">789 1234567</td>
-								<td style="width: 1rem">:</td>
-								<td style="min-width: 17.5rem; max-width: 17.5rem">
-									<strong>0123456789 123456789 123456789 1234</strong>
-								</td>
-							</tr> -->
-
-                                <tr>
-                                    <td style="min-width: 5.5rem; max-width: 5.5rem">Jenis</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{!! nl2br(e($purchaseRequest->description)) !!}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 5.5rem; max-width: 5.5rem">Catatan</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{!! nl2br(e($purchaseRequest->notes)) !!}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 5.5rem; max-width: 5.5rem">Memo</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{!! nl2br(e($purchaseRequest->memo)) !!}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 5.5rem; max-width: 5.5rem">RAB</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ $purchaseRequest->boq }}</strong>
-                                    </td>
-                                </tr>
-
-                                <tr>
-                                    <td style="min-width: 5.5rem; max-width: 5.5rem">Dibuat Oleh</td>
-                                    <td style="width: 1rem">:</td>
-                                    <td style="min-width: 17.5rem; max-width: 17.5rem">
-                                        <strong>{{ $creatorName }}</strong>
-                                    </td>
-                                </tr>
-                            </table>
+                        <td class="text-end">
+                            <strong><u>PURCHASE REQUEST</u></strong><br />Bon Pengajuan Pengadaan Barang / Jasa
                         </td>
-
                     </tr>
                 </table>
             </div>
+
+            <br />
+
+            <!-- PURPOSE / DETAILS -->
+            <div class="row">
+                <table>
+                    <tr>
+                        <td class="meta-col-left">
+                            <table>
+                                <tr>
+                                    <td class="meta-lbl-left">Nomor</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ $purchaseRequest->number }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-left">Tanggal</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ $purchaseRequest->created_at?->translatedFormat('d F Y') ?? '-' }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-left">Proyek</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ $warehouse?->name ?? '-' }}-{{ $division?->name ?? '-' }}-{{ $project?->name ?? '-' }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-left">Alamat</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ implode(', ', array_filter([$warehouseAddress?->address, $warehouseAddress?->city])) ?: '-' }}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+
+                        <td class="meta-col-right">
+                            <table>
+                                <tr>
+                                    <td class="meta-lbl-right">Jenis</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{!! nl2br(e($purchaseRequest->description)) !!}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-right">Catatan</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{!! nl2br(e($purchaseRequest->notes)) !!}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-right">Memo</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{!! nl2br(e($purchaseRequest->memo)) !!}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-right">RAB</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ $purchaseRequest->boq }}</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="meta-lbl-right">Dibuat Oleh</td>
+                                    <td class="meta-sep">:</td>
+                                    <td class="meta-val">
+                                        <strong>{{ $purchaseRequest->user?->name ?? '-' }}</strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
             <br />
 
             <!-- ITEM TABLE -->
             <div class="row">
-                <h1>
-                    Daftar Item&nbsp;
-                </h1>
-                <br />
-
                 <table class="table-item-border">
                     <thead>
                         <tr>
-                            <th>No</th>
-                            <th>Kode</th>
-                            <th>Nama Item&nbsp;</th>
-                            <th>Qty</th>
-                            <th>Satuan</th>
-                            <th>Keterangan&nbsp;</th>
+                            <th class="col-no">No</th>
+                            <th class="col-code">Kode</th>
+                            <th class="col-name">Nama Item&nbsp;</th>
+                            <th class="col-qty">Qty</th>
+                            <th class="col-unit">Satuan</th>
+                            <th class="col-desc">Keterangan&nbsp;</th>
                         </tr>
                     </thead>
-
                     <tbody>
                         @forelse ($items as $index => $item)
                             <tr>
-                                <td class="text-end" style="min-width: 1rem; max-width: 1rem;">
-                                    {{ $index + 1 }}
-                                </td>
-                                <td style="min-width: 3rem; max-width: 3rem;">
-                                    {{ $item->item?->code ?? '-' }}
-                                </td>
-                                <td style="min-width: 15rem; max-width: 15rem;">
-                                    {{ $item->item?->name ?? '-' }}
-                                </td>
-                                <td class="text-end" style="min-width: 4.5rem; max-width: 4.5rem;">
-                                    {{ $qty($item->qty) }}
-                                </td>
-                                <td style="min-width: 3rem; max-width: 3rem;">
-                                    {{ $item->item?->unit ?? '-' }}
-                                </td>
-                                <td style="min-width: 14.5rem; max-width: 14.5rem;">
-                                    {{ $item->description ? '' : '-' }}
-                                </td>
+                                <td class="col-no">{{ $index + 1 }}</td>
+                                <td class="col-code">{{ $item->item?->code ?? '-' }}</td>
+                                <td class="col-name">{{ $item->item?->name ?? '-' }}</td>
+                                <td class="col-qty">{{ $qty($item->qty) }}</td>
+                                <td class="col-unit">{{ $item->item?->unit ?? '-' }}</td>
+                                <td class="col-desc">{{ $item->description ? '' : '-' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center" style="padding: 8px;">(Tidak ada item barang)</td>
+                                <td colspan="6" class="item-empty">(Tidak ada item barang)</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
-            <br />
-        </div>
 
-        <div style="page-break-inside: avoid">
+            <br />
+
+        <!-- Spacer in normal flow reserving vertical space for signatures -->
+        <div class="signature-space"></div>
+
+        <!-- SIGNATURES & DISTRIBUTION FOOTER -->
+        <div class="signature-section">
             <div class="row">
                 <table class="table-signature">
                     <tr>
-                        <td style="text-align: center">Pemesan,</td>
-                        <td style="text-align: center">Dibuat Oleh,&nbsp;</td>
-                        <td colspan="3" style="text-align: center">Diperiksa Oleh,</td>
+                        <td>Pemesan,</td>
+                        <td>Dibuat Oleh,&nbsp;</td>
+                        <td colspan="3">Diperiksa Oleh,</td>
                     </tr>
-
-                    <tr>
-                        <td style="height: 50.7pt;">&nbsp;</td>
+                    <tr class="sig-space-1">
+                        <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                         <td>&nbsp;</td>
                     </tr>
-
                     <tr>
-                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">
+                        <td class="sig-w-8">
                             <hr>Pelaksana&nbsp;
                         </td>
-                        <td style="min-width: 8.5rem; max-width: 8.5rem; text-align: center">
+                        <td class="sig-w-8-5">
                             <hr>Kepala Logistik
                         </td>
-                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">
+                        <td class="sig-w-8">
                             <hr>Site Manager
                         </td>
-                        <td style="min-width: 9.5rem; max-width: 9.5rem; text-align: center">
+                        <td class="sig-w-9-5">
                             <hr>Kordinator Proyek
                         </td>
-                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">
+                        <td class="sig-w-8">
                             <hr>QS
                         </td>
                     </tr>
                 </table>
+
                 <br />
 
                 <table class="table-signature">
                     <tr>
-                        <td style="text-align: center">Disetujui,&nbsp;</td>
+                        <td>Disetujui,&nbsp;</td>
                         <td>&nbsp;</td>
-                        <td colspan="2" style="text-align: center">Direview Oleh,&nbsp;</td>
+                        <td colspan="2">Direview Oleh,&nbsp;</td>
                         <td>&nbsp;</td>
-                        <td style="text-align: center">Bagian Pembelian,&nbsp;</td>
+                        <td>Bagian Pembelian,&nbsp;</td>
+                    </tr>
+                    <tr class="sig-space-2">
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
+                        <td>&nbsp;</td>
                     </tr>
                     <tr>
-                        <td style="height: 50.5pt;">&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                        <td>&nbsp;</td>
-                    </tr>
-                    <tr>
-                        <td style="min-width: 8.5rem; max-width: 8.5rem; text-align: center">
+                        <td class="sig-w-8-5">
                             <hr>Project Manager
                         </td>
-                        <td style="min-width: 2rem; max-width: 2rem; text-align: center">&nbsp;</td>
-                        <td style="min-width: 8rem; max-width: 8rem; text-align: center">
+                        <td class="sig-w-2">&nbsp;</td>
+                        <td class="sig-w-8">
                             <hr>Staf Audit
                         </td>
-                        <td style="min-width: 10.5rem; max-width: 10.5rem; text-align: center">
+                        <td class="sig-w-10-5">
                             <hr>Kepala Audit Proyek
                         </td>
-                        <td style="min-width: 2rem; max-width: 2rem; text-align: center">&nbsp;</td>
-                        <td style="min-width: 10rem; max-width: 10rem; text-align: center">
+                        <td class="sig-w-2">&nbsp;</td>
+                        <td class="sig-w-10">
                             <hr>Purchasing Manager
                         </td>
                     </tr>
                 </table>
             </div>
-            <br />
 
+            <br />
             <br />
 
             <div class="row footer">
                 <p>Bag. Pembelian 1 (satu) lembar; Bag. Pemesanan 1 (satu) lembar; Bag. Logistik 1 (satu) lembar;</p>
             </div>
         </div>
+    </div>
+
+    <!-- PAGE NUMBERING FOOTER -->
+    <div class="footer-page">
+        <table>
+            <tr>
+                <td>
+                    Printed at: {{ $printedAt->translatedFormat('d M Y - H:i') }} | PR No.
+                    {{ $purchaseRequest->number }}
+                </td>
+                <td class="text-end">
+                    Halaman <span class="page-number"></span> dari {{ $pageCount }}
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 

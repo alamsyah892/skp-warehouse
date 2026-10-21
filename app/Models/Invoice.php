@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\PurchaseOrderTaxType;
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
+use Database\Factories\InvoiceFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,11 +14,12 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Invoice extends Model
 {
-    /** @use HasFactory<\Database\Factories\InvoiceFactory> */
+    use DefaultEmptyString, LogsAllFillable;
+
+    /** @use HasFactory<InvoiceFactory> */
     use HasFactory;
 
     use SoftDeletes;
-    use LogsAllFillable, DefaultEmptyString;
 
     protected $fillable = [
         'vendor_id',
@@ -81,41 +83,5 @@ class Invoice extends Model
     public function invoiceItems(): HasMany
     {
         return $this->hasMany(InvoiceItem::class)->orderBy('sort');
-    }
-
-    /**
-     * @param  array<int|string, mixed>  $items
-     * @return array<int, array<string, mixed>>
-     */
-    public static function normalizeSummaryItems(array $items): array
-    {
-        return collect($items)
-            ->filter(fn (mixed $item): bool => is_array($item))
-            ->map(fn (array $item): array => [
-                'qty' => (float) ($item['qty'] ?? 0),
-                'price' => (float) ($item['price'] ?? 0),
-            ])
-            ->values()
-            ->all();
-    }
-
-    /**
-     * @param  array<int|string, mixed>  $items
-     * @return array<string, float>
-     */
-    public static function calculateSummary(
-        array $items,
-        float $discount,
-        PurchaseOrderTaxType|string|null $taxType,
-        int|string|null $taxPercentage,
-        float $rounding,
-    ): array {
-        return PurchaseOrder::calculateOrderSummary(
-            self::normalizeSummaryItems($items),
-            $discount,
-            $taxType,
-            $taxPercentage,
-            $rounding,
-        );
     }
 }
