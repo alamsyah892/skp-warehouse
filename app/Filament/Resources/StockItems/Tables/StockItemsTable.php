@@ -16,14 +16,15 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
-use Filament\Support\Enums\TextSize;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Summarizers\Sum;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\PaginationMode;
 use Filament\Tables\Enums\RecordActionsPosition;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Grouping\Group;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
@@ -49,13 +50,12 @@ class StockItemsTable
                         });
                     })
                     ->sortable()
-                    ->description(fn($record): string => $record->item_name)
-                    ->wrap()
-                ,
+                    ->description(fn ($record): string => $record->item_name)
+                    ->wrap(),
                 TextColumn::make('project_name')
                     ->label(__('project.warehouse_project.label'))
-                    ->description(fn($record): string => Str::limit("{$record->warehouse_name} - {$record->company_alias} - {$record->division_name}", 36))
-                    ->tooltip(fn($record): string => "{$record->warehouse_name} - {$record->company_alias} - {$record->division_name} - {$record->project_name}")
+                    ->description(fn ($record): string => Str::limit("{$record->warehouse_name} - {$record->company_alias} - {$record->division_name}", 36))
+                    ->tooltip(fn ($record): string => "{$record->warehouse_name} - {$record->company_alias} - {$record->division_name} - {$record->project_name}")
                     ->searchable(query: function (Builder $query, string $search): Builder {
                         return $query->where(function (Builder $builder) use ($search): void {
                             $builder
@@ -64,28 +64,26 @@ class StockItemsTable
                                 ->orWhere('projects.po_code', 'like', "%{$search}%");
                         });
                     })
-                    ->sortable(query: fn(Builder $query, string $direction): Builder => $query->orderBy('projects.name', $direction))
-                ,
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('projects.name', $direction)),
                 TextColumn::make('item_unit')
                     ->label(__('item.unit.label'))
                     ->badge()
                     ->color('gray')
-                    ->alignCenter()
-                ,
+                    ->alignCenter(),
                 TextColumn::make('received_qty')
                     ->label(__('stock-item.qty.received'))
                     ->numeric(2)
                     ->alignEnd()
                     ->color('success')
-                    ->sortable()
-                ,
+                    ->summarize(Sum::make()->numeric(2))
+                    ->sortable(),
                 TextColumn::make('issued_qty')
                     ->label(__('stock-item.qty.issued'))
                     ->numeric(2)
                     ->alignEnd()
                     ->color('danger')
-                    ->sortable()
-                ,
+                    ->summarize(Sum::make()->numeric(2))
+                    ->sortable(),
                 TextColumn::make('available_qty')
                     ->label(__('stock-item.qty.available'))
                     ->numeric(2)
@@ -93,17 +91,17 @@ class StockItemsTable
                     ->alignEnd()
                     ->badge()
                     ->color('warning')
-                    ->sortable()
-                ,
+                    ->summarize(Sum::make()->numeric(2))
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('warehouse_id')
                     ->label(__('warehouse.model.label'))
                     ->options(
-                        fn(): array => Warehouse::query()
+                        fn (): array => Warehouse::query()
                             ->when(
                                 auth()->user()->warehouses()->exists(),
-                                fn($query) => $query->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
+                                fn ($query) => $query->whereIn('warehouses.id', auth()->user()->warehouses->pluck('id'))
                             )
                             ->orderBy('name')
                             ->orderBy('code')
@@ -121,11 +119,10 @@ class StockItemsTable
                         }
 
                         return $query->whereIn('goods_receives.warehouse_id', $values);
-                    })
-                ,
+                    }),
                 SelectFilter::make('company_id')
                     ->label(__('company.model.label'))
-                    ->options(fn(): array => Company::query()->orderBy('alias')->orderBy('code')->pluck('alias', 'id')->toArray())
+                    ->options(fn (): array => Company::query()->orderBy('alias')->orderBy('code')->pluck('alias', 'id')->toArray())
                     ->searchable()
                     ->multiple()
                     ->preload()
@@ -137,11 +134,10 @@ class StockItemsTable
                         }
 
                         return $query->whereIn('goods_receives.company_id', $values);
-                    })
-                ,
+                    }),
                 SelectFilter::make('division_id')
                     ->label(__('division.model.label'))
-                    ->options(fn(): array => Division::query()->orderBy('name')->orderBy('code')->pluck('name', 'id')->toArray())
+                    ->options(fn (): array => Division::query()->orderBy('name')->orderBy('code')->pluck('name', 'id')->toArray())
                     ->searchable()
                     ->multiple()
                     ->preload()
@@ -153,16 +149,15 @@ class StockItemsTable
                         }
 
                         return $query->whereIn('goods_receives.division_id', $values);
-                    })
-                ,
+                    }),
                 SelectFilter::make('project_id')
                     ->label(__('project.model.label'))
                     ->options(
-                        fn(): array => Project::query()
+                        fn (): array => Project::query()
                             ->orderBy('name')
                             ->orderBy('code')
                             ->get()
-                            ->mapWithKeys(fn(Project $project): array => [
+                            ->mapWithKeys(fn (Project $project): array => [
                                 (string) $project->id => "{$project->code} / {$project->po_code} | {$project->name}",
                             ])
                             ->toArray()
@@ -178,19 +173,25 @@ class StockItemsTable
                         }
 
                         return $query->whereIn('goods_receives.project_id', $values);
-                    })
-                ,
+                    }),
                 Filter::make('low_stock')
                     ->label(__('stock-item.filters.low_stock'))
-                    ->query(fn(Builder $query): Builder => $query->havingRaw('available_qty <= 10'))
-                    ->toggle()
-                ,
+                    ->query(fn (Builder $query): Builder => $query->havingRaw('available_qty <= 10'))
+                    ->toggle(),
             ])
             ->filtersFormColumns(2)
             ->recordActions([
                 static::viewMutationsAction(),
             ], position: RecordActionsPosition::BeforeColumns)
             ->defaultSort('available_qty', 'asc')
+            ->groups([
+                Group::make('warehouse_name')
+                    ->label(__('warehouse.model.label'))
+                    ->collapsible()
+                    ->orderQueryUsing(fn (Builder $query, string $direction): Builder => $query->orderBy('warehouses.name', $direction))
+                    ->scopeQueryByKeyUsing(fn (Builder $query, ?string $key): Builder => filled($key) ? $query->where('warehouses.name', $key) : $query->whereNull('warehouses.name')),
+            ])
+            ->defaultGroup('warehouse_name')
             ->searchDebounce('700ms')
             ->striped()
             ->stackedOnMobile()
@@ -198,8 +199,7 @@ class StockItemsTable
             ->defaultPaginationPageOption(10)
             ->paginationMode(PaginationMode::Default)
             ->emptyStateHeading(__('stock-item.empty.heading'))
-            ->emptyStateDescription(__('stock-item.empty.description'))
-        ;
+            ->emptyStateDescription(__('stock-item.empty.description'));
     }
 
     protected static function viewMutationsAction(): Action
