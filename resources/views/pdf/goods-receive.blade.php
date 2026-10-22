@@ -209,7 +209,7 @@
 
         /* Distribution & Pagination Footers */
         .signature-space {
-            height: 120pt;
+            height: 180pt;
             page-break-inside: avoid;
         }
 

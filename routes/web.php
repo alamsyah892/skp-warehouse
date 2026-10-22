@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PrintGoodsIssueController;
 use App\Http\Controllers\PrintGoodsReceiveController;
 use App\Http\Controllers\PrintPurchaseOrderKoController;
 use App\Http\Controllers\PrintPurchaseOrderPoController;
@@ -18,4 +19,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('goods-receives/{goodsReceive}/print', PrintGoodsReceiveController::class)
         ->name('goods-receives.print');
+
+    Route::get('goods-issues/{goodsIssue}/print', PrintGoodsIssueController::class)
+        ->name('goods-issues.print');
 });

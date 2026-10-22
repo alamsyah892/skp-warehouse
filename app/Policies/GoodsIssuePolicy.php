@@ -18,6 +18,11 @@ class GoodsIssuePolicy
         return $user->can('Read Goods Issue');
     }
 
+    public function print(User $user, GoodsIssue $goodsIssue): bool
+    {
+        return $user->can('Read Goods Issue');
+    }
+
     public function create(User $user): bool
     {
         return $user->can('Create Goods Issue');
