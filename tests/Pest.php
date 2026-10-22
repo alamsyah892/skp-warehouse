@@ -65,3 +65,13 @@ function createUserWithReadPurchaseRequestPermission(): User
 
     return $user;
 }
+
+function createUserWithReadGoodsReceivePermission(): User
+{
+    Permission::firstOrCreate(['name' => 'Read Goods Receipt', 'guard_name' => 'web']);
+
+    $user = User::factory()->create();
+    $user->givePermissionTo('Read Goods Receipt');
+
+    return $user;
+}

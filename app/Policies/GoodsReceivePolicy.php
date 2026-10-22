@@ -25,6 +25,14 @@ class GoodsReceivePolicy
     }
 
     /**
+     * Determine whether the user can print the model.
+     */
+    public function print(User $user, GoodsReceive $goodsReceive): bool
+    {
+        return $user->can('Read Goods Receipt');
+    }
+
+    /**
      * Determine whether the user can create models.
      */
     public function create(User $user): bool

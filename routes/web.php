@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\PrintGoodsReceiveController;
 use App\Http\Controllers\PrintPurchaseOrderKoController;
 use App\Http\Controllers\PrintPurchaseOrderPoController;
 use App\Http\Controllers\PrintPurchaseRequestController;
@@ -14,4 +15,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('purchase-orders/{purchaseOrder}/print-po', PrintPurchaseOrderPoController::class)
         ->name('purchase-orders.print-po');
+
+    Route::get('goods-receives/{goodsReceive}/print', PrintGoodsReceiveController::class)
+        ->name('goods-receives.print');
 });
