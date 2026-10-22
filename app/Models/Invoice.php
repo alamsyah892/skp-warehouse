@@ -32,13 +32,17 @@ class Invoice extends Model
         'discount',
         'tax_type',
         'tax_percentage',
+        'tax_description',
         'rounding',
         'total_amount',
+        'description',
         'notes',
         'info',
     ];
 
     protected array $defaultEmptyStringFields = [
+        'description',
+        'tax_description',
         'notes',
         'info',
     ];

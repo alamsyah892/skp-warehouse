@@ -18,8 +18,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\View;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontFamily;
 use Filament\Support\Enums\FontWeight;
@@ -93,6 +95,7 @@ class InvoiceForm
                         $set('goods_receive_id', null);
                         $set('purchase_order_id', null);
                         $set('invoiceItems', []);
+                        static::resetSummaryTotalFields($set);
                     })
                     ->required(),
 
@@ -130,12 +133,14 @@ class InvoiceForm
                         if (! $goodsReceive) {
                             $set('purchase_order_id', null);
                             $set('invoiceItems', []);
+                            static::resetSummaryTotalFields($set);
 
                             return;
                         }
 
                         $set('purchase_order_id', $goodsReceive->purchase_order_id);
                         $set('invoiceItems', static::mapGoodsReceiveItemsForInvoice($goodsReceive));
+                        static::applyPurchaseOrderSummaryFields($set, $goodsReceive->purchaseOrder);
                     })
                     ->disabled(fn ($get): bool => blank($get('vendor_id')))
                     ->required()
@@ -279,96 +284,120 @@ class InvoiceForm
 
     protected static function summaryTotalSection(): Section
     {
-        return Section::make('Ringkasan Total')
+        return Section::make(__('purchase-order.section.summary_total.label'))
             ->icon(Heroicon::Calculator)
             ->iconColor('primary')
-            ->compact()
+            ->columnSpanFull()
             ->columns([
                 'default' => 1,
                 'lg' => 12,
             ])
+            ->compact()
             ->schema([
-                Grid::make()
-                    ->columnSpan([
-                        'default' => 1,
-                        'lg' => 7,
-                    ])
-                    ->columns([
-                        'default' => 1,
-                        'lg' => 4,
-                    ])
-                    ->schema([
-                        Select::make('tax_type')
-                            ->label('Tipe Pajak')
-                            ->options(PurchaseOrderTaxType::options())
-                            ->default(PurchaseOrderTaxType::EXCLUDE->value)
-                            ->native(false)
-                            ->live()
-                            ->required(),
-
-                        Select::make('tax_percentage')
-                            ->label('Persentase Pajak')
-                            ->options(OrderCalculationService::getTaxPercentageOptions())
-                            ->default(0)
-                            ->native(false)
-                            ->live()
-                            ->required(),
-
-                        TextInput::make('discount')
-                            ->label('Diskon')
-                            ->numeric()
-                            ->default(0)
-                            ->prefix('Rp')
-                            ->live(debounce: 500),
-
-                        TextInput::make('rounding')
-                            ->label('Pembulatan')
-                            ->numeric()
-                            ->default(0)
-                            ->prefix('Rp')
-                            ->live(debounce: 500),
-                    ]),
-
                 Grid::make()
                     ->columnSpan([
                         'default' => 1,
                         'lg' => 5,
                     ])
-                    ->columns(2)
+                    ->schema([
+                        Select::make('tax_type')
+                            ->label(__('purchase-order.tax_type.label'))
+                            ->options(PurchaseOrderTaxType::options())
+                            ->native(false)
+                            ->default(PurchaseOrderTaxType::EXCLUDE->value)
+                            ->live()
+                            ->afterStateHydrated(fn ($component, $state) => $component->state($state ?? PurchaseOrderTaxType::EXCLUDE->value))
+                            ->required(),
+                        Select::make('tax_percentage')
+                            ->label(__('purchase-order.tax_percentage.label'))
+                            ->options(OrderCalculationService::getTaxPercentageOptions())
+                            ->native(false)
+                            ->live()
+                            ->afterStateHydrated(function ($component, $state): void {
+                                $component->state(
+                                    filled($state) ? (string) ((int) $state + 0) : 0
+                                );
+                            }),
+                        TextInput::make('tax_description')
+                            ->label(__('purchase-order.tax_description.label'))
+                            ->placeholder(__('purchase-order.tax_description.placeholder'))
+                            ->helperText(__('purchase-order.tax_description.helper'))
+                            ->live(debounce: 500)
+                            ->columnSpanFull(),
+                        TextInput::make('discount')
+                            ->label(__('purchase-order.discount.label'))
+                            ->numeric()
+                            ->placeholder(0)
+                            ->live(debounce: 500)
+                            ->dehydrateStateUsing(fn ($state) => $state ?? 0)
+                            ->columnSpanFull(),
+                        TextInput::make('rounding')
+                            ->label(__('purchase-order.rounding.label'))
+                            ->numeric()
+                            ->placeholder(0)
+                            ->live(debounce: 500)
+                            ->dehydrateStateUsing(fn ($state) => $state ?? 0)
+                            ->columnSpanFull(),
+                    ]),
+                Fieldset::make(__('purchase-order.fieldset.detail_total.label'))
+                    ->dense()
+                    ->columns([
+                        'default' => 1,
+                        'lg' => 1,
+                    ])
+                    ->columnSpan([
+                        'default' => 1,
+                        'lg' => 7,
+                    ])
+                    ->inlineLabel()
                     ->schema([
                         TextEntry::make('total_subtotal')
-                            ->label('Subtotal')
-                            ->state(fn ($get): float => static::getSummaryTotals($get)['subtotal'])
+                            ->label(__('purchase-order.subtotal.label'))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['subtotal'] ?? 0.0)
                             ->numeric()
                             ->alignEnd(),
-
                         TextEntry::make('total_discount')
-                            ->label('Diskon')
-                            ->state(fn ($get): float => static::getSummaryTotals($get)['discount'])
+                            ->label(__('purchase-order.discount.label'))
+                            ->state(fn ($get): string => '-'.static::getSummaryTotals($get)['discount'] ?? 0.0)
                             ->numeric()
+                            ->color('danger')
                             ->alignEnd(),
-
                         TextEntry::make('total_after_discount')
-                            ->label('Setelah Diskon')
-                            ->state(fn ($get): float => static::getSummaryTotals($get)['subtotal_after_discount'])
+                            ->label(__('purchase-order.after_discount.label'))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['subtotal_after_discount'] ?? 0.0)
                             ->numeric()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
                             ->alignEnd(),
 
-                        TextEntry::make('total_tax')
-                            ->label(fn ($get): string => 'Pajak'.(filled($get('tax_percentage')) ? " ({$get('tax_percentage')}%)" : ''))
-                            // ->state(fn ($get): float => static::getSummaryTotals($get)['tax'])
+                        View::make('components.divider'),
+
+                        TextEntry::make('total_tax_base')
+                            ->label(__('purchase-order.tax_base.label'))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['tax_base'] ?? 0.0)
                             ->numeric()
                             ->alignEnd(),
-
+                        TextEntry::make('total_ppn')
+                            ->label(fn ($get) => __('purchase-order.tax.label', ['percentage' => filled($get('tax_percentage')) ? "({$get('tax_percentage')}%)" : '']))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['tax_amount'] ?? 0.0)
+                            ->numeric()
+                            ->color('warning')
+                            ->alignEnd(),
+                        TextEntry::make('total')
+                            ->label(__('purchase-order.total.label'))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['total_before_rounding'] ?? 0.0)
+                            ->numeric()
+                            ->weight(FontWeight::Bold)
+                            ->size(TextSize::Large)
+                            ->alignEnd(),
                         TextEntry::make('total_rounding')
-                            ->label('Pembulatan')
-                            ->state(fn ($get): float => (float) ($get('rounding') ?? 0))
+                            ->label(__('purchase-order.rounding.label'))
+                            ->state(fn ($get): string => $get('rounding') ?? 0)
                             ->numeric()
                             ->alignEnd(),
-
                         TextEntry::make('total_grand_total')
-                            ->label('Grand Total')
-                            ->state(fn ($get): float => static::getSummaryTotals($get)['grand_total'])
+                            ->label(__('purchase-order.grand_total.label'))
+                            ->state(fn ($get): string => static::getSummaryTotals($get)['grand_total'] ?? 0.0)
                             ->numeric()
                             ->weight(FontWeight::Bold)
                             ->size(TextSize::Large)
@@ -552,12 +581,18 @@ class InvoiceForm
      */
     protected static function getSummaryTotals(callable $get): array
     {
+        $items = OrderCalculationService::normalizeSummaryItems((array) ($get('invoiceItems') ?? []));
+        $discount = (float) ($get('discount') ?? 0);
+        $taxType = $get('tax_type');
+        $taxPercentage = $get('tax_percentage') ?? 0;
+        $rounding = (float) ($get('rounding') ?? 0);
+
         return OrderCalculationService::calculateSummary(
-            (array) ($get('invoiceItems') ?? []),
-            (float) ($get('discount') ?? 0),
-            $get('tax_type'),
-            $get('tax_percentage') ?? 0,
-            (float) ($get('rounding') ?? 0),
+            $items,
+            $discount,
+            $taxType,
+            $taxPercentage,
+            $rounding,
         );
     }
 
@@ -656,5 +691,34 @@ class InvoiceForm
             ])
             ->values()
             ->all();
+    }
+
+    protected static function resetSummaryTotalFields(callable $set): void
+    {
+        $set('tax_type', PurchaseOrderTaxType::EXCLUDE->value);
+        $set('tax_percentage', 0);
+        $set('tax_description', null);
+        $set('discount', 0);
+        $set('rounding', 0);
+    }
+
+    protected static function applyPurchaseOrderSummaryFields(callable $set, ?PurchaseOrder $purchaseOrder): void
+    {
+        if (! $purchaseOrder) {
+            static::resetSummaryTotalFields($set);
+
+            return;
+        }
+
+        $set(
+            'tax_type',
+            $purchaseOrder->tax_type instanceof PurchaseOrderTaxType
+                ? $purchaseOrder->tax_type->value
+                : ($purchaseOrder->tax_type ?? PurchaseOrderTaxType::EXCLUDE->value),
+        );
+        $set('tax_percentage', filled($purchaseOrder->tax_percentage) ? (int) $purchaseOrder->tax_percentage : 0);
+        $set('tax_description', $purchaseOrder->tax_description);
+        $set('discount', filled($purchaseOrder->discount) ? ((float) $purchaseOrder->discount + 0) : 0);
+        $set('rounding', filled($purchaseOrder->rounding) ? ((float) $purchaseOrder->rounding + 0) : 0);
     }
 }

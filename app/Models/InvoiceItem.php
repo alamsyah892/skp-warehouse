@@ -4,25 +4,25 @@ namespace App\Models;
 
 use App\Models\Concerns\DefaultEmptyString;
 use App\Models\Concerns\LogsAllFillable;
+use Database\Factories\InvoiceItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 
 class InvoiceItem extends Model
 {
-    /** @use HasFactory<\Database\Factories\InvoiceItemFactory> */
-    use HasFactory;
+    use DefaultEmptyString, LogsAllFillable;
 
-    use LogsAllFillable, DefaultEmptyString;
+    /** @use HasFactory<InvoiceItemFactory> */
+    use HasFactory;
 
     protected $fillable = [
         'invoice_id',
         'goods_receive_item_id',
-        'purchase_order_item_id',
         'item_id',
         'qty',
         'price',
-        'subtotal',
         'description',
         'sort',
     ];
@@ -34,14 +34,11 @@ class InvoiceItem extends Model
     protected $casts = [
         'qty' => 'decimal:2',
         'price' => 'decimal:2',
-        'subtotal' => 'decimal:2',
     ];
 
-    protected static function booted(): void
+    public function getSubtotalAttribute(): float
     {
-        static::saving(function (self $record): void {
-            $record->subtotal = (float) $record->qty * (float) $record->price;
-        });
+        return (float) $this->qty * (float) $this->price;
     }
 
     public function invoice(): BelongsTo
@@ -54,9 +51,16 @@ class InvoiceItem extends Model
         return $this->belongsTo(GoodsReceiveItem::class);
     }
 
-    public function purchaseOrderItem(): BelongsTo
+    public function purchaseOrderItem(): HasOneThrough
     {
-        return $this->belongsTo(PurchaseOrderItem::class);
+        return $this->hasOneThrough(
+            PurchaseOrderItem::class,
+            GoodsReceiveItem::class,
+            'id',
+            'id',
+            'goods_receive_item_id',
+            'purchase_order_item_id',
+        );
     }
 
     public function item(): BelongsTo
