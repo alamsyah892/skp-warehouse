@@ -13,8 +13,12 @@ services:
       # -----------------------------------------------------------
       - laravel-storage-production:/var/www/storage:ro
       - laravel-public-assets:/var/www/public/build:ro
+    environment:
+      - DB_HOST=mariadb_server
+      - DB_PORT=3306
     networks:
       - laravel-production
+      - internal_app_net
     ports:
       # Map port 80 inside the container to the port specified by 'NGINX_PORT' on the host machine.
       # -----------------------------------------------------------
@@ -40,6 +44,7 @@ services:
       - .env
     networks:
       - laravel-production
+      - internal_app_net
     healthcheck:
       test: ["CMD-SHELL", "php-fpm-healthcheck || exit 1"]
       interval: 10s
@@ -101,6 +106,8 @@ networks:
   # For example, 'php-fpm' can connect to 'postgres' by using 'postgres' as the hostname.
   # -----------------------------------------------------------
   laravel-production:
+  internal_app_net:
+    external: true
 
 volumes:
   # postgres-data-production:

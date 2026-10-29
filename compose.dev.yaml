@@ -12,8 +12,11 @@ services:
       - "${NGINX_PORT:-83}:80"
     environment:
       - NGINX_HOST=localhost
+      - DB_HOST=mariadb_server
+      - DB_PORT=3306
     networks:
       - laravel-development
+      - internal_app_net
     depends_on:
       php-fpm:
         condition: service_started # Wait for php-fpm to start
@@ -43,6 +46,7 @@ services:
       - ./:/var/www
     networks:
       - laravel-development
+      - internal_app_net
     extra_hosts:
       - "host.docker.internal:host-gateway"
     # depends_on:
@@ -74,6 +78,7 @@ services:
       - ./:/var/www
     networks:
       - laravel-development
+      - internal_app_net
     extra_hosts:
       - "host.docker.internal:host-gateway"
 
@@ -98,6 +103,8 @@ services:
 networks:
   laravel-development:
     driver: bridge
+  internal_app_net:
+    external: true
 
 # volumes:
 #   postgres-data-development:
