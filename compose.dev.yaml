@@ -97,6 +97,7 @@ services:
 
   redis:
     image: redis:alpine
+    restart: unless-stopped
     networks:
       - laravel-development
 
